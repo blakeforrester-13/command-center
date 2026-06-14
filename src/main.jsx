@@ -6,12 +6,10 @@ import {
   ClipboardList,
   Compass,
   DollarSign,
-  Heart,
   Home,
   Inbox,
   Layers,
   ListChecks,
-  MessageCircle,
   Plus,
   RefreshCw,
   Search,
@@ -20,26 +18,53 @@ import {
   TimerReset,
   Trash2,
   Users,
-  Wand2,
   X,
   AlertCircle,
   CalendarDays,
   Clock3,
   Flag,
   HelpCircle,
-  PauseCircle,
   ShieldCheck,
   Archive,
   ArrowRight,
   Save,
   Edit3,
-  Check,
-  MoreHorizontal,
   CircleDashed,
+  Zap,
+  Clock,
+  Battery,
+  BatteryLow,
+  BatteryMedium,
+  BatteryFull,
+  ChevronDown,
+  ChevronRight,
+  ArrowUpCircle,
 } from 'lucide-react';
 import './styles.css';
 
-const STORAGE_KEY = 'command-center-v1';
+const STORAGE_KEY = 'command-center-v2';
+
+// ─── Category tiers ────────────────────────────────────────────────────────
+const categoryTiers = [
+  {
+    id: 'act-now',
+    label: 'Act Now',
+    description: 'Momentum — things with clear forward motion',
+    color: 'tier-act',
+  },
+  {
+    id: 'needs-thinking',
+    label: 'Needs Thinking',
+    description: 'Open loops — draining attention until closed',
+    color: 'tier-think',
+  },
+  {
+    id: 'hold',
+    label: 'Hold / Background',
+    description: 'Stable or parked — not this week',
+    color: 'tier-hold',
+  },
+];
 
 const categories = [
   {
@@ -47,7 +72,8 @@ const categories = [
     label: 'Active Missions',
     short: 'Missions',
     icon: Target,
-    color: 'blue',
+    color: 'amber',
+    tier: 'act-now',
     description: 'The major priorities you are actively focused on right now. Keep this capped at 3.',
     prompt: 'What bigger priority does this connect to?',
   },
@@ -57,17 +83,9 @@ const categories = [
     short: 'Actions',
     icon: CheckCircle2,
     color: 'green',
-    description: 'Small specific tasks you can actually do.',
+    tier: 'act-now',
+    description: 'Small specific tasks you can actually do right now.',
     prompt: 'What is the next physical action?',
-  },
-  {
-    id: 'maintenance',
-    label: 'Maintenance',
-    short: 'Maintenance',
-    icon: ShieldCheck,
-    color: 'teal',
-    description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.',
-    prompt: 'What keeps this from becoming chaos?',
   },
   {
     id: 'problems',
@@ -75,6 +93,7 @@ const categories = [
     short: 'Problems',
     icon: HelpCircle,
     color: 'orange',
+    tier: 'needs-thinking',
     description: 'Things that need thinking, planning, or breaking down before action.',
     prompt: 'What question needs to be solved?',
   },
@@ -84,6 +103,7 @@ const categories = [
     short: 'Decisions',
     icon: Compass,
     color: 'purple',
+    tier: 'needs-thinking',
     description: 'Open choices that are draining attention until you close them.',
     prompt: 'What options are you choosing between?',
   },
@@ -93,17 +113,19 @@ const categories = [
     short: 'Waiting',
     icon: TimerReset,
     color: 'yellow',
-    description: 'Things blocked by another person, answer, event, payment, email, appointment, or deadline.',
+    tier: 'needs-thinking',
+    description: 'Things blocked by another person, answer, event, payment, or deadline.',
     prompt: 'Who or what are you waiting on?',
   },
   {
-    id: 'someday',
-    label: 'Someday / Parking Lot',
-    short: 'Someday',
-    icon: Archive,
-    color: 'slate',
-    description: 'Good ideas that matter, but not right now.',
-    prompt: 'Why is this not for this week?',
+    id: 'maintenance',
+    label: 'Maintenance',
+    short: 'Maintenance',
+    icon: ShieldCheck,
+    color: 'teal',
+    tier: 'hold',
+    description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.',
+    prompt: 'What keeps this from becoming chaos?',
   },
   {
     id: 'relationships',
@@ -111,6 +133,7 @@ const categories = [
     short: 'People',
     icon: Users,
     color: 'pink',
+    tier: 'hold',
     description: 'Gabi, family, siblings, friends, work relationships, networking, and conversations.',
     prompt: 'Who does this involve and what would showing up well look like?',
   },
@@ -120,8 +143,19 @@ const categories = [
     short: 'Adult Life',
     icon: DollarSign,
     color: 'emerald',
+    tier: 'hold',
     description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.',
     prompt: 'What real-world responsibility needs clarity?',
+  },
+  {
+    id: 'someday',
+    label: 'Someday / Parking Lot',
+    short: 'Someday',
+    icon: Archive,
+    color: 'slate',
+    tier: 'hold',
+    description: 'Good ideas that matter, but not right now.',
+    prompt: 'Why is this not for this week?',
   },
   {
     id: 'anxiety-noise',
@@ -129,6 +163,7 @@ const categories = [
     short: 'Noise',
     icon: Brain,
     color: 'red',
+    tier: 'hold',
     description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.',
     prompt: 'Is there a real action here, or is this a repeated worry loop?',
   },
@@ -138,6 +173,21 @@ const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
 
+// ─── Staleness helper ──────────────────────────────────────────────────────
+function getDaysOld(isoString) {
+  if (!isoString) return 0;
+  const ms = Date.now() - new Date(isoString).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+function stalenessLabel(days, category) {
+  if (category === 'waiting-on' && days >= 14) return { label: `${days}d — follow up?`, urgent: true };
+  if (category === 'decisions' && days >= 7) return { label: `${days}d open`, urgent: true };
+  if (category === 'problems' && days >= 10) return { label: `${days}d — needs attention`, urgent: days >= 14 };
+  if (days >= 21) return { label: `${days}d — stale`, urgent: false };
+  return null;
+}
+
 const starterState = {
   thoughts: [
     {
@@ -146,7 +196,7 @@ const starterState = {
       category: 'problems',
       area: 'Personal',
       status: 'Open',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
       nextAction: 'Pick 3 active priorities for the week.',
       notes: 'This app should reduce mental noise, not create another thing to manage.',
       dueDate: '',
@@ -170,7 +220,7 @@ const starterState = {
       title: 'Build body and discipline',
       why: 'Fitness, food, sleep, and consistency stabilize everything else.',
       weeklyGoal: 'Hit workouts and keep basic tracking consistent.',
-      nextAction: 'Choose today’s body win.',
+      nextAction: 'Choose today\'s body win.',
       status: 'Open',
       area: 'Health',
       createdAt: new Date().toISOString(),
@@ -187,9 +237,11 @@ const starterState = {
     },
   ],
   today: {
-    mainMission: 'Pick one thing that moves life forward today.',
+    mainMissionId: '',
+    mainMissionText: 'Pick one thing that moves life forward today.',
     bodyWin: 'Do one action that keeps your body/life stable.',
-    lifeWin: 'Clear one small real-life open loop.',
+    lifeWinId: '',
+    lifeWinText: 'Clear one small real-life open loop.',
     avoiding: 'Name the thing you do not want to deal with.',
     updatedAt: new Date().toISOString(),
   },
@@ -206,7 +258,7 @@ function loadState() {
       ...parsed,
       thoughts: parsed.thoughts || [],
       missions: parsed.missions || starterState.missions,
-      today: parsed.today || starterState.today,
+      today: { ...starterState.today, ...(parsed.today || {}) },
       reviews: parsed.reviews || [],
     };
   } catch {
@@ -222,14 +274,19 @@ function formatDate(value) {
 }
 
 function getCategory(id) {
-  return categories.find((category) => category.id === id) || categories[0];
+  return categories.find((c) => c.id === id) || categories[0];
 }
 
+function getTier(tierId) {
+  return categoryTiers.find((t) => t.id === tierId) || categoryTiers[0];
+}
+
+// ─── UI Primitives ─────────────────────────────────────────────────────────
 function Pill({ children, tone = 'default', className = '' }) {
   return <span className={`pill pill-${tone} ${className}`}>{children}</span>;
 }
 
-function IconBadge({ icon: Icon, tone = 'blue' }) {
+function IconBadge({ icon: Icon, tone = 'amber' }) {
   return (
     <div className={`icon-badge icon-${tone}`}>
       <Icon size={18} />
@@ -250,10 +307,10 @@ function EmptyState({ icon: Icon = CircleDashed, title, text }) {
 function Modal({ title, children, onClose }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{title}</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Close modal">
+          <button className="icon-button" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -272,44 +329,57 @@ function Field({ label, children }) {
   );
 }
 
+function EnergyIcon({ level }) {
+  if (level === 'Low') return <BatteryLow size={14} />;
+  if (level === 'High') return <BatteryFull size={14} />;
+  return <BatteryMedium size={14} />;
+}
+
+function StalenessTag({ thought }) {
+  const days = getDaysOld(thought.createdAt);
+  const info = stalenessLabel(days, thought.category);
+  if (!info) return null;
+  return <Pill tone={info.urgent ? 'red' : 'slate'}><Clock size={11} /> {info.label}</Pill>;
+}
+
+// ─── App ───────────────────────────────────────────────────────────────────
 function App() {
   const [state, setState] = useState(loadState);
   const [activeTab, setActiveTab] = useState('today');
   const [selectedCategory, setSelectedCategory] = useState('active-missions');
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(null);
+  const [energyFilter, setEnergyFilter] = useState('');
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const unsorted = state.thoughts.filter((thought) => !thought.category);
-  const openTasks = state.thoughts.filter((thought) => thought.category === 'next-actions' && thought.status !== 'Done');
-  const openLoops = state.thoughts.filter((thought) => ['problems', 'decisions', 'waiting-on'].includes(thought.category) && thought.status !== 'Done');
-  const noiseItems = state.thoughts.filter((thought) => thought.category === 'anxiety-noise');
+  const unsorted = state.thoughts.filter((t) => !t.category);
+  const openTasks = state.thoughts.filter((t) => t.category === 'next-actions' && t.status !== 'Done');
+  const openLoops = state.thoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category) && t.status !== 'Done');
+  const noiseItems = state.thoughts.filter((t) => t.category === 'anxiety-noise');
 
   const filteredThoughts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return state.thoughts
-      .filter((thought) => (selectedCategory ? thought.category === selectedCategory : true))
-      .filter((thought) => {
+      .filter((t) => selectedCategory ? t.category === selectedCategory : true)
+      .filter((t) => {
         if (!normalized) return true;
-        return [thought.text, thought.area, thought.notes, thought.nextAction, thought.status]
-          .join(' ')
-          .toLowerCase()
-          .includes(normalized);
+        return [t.text, t.area, t.notes, t.nextAction, t.status].join(' ').toLowerCase().includes(normalized);
       })
       .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.createdAt) - new Date(a.createdAt));
   }, [state.thoughts, selectedCategory, query]);
 
+  // Energy-filtered tasks for "do right now" view
+  const energyFilteredTasks = useMemo(() => {
+    return openTasks.filter((t) => !energyFilter || t.energy === energyFilter);
+  }, [openTasks, energyFilter]);
+
   function updateToday(key, value) {
     setState((prev) => ({
       ...prev,
-      today: {
-        ...prev.today,
-        [key]: value,
-        updatedAt: new Date().toISOString(),
-      },
+      today: { ...prev.today, [key]: value, updatedAt: new Date().toISOString() },
     }));
   }
 
@@ -340,12 +410,12 @@ function App() {
   function updateThought(id, patch) {
     setState((prev) => ({
       ...prev,
-      thoughts: prev.thoughts.map((thought) => (thought.id === id ? { ...thought, ...patch } : thought)),
+      thoughts: prev.thoughts.map((t) => t.id === id ? { ...t, ...patch } : t),
     }));
   }
 
   function deleteThought(id) {
-    setState((prev) => ({ ...prev, thoughts: prev.thoughts.filter((thought) => thought.id !== id) }));
+    setState((prev) => ({ ...prev, thoughts: prev.thoughts.filter((t) => t.id !== id) }));
   }
 
   function addMission(input) {
@@ -366,21 +436,19 @@ function App() {
   function updateMission(id, patch) {
     setState((prev) => ({
       ...prev,
-      missions: prev.missions.map((mission) => (mission.id === id ? { ...mission, ...patch } : mission)),
+      missions: prev.missions.map((m) => m.id === id ? { ...m, ...patch } : m),
     }));
   }
 
   function deleteMission(id) {
-    setState((prev) => ({ ...prev, missions: prev.missions.filter((mission) => mission.id !== id) }));
+    setState((prev) => ({ ...prev, missions: prev.missions.filter((m) => m.id !== id) }));
   }
 
   function saveReview(review) {
-    const saved = {
-      ...review,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    setState((prev) => ({ ...prev, reviews: [saved, ...prev.reviews] }));
+    setState((prev) => ({
+      ...prev,
+      reviews: [{ ...review, id: crypto.randomUUID(), createdAt: new Date().toISOString() }, ...prev.reviews],
+    }));
   }
 
   function convertThought(thought, conversion) {
@@ -397,6 +465,12 @@ function App() {
       done: { status: 'Done' },
     };
     updateThought(thought.id, patches[conversion] || {});
+  }
+
+  // Promote a real task/mission into Today slots
+  function promoteToToday(slot, id, text) {
+    if (slot === 'main') updateToday('mainMissionId', id), updateToday('mainMissionText', text);
+    if (slot === 'life') updateToday('lifeWinId', id), updateToday('lifeWinText', text);
   }
 
   const navItems = [
@@ -416,7 +490,7 @@ function App() {
         </div>
         <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
           <Plus size={17} />
-          Capture
+          <span>Capture</span>
         </button>
       </header>
 
@@ -429,20 +503,22 @@ function App() {
             openTasks={openTasks}
             openLoops={openLoops}
             noiseItems={noiseItems}
+            energyFilter={energyFilter}
+            setEnergyFilter={setEnergyFilter}
+            energyFilteredTasks={energyFilteredTasks}
             setActiveTab={setActiveTab}
             setSelectedCategory={setSelectedCategory}
             setModal={setModal}
             updateThought={updateThought}
+            promoteToToday={promoteToToday}
+            allThoughts={state.thoughts}
           />
         )}
-
         {activeTab === 'capture' && <CaptureView addThought={addThought} missions={state.missions} setActiveTab={setActiveTab} />}
-
         {activeTab === 'sort' && (
           <SortView
             thoughts={state.thoughts}
             unsorted={unsorted}
-            categories={categories}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             query={query}
@@ -454,7 +530,6 @@ function App() {
             setModal={setModal}
           />
         )}
-
         {activeTab === 'missions' && (
           <MissionsView
             missions={state.missions}
@@ -466,7 +541,6 @@ function App() {
             setSelectedCategory={setSelectedCategory}
           />
         )}
-
         {activeTab === 'review' && <ReviewView state={state} saveReview={saveReview} />}
       </main>
 
@@ -485,11 +559,7 @@ function App() {
       {modal?.type === 'quick-capture' && (
         <Modal title="Quick Capture" onClose={() => setModal(null)}>
           <CaptureForm
-            addThought={(input) => {
-              addThought(input);
-              setModal(null);
-              setActiveTab('sort');
-            }}
+            addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }}
             missions={state.missions}
             compact
           />
@@ -501,10 +571,19 @@ function App() {
           <ThoughtEditForm
             thought={modal.thought}
             missions={state.missions}
-            updateThought={(id, patch) => {
-              updateThought(id, patch);
-              setModal(null);
-            }}
+            updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }}
+          />
+        </Modal>
+      )}
+
+      {modal?.type === 'promote' && (
+        <Modal title={`Promote to Today's ${modal.slot === 'main' ? 'Main Mission' : 'Life Win'}`} onClose={() => setModal(null)}>
+          <PromoteModal
+            slot={modal.slot}
+            missions={state.missions}
+            tasks={openTasks}
+            loops={openLoops}
+            onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }}
           />
         </Modal>
       )}
@@ -512,173 +591,261 @@ function App() {
   );
 }
 
-function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, setActiveTab, setSelectedCategory, setModal, updateThought }) {
+// ─── Today View ────────────────────────────────────────────────────────────
+function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, allThoughts }) {
   return (
     <section className="screen stack">
       <div className="hero-card">
         <div className="hero-copy">
-          <p className="eyebrow">Today’s Command</p>
+          <p className="eyebrow">Daily Operating System</p>
           <h2>What deserves your attention?</h2>
-          <p>Pick the few things that make today a win. Everything else gets sorted, parked, or reviewed later.</p>
+          <p>Pick the few things that make today a win. Park everything else.</p>
         </div>
-        <Sparkles size={34} />
+        <Sparkles size={32} className="hero-icon" />
       </div>
 
+      {/* Today's 3 — promoted from real data */}
       <div className="card">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Daily Operating System</p>
-            <h2>Today’s 3</h2>
+            <p className="eyebrow">Today's Focus</p>
+            <h2>Today's 3</h2>
           </div>
-          <Pill tone="blue">Updated {formatDate(today.updatedAt)}</Pill>
+          <Pill tone="slate">Updated {formatDate(today.updatedAt)}</Pill>
         </div>
         <div className="today-grid">
-          <Field label="Main Mission">
-            <textarea value={today.mainMission} onChange={(event) => updateToday('mainMission', event.target.value)} />
-          </Field>
+          <TodaySlot
+            label="Main Mission"
+            value={today.mainMissionText}
+            onChange={(v) => updateToday('mainMissionText', v)}
+            onPromote={() => setModal({ type: 'promote', slot: 'main' })}
+            linkedId={today.mainMissionId}
+          />
           <Field label="Body / Stability Win">
-            <textarea value={today.bodyWin} onChange={(event) => updateToday('bodyWin', event.target.value)} />
+            <textarea value={today.bodyWin} onChange={(e) => updateToday('bodyWin', e.target.value)} />
           </Field>
-          <Field label="Life Win">
-            <textarea value={today.lifeWin} onChange={(event) => updateToday('lifeWin', event.target.value)} />
-          </Field>
-          <Field label="One Thing I’m Avoiding">
-            <textarea value={today.avoiding} onChange={(event) => updateToday('avoiding', event.target.value)} />
+          <TodaySlot
+            label="Life Win"
+            value={today.lifeWinText}
+            onChange={(v) => updateToday('lifeWinText', v)}
+            onPromote={() => setModal({ type: 'promote', slot: 'life' })}
+            linkedId={today.lifeWinId}
+          />
+          <Field label="One Thing I'm Avoiding">
+            <textarea value={today.avoiding} onChange={(e) => updateToday('avoiding', e.target.value)} />
           </Field>
         </div>
       </div>
 
+      {/* Active missions */}
       <div className="section-header">
         <div>
-          <p className="eyebrow">Focus</p>
-          <h2>Active Missions</h2>
+          <p className="eyebrow">Active Missions</p>
+          <h2>Where Momentum Lives</h2>
         </div>
         <button className="text-button" onClick={() => setActiveTab('missions')}>Manage</button>
       </div>
       <div className="mission-list">
-        {missions.slice(0, 3).map((mission) => (
-          <article className="mission-card" key={mission.id}>
+        {missions.slice(0, 3).map((m) => (
+          <article className="mission-card" key={m.id}>
             <div>
-              <h3>{mission.title}</h3>
-              <p>{mission.why || 'No why added yet.'}</p>
+              <p className="eyebrow">{m.area}</p>
+              <h3>{m.title}</h3>
+              <p>{m.why || 'No why added yet.'}</p>
             </div>
-            <Pill tone={mission.status === 'On Track' ? 'green' : mission.status === 'Slipping' ? 'red' : 'default'}>{mission.status}</Pill>
+            <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' ? 'red' : m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
           </article>
         ))}
+        {missions.length === 0 && <EmptyState title="No missions yet" text="Go to Missions to set your top 3 priorities." />}
       </div>
 
-      <div className="two-column">
-        <div className="card">
-          <div className="mini-header">
-            <ListChecks size={18} />
-            <h3>Urgent Next Actions</h3>
+      {/* Energy-based task filter — Feature 4 */}
+      <div className="card">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Do Right Now</p>
+            <h2>Next Actions</h2>
           </div>
-          {openTasks.length ? (
-            <div className="compact-list">
-              {openTasks.slice(0, 5).map((task) => (
-                <button key={task.id} className="compact-item" onClick={() => updateThought(task.id, { status: task.status === 'Done' ? 'Open' : 'Done' })}>
-                  <CheckCircle2 size={17} />
+          <div className="energy-toggle">
+            {['', 'Low', 'Medium', 'High'].map((level) => (
+              <button
+                key={level}
+                className={`energy-btn ${energyFilter === level ? 'active' : ''}`}
+                onClick={() => setEnergyFilter(level)}
+              >
+                {level === '' ? 'All' : <><EnergyIcon level={level} /> {level}</>}
+              </button>
+            ))}
+          </div>
+        </div>
+        {energyFilteredTasks.length ? (
+          <div className="compact-list">
+            {energyFilteredTasks.slice(0, 6).map((task) => (
+              <button
+                key={task.id}
+                className={`compact-item ${task.status === 'Done' ? 'done-item' : ''}`}
+                onClick={() => updateThought(task.id, { status: task.status === 'Done' ? 'Open' : 'Done' })}
+              >
+                <CheckCircle2 size={17} className={task.status === 'Done' ? 'check-done' : ''} />
+                <div className="compact-item-body">
                   <span>{task.text}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="No actions yet" text="Capture or convert a thought into a next action." />
-          )}
-        </div>
-
-        <div className="card">
-          <div className="mini-header">
-            <AlertCircle size={18} />
-            <h3>Open Loops</h3>
+                  <div className="compact-meta">
+                    <EnergyIcon level={task.energy} />
+                    <span className="meta-text">{task.energy}</span>
+                    {task.dueDate && <><CalendarDays size={11} /><span className="meta-text">{formatDate(task.dueDate)}</span></>}
+                  </div>
+                </div>
+              </button>
+            ))}
+            {openTasks.length > 6 && (
+              <button className="text-button full-width" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
+                See all {openTasks.length} actions →
+              </button>
+            )}
           </div>
-          {openLoops.length ? (
-            <div className="compact-list">
-              {openLoops.slice(0, 5).map((loop) => {
-                const category = getCategory(loop.category);
-                return (
-                  <button
-                    key={loop.id}
-                    className="compact-item"
-                    onClick={() => {
-                      setSelectedCategory(loop.category);
-                      setActiveTab('sort');
-                    }}
-                  >
-                    <category.icon size={17} />
-                    <span>{loop.text}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState title="No open loops" text="Problems, decisions, and waiting items will show up here." />
-          )}
-        </div>
+        ) : (
+          <EmptyState title={energyFilter ? `No ${energyFilter.toLowerCase()} energy tasks` : 'No open actions'} text="Capture or convert a thought into a next action." />
+        )}
       </div>
 
+      {/* Open loops */}
+      <div className="card">
+        <div className="mini-header">
+          <AlertCircle size={18} />
+          <h3>Open Loops</h3>
+          <Pill tone={openLoops.length > 0 ? 'orange' : 'green'} className="ml-auto">{openLoops.length}</Pill>
+        </div>
+        {openLoops.length ? (
+          <div className="compact-list">
+            {openLoops.slice(0, 5).map((loop) => {
+              const cat = getCategory(loop.category);
+              const days = getDaysOld(loop.createdAt);
+              const stale = stalenessLabel(days, loop.category);
+              return (
+                <button key={loop.id} className="compact-item" onClick={() => { setSelectedCategory(loop.category); setActiveTab('sort'); }}>
+                  <cat.icon size={17} />
+                  <div className="compact-item-body">
+                    <span>{loop.text}</span>
+                    {stale && <span className={`stale-tag ${stale.urgent ? 'stale-urgent' : ''}`}><Clock size={11} /> {stale.label}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="muted small">No open loops. Problems, decisions, and waiting items show here.</p>
+        )}
+      </div>
+
+      {/* Noise card */}
       <div className="card noise-card">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Mental Noise Check</p>
-            <h2>Repeated Worry Loop</h2>
+            <p className="eyebrow">Mental Noise</p>
+            <h2>Worry Check</h2>
           </div>
           <button className="secondary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
-            <Plus size={16} />
-            Add
+            <Plus size={16} /> Add
           </button>
         </div>
         {noiseItems.length ? (
           <ThoughtCard thought={noiseItems[0]} updateThought={updateThought} compact />
         ) : (
-          <p className="muted">No anxiety/noise entries yet. When a thought repeats but has no clear action, put it here.</p>
+          <p className="muted small">No noise entries yet. When a thought repeats with no clear action, put it here.</p>
         )}
       </div>
     </section>
   );
 }
 
+// ─── Today Slot — with promote button ─────────────────────────────────────
+function TodaySlot({ label, value, onChange, onPromote, linkedId }) {
+  return (
+    <div className="today-slot">
+      <div className="today-slot-header">
+        <span className="field-label">{label}</span>
+        <button className="promote-btn" onClick={onPromote} title="Pull from your actual tasks">
+          <ArrowUpCircle size={14} /> Pull from list
+        </button>
+      </div>
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} className={linkedId ? 'linked-slot' : ''} />
+    </div>
+  );
+}
+
+// ─── Promote Modal ─────────────────────────────────────────────────────────
+function PromoteModal({ slot, missions, tasks, loops, onSelect }) {
+  return (
+    <div className="promote-modal">
+      <p className="muted small">Choose something from your actual lists to promote to today's focus.</p>
+      {missions.length > 0 && (
+        <div className="promote-group">
+          <p className="promote-group-label">Active Missions</p>
+          {missions.slice(0, 3).map((m) => (
+            <button key={m.id} className="promote-item" onClick={() => onSelect(m.id, m.title)}>
+              <Target size={15} />
+              <span>{m.title}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {tasks.length > 0 && (
+        <div className="promote-group">
+          <p className="promote-group-label">Next Actions</p>
+          {tasks.slice(0, 5).map((t) => (
+            <button key={t.id} className="promote-item" onClick={() => onSelect(t.id, t.text)}>
+              <CheckCircle2 size={15} />
+              <span>{t.text}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {loops.length > 0 && (
+        <div className="promote-group">
+          <p className="promote-group-label">Open Loops</p>
+          {loops.slice(0, 5).map((l) => {
+            const cat = getCategory(l.category);
+            return (
+              <button key={l.id} className="promote-item" onClick={() => onSelect(l.id, l.text)}>
+                <cat.icon size={15} />
+                <span>{l.text}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Capture View ──────────────────────────────────────────────────────────
 function CaptureView({ addThought, missions, setActiveTab }) {
   return (
     <section className="screen stack">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Phase 1</p>
-          <h2>Brain Dump Inbox</h2>
-          <p className="muted">Get the thought out of your head first. Perfect sorting can happen after.</p>
+          <p className="eyebrow">Brain Dump</p>
+          <h2>Capture</h2>
+          <p className="muted">Get it out of your head. Sort later.</p>
         </div>
       </div>
-      <CaptureForm
-        addThought={(input) => {
-          addThought(input);
-          setActiveTab('sort');
-        }}
-        missions={missions}
-      />
+      <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} missions={missions} />
     </section>
   );
 }
 
 function CaptureForm({ addThought, missions, compact = false }) {
   const [form, setForm] = useState({
-    text: '',
-    category: '',
-    area: 'Personal',
-    nextAction: '',
-    notes: '',
-    dueDate: '',
-    energy: 'Medium',
-    relatedMissionId: '',
+    text: '', category: '', area: 'Personal', nextAction: '',
+    notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '',
   });
 
   const selected = form.category ? getCategory(form.category) : null;
 
-  function set(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
 
-  function submit(event) {
-    event.preventDefault();
+  function submit(e) {
+    e.preventDefault();
     if (!form.text.trim()) return;
     addThought(form);
     setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
@@ -689,25 +856,29 @@ function CaptureForm({ addThought, missions, compact = false }) {
       <Field label="What is on your mind?">
         <textarea
           className="big-input"
-          placeholder="Dump the thought here. Example: I need to figure out money before this week gets away from me."
+          placeholder="Dump the thought here. Sorting can happen after."
           value={form.text}
-          onChange={(event) => set('text', event.target.value)}
+          onChange={(e) => set('text', e.target.value)}
           autoFocus={compact}
         />
       </Field>
 
       <div className="form-grid">
         <Field label="Category">
-          <select value={form.category} onChange={(event) => set('category', event.target.value)}>
+          <select value={form.category} onChange={(e) => set('category', e.target.value)}>
             <option value="">Unsorted Inbox</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.label}</option>
+            {categoryTiers.map((tier) => (
+              <optgroup key={tier.id} label={tier.label}>
+                {categories.filter((c) => c.tier === tier.id).map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </Field>
         <Field label="Life Area">
-          <select value={form.area} onChange={(event) => set('area', event.target.value)}>
-            {lifeAreas.map((area) => <option key={area}>{area}</option>)}
+          <select value={form.area} onChange={(e) => set('area', e.target.value)}>
+            {lifeAreas.map((a) => <option key={a}>{a}</option>)}
           </select>
         </Field>
       </div>
@@ -723,47 +894,53 @@ function CaptureForm({ addThought, missions, compact = false }) {
       )}
 
       <Field label="Next Action / Clarifying Step">
-        <input placeholder="Example: check account balance and list upcoming expenses" value={form.nextAction} onChange={(event) => set('nextAction', event.target.value)} />
+        <input placeholder="What is the very next physical step?" value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)} />
       </Field>
 
       <div className="form-grid">
         <Field label="Due / Follow-up Date">
-          <input type="date" value={form.dueDate} onChange={(event) => set('dueDate', event.target.value)} />
+          <input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} />
         </Field>
-        <Field label="Energy">
-          <select value={form.energy} onChange={(event) => set('energy', event.target.value)}>
-            {energyLevels.map((level) => <option key={level}>{level}</option>)}
+        <Field label="Energy Required">
+          <select value={form.energy} onChange={(e) => set('energy', e.target.value)}>
+            {energyLevels.map((l) => <option key={l}>{l}</option>)}
           </select>
         </Field>
       </div>
 
       <Field label="Related Mission">
-        <select value={form.relatedMissionId} onChange={(event) => set('relatedMissionId', event.target.value)}>
+        <select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}>
           <option value="">None</option>
-          {missions.map((mission) => <option key={mission.id} value={mission.id}>{mission.title}</option>)}
+          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
         </select>
       </Field>
 
       <Field label="Notes">
-        <textarea placeholder="Extra context, why it matters, options, or anything you do not want to forget." value={form.notes} onChange={(event) => set('notes', event.target.value)} />
+        <textarea placeholder="Context, why it matters, anything you don't want to forget." value={form.notes} onChange={(e) => set('notes', e.target.value)} />
       </Field>
 
       <button className="primary-button" type="submit">
-        <Save size={17} />
-        Save to Command Center
+        <Save size={17} /> Save to Command Center
       </button>
     </form>
   );
 }
 
-function SortView({ thoughts, unsorted, categories, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
+// ─── Sort View — tiered ────────────────────────────────────────────────────
+function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
+  const [collapsedTiers, setCollapsedTiers] = useState({});
+
+  function toggleTier(tierId) {
+    setCollapsedTiers((prev) => ({ ...prev, [tierId]: !prev[tierId] }));
+  }
+
   return (
     <section className="screen stack">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Phase 1 + 2 + 3</p>
-          <h2>Sort & Convert</h2>
-          <p className="muted">Every thought gets assigned a role: act, solve, decide, wait, maintain, park, or let go.</p>
+          <p className="eyebrow">Sort & Convert</p>
+          <h2>Every Thought Gets a Role</h2>
+          <p className="muted">Act, solve, decide, wait, maintain, park, or let go.</p>
         </div>
         <Pill tone={unsorted.length ? 'red' : 'green'}>{unsorted.length} unsorted</Pill>
       </div>
@@ -772,41 +949,73 @@ function SortView({ thoughts, unsorted, categories, selectedCategory, setSelecte
         <div className="card inbox-triage">
           <div className="mini-header">
             <Inbox size={18} />
-            <h3>Inbox Triage</h3>
+            <h3>Inbox — Sort These First</h3>
           </div>
-          <p className="muted">Sort these first so they stop floating around your head.</p>
           <div className="thought-list">
-            {unsorted.slice(0, 3).map((thought) => (
-              <TriageCard key={thought.id} thought={thought} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
+            {unsorted.slice(0, 3).map((t) => (
+              <TriageCard key={t.id} thought={t} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
             ))}
           </div>
         </div>
       )}
 
-      <div className="category-strip">
-        {categories.map((category) => {
-          const Icon = category.icon;
-          const count = thoughts.filter((thought) => thought.category === category.id).length;
+      {/* Tiered category navigation */}
+      <div className="tier-nav">
+        {categoryTiers.map((tier) => {
+          const tierCats = categories.filter((c) => c.tier === tier.id);
+          const isCollapsed = collapsedTiers[tier.id];
           return (
-            <button
-              key={category.id}
-              className={`category-chip ${selectedCategory === category.id ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category.id)}
-            >
-              <Icon size={17} />
-              <span>{category.short}</span>
-              <small>{count}</small>
-            </button>
+            <div key={tier.id} className={`tier-group tier-group-${tier.color}`}>
+              <button className="tier-header" onClick={() => toggleTier(tier.id)}>
+                <div>
+                  <span className="tier-label">{tier.label}</span>
+                  <span className="tier-desc">{tier.description}</span>
+                </div>
+                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+              </button>
+              {!isCollapsed && (
+                <div className="tier-chips">
+                  {tierCats.map((cat) => {
+                    const Icon = cat.icon;
+                    const count = thoughts.filter((t) => t.category === cat.id).length;
+                    const staleCt = thoughts.filter((t) => {
+                      if (t.category !== cat.id || t.status === 'Done') return false;
+                      const info = stalenessLabel(getDaysOld(t.createdAt), cat.id);
+                      return info?.urgent;
+                    }).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        className={`category-chip ${selectedCategory === cat.id ? 'active' : ''}`}
+                        onClick={() => setSelectedCategory(cat.id)}
+                      >
+                        <Icon size={16} />
+                        <span>{cat.short}</span>
+                        <small>{count}</small>
+                        {staleCt > 0 && <span className="stale-dot">{staleCt}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
 
       <div className="search-bar">
         <Search size={18} />
-        <input placeholder="Search this category..." value={query} onChange={(event) => setQuery(event.target.value)} />
+        <input placeholder="Search this category..." value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
 
-      <CategoryDetail category={getCategory(selectedCategory)} thoughts={filteredThoughts} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
+      <CategoryDetail
+        category={getCategory(selectedCategory)}
+        thoughts={filteredThoughts}
+        updateThought={updateThought}
+        deleteThought={deleteThought}
+        convertThought={convertThought}
+        setModal={setModal}
+      />
     </section>
   );
 }
@@ -820,26 +1029,18 @@ function CategoryDetail({ category, thoughts, updateThought, deleteThought, conv
           <IconBadge icon={Icon} tone={category.color} />
           <div>
             <h2>{category.label}</h2>
-            <p>{category.description}</p>
+            <p className="muted">{category.description}</p>
           </div>
         </div>
       </div>
-
       {thoughts.length ? (
         <div className="thought-list">
-          {thoughts.map((thought) => (
-            <ThoughtCard
-              key={thought.id}
-              thought={thought}
-              updateThought={updateThought}
-              deleteThought={deleteThought}
-              convertThought={convertThought}
-              setModal={setModal}
-            />
+          {thoughts.map((t) => (
+            <ThoughtCard key={t.id} thought={t} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
           ))}
         </div>
       ) : (
-        <EmptyState title="Nothing here yet" text="Captured items sorted into this category will show up here." />
+        <EmptyState title="Nothing here yet" text="Captured items sorted into this category will appear here." />
       )}
     </div>
   );
@@ -864,6 +1065,9 @@ function TriageCard({ thought, updateThought, deleteThought, convertThought, set
 function ThoughtCard({ thought, updateThought, deleteThought, convertThought, setModal, compact = false }) {
   const category = getCategory(thought.category);
   const Icon = category.icon;
+  const days = getDaysOld(thought.createdAt);
+  const stale = stalenessLabel(days, thought.category);
+
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
       <div className="thought-topline">
@@ -871,8 +1075,10 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
           <Pill tone={category.color}><Icon size={13} /> {category.short}</Pill>
           <Pill tone="default">{thought.area}</Pill>
           {thought.dueDate && <Pill tone="yellow"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
+          {thought.energy && <Pill tone="default"><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
+          {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
         </div>
-        <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })} title="Pin item">
+        <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })} title="Pin">
           <Flag size={16} className={thought.pinned ? 'filled-flag' : ''} />
         </button>
       </div>
@@ -887,11 +1093,21 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
         {thought.exaggeration && <p><strong>Exaggeration:</strong> {thought.exaggeration}</p>}
       </div>
 
+      {/* Noise → Action bridge — Feature 3 */}
+      {thought.category === 'anxiety-noise' && !compact && (
+        <div className="noise-bridge">
+          <p className="noise-bridge-label">Is there a real action hiding here?</p>
+          <button className="convert-action-btn" onClick={() => convertThought(thought, 'task')}>
+            <Zap size={14} /> Yes — convert to task
+          </button>
+        </div>
+      )}
+
       {!compact && <ConversionButtons thought={thought} convertThought={convertThought} />}
 
       <div className="card-actions">
-        <select value={thought.status} onChange={(event) => updateThought(thought.id, { status: event.target.value })}>
-          {statuses.map((status) => <option key={status}>{status}</option>)}
+        <select value={thought.status} onChange={(e) => updateThought(thought.id, { status: e.target.value })}>
+          {statuses.map((s) => <option key={s}>{s}</option>)}
         </select>
         <button className="text-button" onClick={() => setModal({ type: 'edit-thought', thought })}><Edit3 size={15} /> Edit</button>
         {deleteThought && <button className="danger-button" onClick={() => deleteThought(thought.id)}><Trash2 size={15} /> Delete</button>}
@@ -902,21 +1118,20 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
 
 function ConversionButtons({ thought, convertThought }) {
   const buttons = [
-    { id: 'task', label: 'Make Task', icon: CheckCircle2 },
-    { id: 'problem', label: 'Make Problem', icon: HelpCircle },
-    { id: 'decision', label: 'Make Decision', icon: Compass },
-    { id: 'waiting', label: 'Waiting On', icon: TimerReset },
+    { id: 'task', label: 'Task', icon: CheckCircle2 },
+    { id: 'problem', label: 'Problem', icon: HelpCircle },
+    { id: 'decision', label: 'Decision', icon: Compass },
+    { id: 'waiting', label: 'Waiting', icon: TimerReset },
     { id: 'someday', label: 'Park It', icon: Archive },
     { id: 'noise', label: 'Noise', icon: Brain },
   ];
   return (
     <div className="convert-row">
-      {buttons.map((button) => {
-        const Icon = button.icon;
+      {buttons.map((b) => {
+        const BIcon = b.icon;
         return (
-          <button key={button.id} onClick={() => convertThought(thought, button.id)}>
-            <Icon size={14} />
-            {button.label}
+          <button key={b.id} onClick={() => convertThought(thought, b.id)}>
+            <BIcon size={13} /> {b.label}
           </button>
         );
       })}
@@ -926,85 +1141,91 @@ function ConversionButtons({ thought, convertThought }) {
 
 function ThoughtEditForm({ thought, missions, updateThought }) {
   const [form, setForm] = useState({ ...thought });
-  function set(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-  function submit(event) {
-    event.preventDefault();
-    updateThought(thought.id, form);
-  }
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) { e.preventDefault(); updateThought(thought.id, form); }
+
   return (
     <form className="capture-form" onSubmit={submit}>
       <Field label="Title / Thought">
-        <textarea className="big-input" value={form.text} onChange={(event) => set('text', event.target.value)} />
+        <textarea className="big-input" value={form.text} onChange={(e) => set('text', e.target.value)} />
       </Field>
       <div className="form-grid">
         <Field label="Category">
-          <select value={form.category || ''} onChange={(event) => set('category', event.target.value)}>
+          <select value={form.category || ''} onChange={(e) => set('category', e.target.value)}>
             <option value="">Unsorted</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
+            {categoryTiers.map((tier) => (
+              <optgroup key={tier.id} label={tier.label}>
+                {categories.filter((c) => c.tier === tier.id).map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </Field>
         <Field label="Area">
-          <select value={form.area || 'Personal'} onChange={(event) => set('area', event.target.value)}>
-            {lifeAreas.map((area) => <option key={area}>{area}</option>)}
+          <select value={form.area || 'Personal'} onChange={(e) => set('area', e.target.value)}>
+            {lifeAreas.map((a) => <option key={a}>{a}</option>)}
           </select>
         </Field>
       </div>
       <Field label="Next Action">
-        <input value={form.nextAction || ''} onChange={(event) => set('nextAction', event.target.value)} />
+        <input value={form.nextAction || ''} onChange={(e) => set('nextAction', e.target.value)} />
       </Field>
       <div className="form-grid">
         <Field label="Due / Follow-up">
-          <input type="date" value={form.dueDate || ''} onChange={(event) => set('dueDate', event.target.value)} />
+          <input type="date" value={form.dueDate || ''} onChange={(e) => set('dueDate', e.target.value)} />
         </Field>
         <Field label="Status">
-          <select value={form.status || 'Open'} onChange={(event) => set('status', event.target.value)}>
-            {statuses.map((status) => <option key={status}>{status}</option>)}
+          <select value={form.status || 'Open'} onChange={(e) => set('status', e.target.value)}>
+            {statuses.map((s) => <option key={s}>{s}</option>)}
           </select>
         </Field>
       </div>
+      <Field label="Energy Required">
+        <select value={form.energy || 'Medium'} onChange={(e) => set('energy', e.target.value)}>
+          {energyLevels.map((l) => <option key={l}>{l}</option>)}
+        </select>
+      </Field>
       <Field label="Related Mission">
-        <select value={form.relatedMissionId || ''} onChange={(event) => set('relatedMissionId', event.target.value)}>
+        <select value={form.relatedMissionId || ''} onChange={(e) => set('relatedMissionId', e.target.value)}>
           <option value="">None</option>
-          {missions.map((mission) => <option key={mission.id} value={mission.id}>{mission.title}</option>)}
+          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
         </select>
       </Field>
       {form.category === 'decisions' && (
         <Field label="Options">
-          <textarea value={form.decisionOptions || ''} onChange={(event) => set('decisionOptions', event.target.value)} placeholder="Option A / Option B / Current leaning" />
+          <textarea value={form.decisionOptions || ''} onChange={(e) => set('decisionOptions', e.target.value)} placeholder="Option A / Option B / Current leaning" />
         </Field>
       )}
       {form.category === 'waiting-on' && (
         <Field label="Waiting On">
-          <input value={form.waitingOn || ''} onChange={(event) => set('waitingOn', event.target.value)} placeholder="Person, payment, email, answer, appointment..." />
+          <input value={form.waitingOn || ''} onChange={(e) => set('waitingOn', e.target.value)} placeholder="Person, payment, email, answer..." />
         </Field>
       )}
       {form.category === 'anxiety-noise' && (
         <>
           <Field label="Grounded Truth">
-            <textarea value={form.truth || ''} onChange={(event) => set('truth', event.target.value)} placeholder="What is actually true?" />
+            <textarea value={form.truth || ''} onChange={(e) => set('truth', e.target.value)} placeholder="What is actually true?" />
           </Field>
           <Field label="Exaggeration / Fear Loop">
-            <textarea value={form.exaggeration || ''} onChange={(event) => set('exaggeration', event.target.value)} placeholder="What part is your brain exaggerating?" />
+            <textarea value={form.exaggeration || ''} onChange={(e) => set('exaggeration', e.target.value)} placeholder="What part is your brain exaggerating?" />
           </Field>
         </>
       )}
       <Field label="Notes">
-        <textarea value={form.notes || ''} onChange={(event) => set('notes', event.target.value)} />
+        <textarea value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} />
       </Field>
       <button className="primary-button" type="submit"><Save size={17} /> Save Changes</button>
     </form>
   );
 }
 
+// ─── Missions View ─────────────────────────────────────────────────────────
 function MissionsView({ missions, thoughts, addMission, updateMission, deleteMission, setActiveTab, setSelectedCategory }) {
   const [form, setForm] = useState({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work' });
-  function set(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-  function submit(event) {
-    event.preventDefault();
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
     addMission(form);
     setForm({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work' });
   }
@@ -1013,44 +1234,41 @@ function MissionsView({ missions, thoughts, addMission, updateMission, deleteMis
     <section className="screen stack">
       <div className="section-header">
         <div>
-          <p className="eyebrow">Phase 1</p>
-          <h2>Active Missions</h2>
-          <p className="muted">Cap this at 3 when possible. More than that becomes mental clutter.</p>
+          <p className="eyebrow">Active Missions</p>
+          <h2>Where Your Energy Goes</h2>
+          <p className="muted">Cap at 3. More than that becomes clutter.</p>
         </div>
-        <Pill tone={missions.length <= 3 ? 'green' : 'red'}>{missions.length}/3 active</Pill>
+        <Pill tone={missions.length <= 3 ? 'green' : 'red'}>{missions.length}/3</Pill>
       </div>
 
       <div className="mission-list detailed">
-        {missions.map((mission) => {
-          const related = thoughts.filter((thought) => thought.relatedMissionId === mission.id && thought.status !== 'Done');
+        {missions.map((m) => {
+          const related = thoughts.filter((t) => t.relatedMissionId === m.id && t.status !== 'Done');
           return (
-            <article className="mission-detail-card" key={mission.id}>
+            <article className="mission-detail-card" key={m.id}>
               <div className="mission-detail-top">
                 <div>
-                  <p className="eyebrow">{mission.area}</p>
-                  <h3>{mission.title}</h3>
+                  <p className="eyebrow">{m.area}</p>
+                  <h3>{m.title}</h3>
                 </div>
-                <select value={mission.status} onChange={(event) => updateMission(mission.id, { status: event.target.value })}>
-                  {statuses.map((status) => <option key={status}>{status}</option>)}
+                <select value={m.status} onChange={(e) => updateMission(m.id, { status: e.target.value })}>
+                  {statuses.map((s) => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <Field label="Why it matters">
-                <textarea value={mission.why} onChange={(event) => updateMission(mission.id, { why: event.target.value })} />
+                <textarea value={m.why} onChange={(e) => updateMission(m.id, { why: e.target.value })} />
               </Field>
-              <Field label="This week’s goal">
-                <input value={mission.weeklyGoal} onChange={(event) => updateMission(mission.id, { weeklyGoal: event.target.value })} />
+              <Field label="This week's goal">
+                <input value={m.weeklyGoal} onChange={(e) => updateMission(m.id, { weeklyGoal: e.target.value })} />
               </Field>
               <Field label="Next action">
-                <input value={mission.nextAction} onChange={(event) => updateMission(mission.id, { nextAction: event.target.value })} />
+                <input value={m.nextAction} onChange={(e) => updateMission(m.id, { nextAction: e.target.value })} />
               </Field>
               <div className="mission-footer">
-                <button className="secondary-button compact" onClick={() => {
-                  setSelectedCategory('next-actions');
-                  setActiveTab('sort');
-                }}>
+                <button className="secondary-button compact" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
                   <ClipboardList size={16} /> {related.length} related items
                 </button>
-                <button className="danger-button" onClick={() => deleteMission(mission.id)}><Trash2 size={15} /> Delete</button>
+                <button className="danger-button" onClick={() => deleteMission(m.id)}><Trash2 size={15} /> Delete</button>
               </div>
             </article>
           );
@@ -1058,33 +1276,30 @@ function MissionsView({ missions, thoughts, addMission, updateMission, deleteMis
       </div>
 
       <form className="card capture-form" onSubmit={submit}>
-        <div className="mini-header">
-          <Plus size={18} />
-          <h3>Add Mission</h3>
-        </div>
+        <div className="mini-header"><Plus size={18} /><h3>Add Mission</h3></div>
         <Field label="Mission Name">
-          <input placeholder="Example: Build real-world AI value" value={form.title} onChange={(event) => set('title', event.target.value)} />
+          <input placeholder="Build real-world AI value" value={form.title} onChange={(e) => set('title', e.target.value)} />
         </Field>
         <Field label="Why it matters">
-          <textarea value={form.why} onChange={(event) => set('why', event.target.value)} />
+          <textarea value={form.why} onChange={(e) => set('why', e.target.value)} />
         </Field>
         <div className="form-grid">
           <Field label="Area">
-            <select value={form.area} onChange={(event) => set('area', event.target.value)}>
-              {lifeAreas.map((area) => <option key={area}>{area}</option>)}
+            <select value={form.area} onChange={(e) => set('area', e.target.value)}>
+              {lifeAreas.map((a) => <option key={a}>{a}</option>)}
             </select>
           </Field>
           <Field label="Status">
-            <select value={form.status} onChange={(event) => set('status', event.target.value)}>
-              {statuses.map((status) => <option key={status}>{status}</option>)}
+            <select value={form.status} onChange={(e) => set('status', e.target.value)}>
+              {statuses.map((s) => <option key={s}>{s}</option>)}
             </select>
           </Field>
         </div>
-        <Field label="This week’s goal">
-          <input value={form.weeklyGoal} onChange={(event) => set('weeklyGoal', event.target.value)} />
+        <Field label="This week's goal">
+          <input value={form.weeklyGoal} onChange={(e) => set('weeklyGoal', e.target.value)} />
         </Field>
         <Field label="Next action">
-          <input value={form.nextAction} onChange={(event) => set('nextAction', event.target.value)} />
+          <input value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)} />
         </Field>
         <button className="primary-button" type="submit"><Target size={17} /> Add Mission</button>
       </form>
@@ -1092,17 +1307,25 @@ function MissionsView({ missions, thoughts, addMission, updateMission, deleteMis
   );
 }
 
+// ─── Review View ───────────────────────────────────────────────────────────
 function ReviewView({ state, saveReview }) {
   const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
-  function set(key, value) {
-    setReview((prev) => ({ ...prev, [key]: value }));
-  }
-  function submit(event) {
-    event.preventDefault();
+  function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
     saveReview(review);
     setReview({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
   }
-  const counts = categories.map((category) => ({ ...category, count: state.thoughts.filter((thought) => thought.category === category.id).length }));
+
+  const counts = categories.map((c) => ({
+    ...c,
+    count: state.thoughts.filter((t) => t.category === c.id).length,
+    staleCount: state.thoughts.filter((t) => {
+      if (t.category !== c.id || t.status === 'Done') return false;
+      return stalenessLabel(getDaysOld(t.createdAt), c.id)?.urgent;
+    }).length,
+  }));
+
   return (
     <section className="screen stack">
       <div className="section-header">
@@ -1118,48 +1341,43 @@ function ReviewView({ state, saveReview }) {
           const Icon = item.icon;
           return (
             <div className="stat-card" key={item.id}>
-              <Icon size={18} />
+              <Icon size={16} />
               <strong>{item.count}</strong>
               <span>{item.short}</span>
+              {item.staleCount > 0 && <span className="stat-stale">{item.staleCount} stale</span>}
             </div>
           );
         })}
       </div>
 
       <form className="card capture-form" onSubmit={submit}>
-        <div className="mini-header">
-          <RefreshCw size={18} />
-          <h3>Sunday Life Reset</h3>
-        </div>
+        <div className="mini-header"><RefreshCw size={18} /><h3>Sunday Life Reset</h3></div>
         <Field label="What improved this week?">
-          <textarea value={review.improved} onChange={(event) => set('improved', event.target.value)} />
+          <textarea value={review.improved} onChange={(e) => set('improved', e.target.value)} />
         </Field>
         <Field label="What did I avoid?">
-          <textarea value={review.avoided} onChange={(event) => set('avoided', event.target.value)} />
+          <textarea value={review.avoided} onChange={(e) => set('avoided', e.target.value)} />
         </Field>
         <Field label="What actually mattered?">
-          <textarea value={review.mattered} onChange={(event) => set('mattered', event.target.value)} />
+          <textarea value={review.mattered} onChange={(e) => set('mattered', e.target.value)} />
         </Field>
         <Field label="What kept stressing me out?">
-          <textarea value={review.stress} onChange={(event) => set('stress', event.target.value)} />
+          <textarea value={review.stress} onChange={(e) => set('stress', e.target.value)} />
         </Field>
-        <Field label="Next week’s 3 priorities">
-          <textarea value={review.nextWeek} onChange={(event) => set('nextWeek', event.target.value)} placeholder="1. ...\n2. ...\n3. ..." />
+        <Field label="Next week's 3 priorities">
+          <textarea value={review.nextWeek} onChange={(e) => set('nextWeek', e.target.value)} placeholder={"1. ...\n2. ...\n3. ..."} />
         </Field>
         <button className="primary-button" type="submit"><Save size={17} /> Save Weekly Review</button>
       </form>
 
       <div className="card">
-        <div className="mini-header">
-          <Clock3 size={18} />
-          <h3>Past Reviews</h3>
-        </div>
+        <div className="mini-header"><Clock3 size={18} /><h3>Past Reviews</h3></div>
         {state.reviews.length ? (
           <div className="thought-list">
             {state.reviews.map((item) => (
               <article className="review-card" key={item.id}>
                 <p className="eyebrow">{formatDate(item.createdAt)}</p>
-                <h3>Next Week’s 3</h3>
+                <h3>Next Week's 3</h3>
                 <p>{item.nextWeek || 'No priorities written.'}</p>
                 <details>
                   <summary>Open full review</summary>
