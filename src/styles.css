@@ -777,3 +777,191 @@ input:focus, textarea:focus, select:focus {
   .energy-toggle { gap: 4px; }
   .energy-btn { padding: 5px 8px; font-size: 0.72rem; }
 }
+
+/* ── Thought card labeled sections ────────────────────────────────── */
+.thought-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.thought-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.thought-item-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.thought-section {
+  margin-top: 10px;
+  display: grid;
+  gap: 4px;
+}
+.thought-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.thought-section-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Sub-tab switcher (Progress page) ────────────────────────────── */
+.subtab-row {
+  display: flex;
+  gap: 8px;
+}
+.subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.subtab-btn:hover { border-color: var(--line-strong); color: var(--text); }
+.subtab-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+/* ── Accomplishments ──────────────────────────────────────────────── */
+.accomplish-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.accomplish-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: grid;
+  gap: 3px;
+}
+.accomplish-stat strong { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.accomplish-stat span { font-size: 0.75rem; color: var(--text-muted); }
+
+.accomplish-day {
+  padding: 16px 18px;
+}
+.accomplish-day-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.accomplish-day-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.accomplish-day-date {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.accomplish-day-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+.accomplish-cat-list { display: grid; gap: 12px; }
+.accomplish-cat-group { display: grid; gap: 6px; }
+.accomplish-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+}
+.accomplish-cat-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+/* Category label colors matching pill tones */
+.cat-label-amber  { color: var(--cat-amber); }
+.cat-label-green  { color: var(--cat-green); }
+.cat-label-orange { color: var(--cat-orange); }
+.cat-label-purple { color: var(--cat-purple); }
+.cat-label-yellow { color: var(--cat-yellow); }
+.cat-label-teal   { color: var(--cat-teal); }
+.cat-label-pink   { color: var(--cat-pink); }
+.cat-label-emerald{ color: var(--cat-emerald); }
+.cat-label-slate  { color: var(--cat-slate); }
+.cat-label-red    { color: var(--cat-red); }
+
+.accomplish-cat-count {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.accomplish-items { display: grid; gap: 5px; padding-left: 4px; }
+.accomplish-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.accomplish-check { color: var(--status-track); flex-shrink: 0; margin-top: 1px; }
+
+/* Clickable stat card */
+.stat-card-btn {
+  cursor: pointer;
+  border: 0;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+.stat-card-btn:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+/* stack helper for subtab content */
+.stack { display: grid; gap: 16px; }
+
+/* ── Responsive additions ─────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .accomplish-summary { grid-template-columns: repeat(3, 1fr); }
+  .subtab-row { width: 100%; }
+  .subtab-btn { flex: 1; justify-content: center; }
+}
