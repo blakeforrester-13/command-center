@@ -36,11 +36,9 @@ import {
   Check,
   MoreHorizontal,
   CircleDashed,
-  Moon,
-  Sword,
+  MoonStar,
   Copy,
   ClipboardCheck,
-  TrendingUp,
 } from 'lucide-react';
 import './styles.css';
 
@@ -390,16 +388,6 @@ function App() {
     setState((prev) => ({ ...prev, reviews: [saved, ...prev.reviews] }));
   }
 
-  function saveDayReview(dayReview) {
-    const saved = {
-      ...dayReview,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    setState((prev) => ({ ...prev, dayReviews: [saved, ...(prev.dayReviews || [])] }));
-    return saved;
-  }
-
   function convertThought(thought, conversion) {
     const patches = {
       task: { category: 'next-actions', status: 'Open' },
@@ -414,6 +402,82 @@ function App() {
       done: { status: 'Done' },
     };
     updateThought(thought.id, patches[conversion] || {});
+  }
+
+  function saveDayReview(dayReview) {
+    const saved = { ...dayReview, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    setState((prev) => ({ ...prev, dayReviews: [saved, ...(prev.dayReviews || [])] }));
+    return saved;
+  }
+
+  function buildDaySummary({ thoughts, missions, today, review }) {
+    const isSameDay = (iso) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear()
+        && d.getMonth() === now.getMonth()
+        && d.getDate() === now.getDate();
+    };
+
+    const tasks = thoughts.filter(
+      (t) => t.category === 'next-actions' && (isSameDay(t.createdAt) || t.status === 'Done')
+    );
+    const tasksDone = tasks.filter((t) => t.status === 'Done');
+    const tasksOpen = tasks.filter((t) => t.status !== 'Done');
+
+    const captured = thoughts.filter((t) => isSameDay(t.createdAt));
+
+    const touchedIds = new Set(
+      thoughts
+        .filter((t) => t.relatedMissionId && isSameDay(t.createdAt))
+        .map((t) => t.relatedMissionId)
+    );
+    const missionsTouched = missions.filter((m) => touchedIds.has(m.id));
+
+    const dateLabel = new Date().toLocaleDateString(undefined, {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    });
+
+    const lines = [];
+    lines.push(`Daily Review — ${dateLabel}`);
+    lines.push('');
+
+    if (review) {
+      lines.push(`Did I get better today? ${review.verdict}  (Score ${review.score}/5)`);
+      review.answers.forEach((a) => lines.push(`  ${a.hit ? '[x]' : '[ ]'} ${a.label}`));
+      lines.push('');
+    }
+
+    if (today) {
+      lines.push("Today's 3");
+      if (today.mainMission) lines.push(`  Main: ${today.mainMission}`);
+      if (today.bodyWin) lines.push(`  Body: ${today.bodyWin}`);
+      if (today.lifeWin) lines.push(`  Life: ${today.lifeWin}`);
+      if (today.avoiding) lines.push(`  Avoiding: ${today.avoiding}`);
+      lines.push('');
+    }
+
+    lines.push(`Tasks worked on (${tasksDone.length} done, ${tasksOpen.length} still open)`);
+    if (tasksDone.length) tasksDone.forEach((t) => lines.push(`  [x] ${t.text}`));
+    if (tasksOpen.length) tasksOpen.forEach((t) => lines.push(`  [ ] ${t.text}`));
+    if (!tasks.length) lines.push('  (none logged today)');
+    lines.push('');
+
+    lines.push(`Missions touched (${missionsTouched.length})`);
+    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  - ${m.title}`));
+    else lines.push('  (none)');
+    lines.push('');
+
+    lines.push(`New thoughts captured (${captured.length})`);
+    if (captured.length) captured.forEach((t) => lines.push(`  - ${t.text}`));
+    else lines.push('  (none)');
+    lines.push('');
+
+    lines.push('— My own review —');
+    lines.push('');
+
+    return lines.join('\n');
   }
 
   const navItems = [
@@ -443,12 +507,9 @@ function App() {
             today={state.today}
             updateToday={updateToday}
             missions={state.missions}
-            thoughts={state.thoughts}
             openTasks={openTasks}
             openLoops={openLoops}
             noiseItems={noiseItems}
-            dayReviews={state.dayReviews || []}
-            saveDayReview={saveDayReview}
             setActiveTab={setActiveTab}
             setSelectedCategory={setSelectedCategory}
             setModal={setModal}
@@ -528,11 +589,23 @@ function App() {
           />
         </Modal>
       )}
+
+      {modal?.type === 'close-the-day' && (
+        <Modal title="Close the Day" onClose={() => setModal(null)}>
+          <CloseTheDay
+            thoughts={state.thoughts}
+            missions={state.missions}
+            today={state.today}
+            buildDaySummary={buildDaySummary}
+            saveDayReview={saveDayReview}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
 
-function TodayView({ today, updateToday, missions, thoughts, openTasks, openLoops, noiseItems, dayReviews, saveDayReview, setActiveTab, setSelectedCategory, setModal, updateThought }) {
+function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, setActiveTab, setSelectedCategory, setModal, updateThought }) {
   return (
     <section className="screen stack">
       <div className="hero-card">
@@ -655,13 +728,17 @@ function TodayView({ today, updateToday, missions, thoughts, openTasks, openLoop
         )}
       </div>
 
-      <CloseTheDay
-        thoughts={thoughts}
-        missions={missions}
-        today={today}
-        dayReviews={dayReviews}
-        saveDayReview={saveDayReview}
-      />
+      <div className="card close-day-card">
+        <div className="close-day-copy">
+          <p className="eyebrow">End of Day</p>
+          <h2>Did I get better today?</h2>
+          <p className="muted">Score the day, then hand it to your Journal to write your own review.</p>
+        </div>
+        <button className="primary-button compact" onClick={() => setModal({ type: 'close-the-day' })}>
+          <MoonStar size={17} />
+          Close the Day
+        </button>
+      </div>
     </section>
   );
 }
@@ -1208,108 +1285,30 @@ function ReviewView({ state, saveReview }) {
 }
 
 const BETTER_QUESTIONS = [
-  { key: 'mission',   label: 'Did I move a mission forward today?' },
-  { key: 'body',      label: 'Did I keep my body & discipline standards?' },
-  { key: 'courage',   label: 'Did I face the thing I was avoiding?' },
-  { key: 'mind',      label: 'Did I quiet the mental noise?' },
-  { key: 'becoming',  label: 'Did I live like the person I\'m trying to become?' },
+  { key: 'mission', label: 'Did I move a mission forward?' },
+  { key: 'body', label: 'Did I keep my body & discipline standards?' },
+  { key: 'courage', label: 'Did I face the thing I was avoiding?' },
+  { key: 'mind', label: 'Did I quiet the mental noise?' },
+  { key: 'becoming', label: 'Did I live like the person I’m trying to become?' },
 ];
 
-function buildDaySummary({ thoughts, missions, today, review }) {
-  const isSameDay = (iso) => {
-    if (!iso) return false;
-    const d = new Date(iso);
-    const now = new Date();
-    return d.getFullYear() === now.getFullYear()
-      && d.getMonth() === now.getMonth()
-      && d.getDate() === now.getDate();
-  };
-
-  const tasks = thoughts.filter(
-    (t) => t.category === 'next-actions' && (isSameDay(t.createdAt) || t.status === 'Done')
-  );
-  const tasksDone = tasks.filter((t) => t.status === 'Done');
-  const tasksOpen = tasks.filter((t) => t.status !== 'Done');
-
-  const captured = thoughts.filter((t) => isSameDay(t.createdAt));
-
-  const touchedIds = new Set(
-    thoughts
-      .filter((t) => t.relatedMissionId && isSameDay(t.createdAt))
-      .map((t) => t.relatedMissionId)
-  );
-  const missionsTouched = missions.filter((m) => touchedIds.has(m.id));
-
-  const dateLabel = new Date().toLocaleDateString(undefined, {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
-
-  const lines = [];
-  lines.push(`Daily Review — ${dateLabel}`);
-  lines.push('');
-
-  if (review) {
-    lines.push(`Did I get better today? ${review.verdict}  (Score ${review.score}/5)`);
-    review.answers.forEach((a) => lines.push(`  ${a.hit ? '[x]' : '[ ]'} ${a.label}`));
-    lines.push('');
-  }
-
-  lines.push("Today's 3");
-  if (today.mainMission) lines.push(`  Main: ${today.mainMission}`);
-  if (today.bodyWin)     lines.push(`  Body: ${today.bodyWin}`);
-  if (today.lifeWin)     lines.push(`  Life: ${today.lifeWin}`);
-  if (today.avoiding)    lines.push(`  Avoided: ${today.avoiding}`);
-  lines.push('');
-
-  lines.push(`Tasks (${tasksDone.length} done, ${tasksOpen.length} open)`);
-  tasksDone.forEach((t) => lines.push(`  [x] ${t.text}`));
-  tasksOpen.forEach((t) => lines.push(`  [ ] ${t.text}`));
-  if (!tasks.length) lines.push('  (none logged today)');
-  lines.push('');
-
-  lines.push(`Missions touched (${missionsTouched.length})`);
-  if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  - ${m.title}`));
-  else lines.push('  (none)');
-  lines.push('');
-
-  lines.push(`New thoughts captured (${captured.length})`);
-  if (captured.length) captured.forEach((t) => lines.push(`  - ${t.text}`));
-  else lines.push('  (none)');
-  lines.push('');
-
-  lines.push('— My own review —');
-  lines.push('');
-
-  return lines.join('\n');
-}
-
-function CloseTheDay({ thoughts, missions, today, dayReviews, saveDayReview }) {
-  const todayStr = new Date().toDateString();
-  const alreadyDone = (dayReviews || []).find(
-    (r) => new Date(r.createdAt).toDateString() === todayStr
-  );
-
-  const [phase, setPhase] = useState(alreadyDone ? 'result' : 'verdict');
-  const [verdict, setVerdict] = useState(alreadyDone?.verdict || '');
+function CloseTheDay({ thoughts, missions, today, buildDaySummary, saveDayReview }) {
+  const [phase, setPhase] = useState('verdict');
+  const [verdict, setVerdict] = useState('');
   const [answers, setAnswers] = useState(() =>
-    alreadyDone
-      ? BETTER_QUESTIONS.reduce((acc, q) => {
-          const found = alreadyDone.answers.find((a) => a.key === q.key);
-          return { ...acc, [q.key]: found ? found.hit : false };
-        }, {})
-      : BETTER_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.key]: null }), {})
+    BETTER_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.key]: null }), {})
   );
   const [step, setStep] = useState(0);
-  const [saved, setSaved] = useState(alreadyDone || null);
+  const [saved, setSaved] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const score = BETTER_QUESTIONS.reduce((sum, q) => sum + (answers[q.key] ? 1 : 0), 0);
   const current = BETTER_QUESTIONS[step];
+  const verdictTone = (v) => (v === 'Yes' ? 'green' : v === 'No' ? 'red' : 'yellow');
 
   function pickVerdict(v) {
     setVerdict(v);
     setPhase('questions');
-    setStep(0);
   }
 
   function answer(hit) {
@@ -1330,20 +1329,11 @@ function CloseTheDay({ thoughts, missions, today, dayReviews, saveDayReview }) {
     }
   }
 
-  function copySummary() {
-    const text = buildDaySummary({ thoughts, missions, today, review: saved });
-    const done = () => { setCopied(true); setTimeout(() => setCopied(false), 2500); };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-    } else {
-      fallbackCopy(text, done);
-    }
-  }
-
   function fallbackCopy(text, done) {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
     try { document.execCommand('copy'); } catch (e) { /* noop */ }
@@ -1351,131 +1341,90 @@ function CloseTheDay({ thoughts, missions, today, dayReviews, saveDayReview }) {
     done();
   }
 
-  function reset() {
-    setPhase('verdict');
-    setVerdict('');
-    setAnswers(BETTER_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.key]: null }), {}));
-    setStep(0);
-    setSaved(null);
-    setCopied(false);
+  function copySummary() {
+    const text = buildDaySummary({ thoughts, missions, today, review: saved });
+    const done = () => { setCopied(true); setTimeout(() => setCopied(false), 2200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
   }
 
-  const verdictColor = (v) => v === 'Yes' ? 'warm-green' : v === 'No' ? 'warm-red' : 'warm-amber';
+  if (phase === 'verdict') {
+    return (
+      <div className="ctd">
+        <div className="ctd-head">
+          <MoonStar size={22} />
+          <div>
+            <h3>Did I get better today?</h3>
+            <p className="muted">Gut call first. The score comes next.</p>
+          </div>
+        </div>
+        <div className="ctd-verdict">
+          {['Yes', 'Neutral', 'No'].map((v) => (
+            <button key={v} className={`ctd-verdict-btn tone-${verdictTone(v)}`} onClick={() => pickVerdict(v)}>
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'questions') {
+    const runningScore = BETTER_QUESTIONS.slice(0, step).reduce((s, q) => s + (answers[q.key] ? 1 : 0), 0);
+    return (
+      <div className="ctd">
+        <div className="ctd-progress">
+          <span>Question {step + 1} of {BETTER_QUESTIONS.length}</span>
+          <div className="ctd-bar"><div style={{ width: `${(step / BETTER_QUESTIONS.length) * 100}%` }} /></div>
+        </div>
+        <div className="ctd-question">
+          <h3>{current.label}</h3>
+        </div>
+        <div className="ctd-yesno">
+          <button className="ctd-yes" onClick={() => answer(true)}><Check size={18} /> Yes</button>
+          <button className="ctd-no" onClick={() => answer(false)}><X size={18} /> Not today</button>
+        </div>
+        <p className="muted ctd-running">Running score: {runningScore} / {step}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="ctd-card">
-      <div className="ctd-header">
-        <Moon size={20} className="ctd-moon" />
+    <div className="ctd">
+      <div className="ctd-scorewrap">
+        <div className={`ctd-score tone-${verdictTone(verdict)}`}>
+          <strong>{score}</strong>
+          <span>/ 5</span>
+        </div>
         <div>
-          <p className="eyebrow">End of Day</p>
-          <h2>Close the Day</h2>
+          <Pill tone={verdictTone(verdict)}>{verdict}</Pill>
+          <p className="muted ctd-scorenote">
+            {score >= 4 ? 'Strong day. Bank it.'
+              : score === 3 ? 'Solid middle. You showed up.'
+              : score >= 1 ? 'Partial — name one thing for tomorrow.'
+              : 'Rough one. Closing it honestly still counts.'}
+          </p>
         </div>
       </div>
 
-      {phase === 'verdict' && (
-        <div className="ctd-body">
-          <p className="ctd-subtext">Start with your gut. Did you get better today?</p>
-          <div className="ctd-verdict-row">
-            {['Yes', 'Neutral', 'No'].map((v) => (
-              <button
-                key={v}
-                className={`ctd-verdict-btn ctd-${verdictColor(v)}`}
-                onClick={() => pickVerdict(v)}
-              >
-                {v === 'Yes' ? '🔥' : v === 'Neutral' ? '〰️' : '📉'}
-                <span>{v}</span>
-              </button>
-            ))}
+      <div className="ctd-answers">
+        {saved.answers.map((a) => (
+          <div key={a.key} className={`ctd-answer ${a.hit ? 'hit' : 'miss'}`}>
+            {a.hit ? <Check size={15} /> : <X size={15} />}
+            <span>{a.label}</span>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {phase === 'questions' && (
-        <div className="ctd-body">
-          <div className="ctd-progress-wrap">
-            <div className="ctd-progress-bar">
-              <div className="ctd-progress-fill" style={{ width: `${(step / BETTER_QUESTIONS.length) * 100}%` }} />
-            </div>
-            <span className="ctd-progress-label">{step + 1} / {BETTER_QUESTIONS.length}</span>
-          </div>
-          <p className="ctd-question-text">{current.label}</p>
-          <div className="ctd-yn-row">
-            <button className="ctd-yn-yes" onClick={() => answer(true)}>
-              <Check size={18} /> Yes
-            </button>
-            <button className="ctd-yn-no" onClick={() => answer(false)}>
-              <X size={18} /> Not today
-            </button>
-          </div>
-          <p className="ctd-running-score">
-            Running: {BETTER_QUESTIONS.slice(0, step).reduce((s, q) => s + (answers[q.key] ? 1 : 0), 0)} / {step} so far
-          </p>
-        </div>
-      )}
-
-      {phase === 'result' && saved && (
-        <div className="ctd-body">
-          <div className="ctd-result-top">
-            <div className={`ctd-score-ring ctd-${verdictColor(saved.verdict)}`}>
-              <strong>{saved.score}</strong>
-              <span>/ 5</span>
-            </div>
-            <div className="ctd-result-right">
-              <span className={`ctd-verdict-badge ctd-${verdictColor(saved.verdict)}`}>{saved.verdict}</span>
-              <p className="ctd-verdict-note">
-                {saved.score >= 4 ? 'Strong day. Bank it.' :
-                 saved.score === 3 ? 'Solid middle. You showed up.' :
-                 saved.score >= 1 ? 'Partial — name one thing for tomorrow.' :
-                 'Rough one. Closing it honestly still counts.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="ctd-answers-list">
-            {saved.answers.map((a) => (
-              <div key={a.key} className={`ctd-answer-row ${a.hit ? 'ctd-hit' : 'ctd-miss'}`}>
-                {a.hit ? <Check size={15} /> : <X size={15} />}
-                <span>{a.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <button className={`ctd-copy-btn ${copied ? 'ctd-copied' : ''}`} onClick={copySummary}>
-            {copied
-              ? <><ClipboardCheck size={17} /> Copied — paste into Journal</>
-              : <><Copy size={17} /> Copy Day Summary for Journal</>
-            }
-          </button>
-
-          <div className="ctd-handoff-note">
-            <p>Open Apple Journal → New Entry → Paste → write your own review below the line.</p>
-          </div>
-
-          <button className="ctd-redo-btn" onClick={reset}>
-            <RefreshCw size={14} /> Redo today's review
-          </button>
-
-          {(dayReviews || []).length > 1 && (
-            <div className="ctd-trend">
-              <div className="ctd-trend-header">
-                <TrendingUp size={15} />
-                <span>Recent days</span>
-              </div>
-              <div className="ctd-trend-dots">
-                {(dayReviews || []).slice(0, 7).reverse().map((r) => (
-                  <div
-                    key={r.id}
-                    className={`ctd-trend-dot ctd-${verdictColor(r.verdict)}`}
-                    title={`${formatDate(r.createdAt)} — ${r.verdict} (${r.score}/5)`}
-                  >
-                    <span>{r.score}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <button className="primary-button" onClick={copySummary}>
+        {copied ? <><ClipboardCheck size={17} /> Copied — paste into Journal</> : <><Copy size={17} /> Copy day for Journal</>}
+      </button>
+      <p className="muted ctd-hint">
+        Copy this, open Apple Journal, paste, then write your own review under the line.
+      </p>
     </div>
   );
 }
