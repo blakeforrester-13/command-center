@@ -9,6 +9,7 @@ import {
   Archive, ArrowRight, Save, Edit3, CircleDashed, Zap,
   Clock, BatteryLow, BatteryMedium, BatteryFull,
   ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
+  MoonStar, RotateCcw, Copy, Check,
 } from 'lucide-react';
 import './styles.css';
 
@@ -401,6 +402,7 @@ function App() {
             reviews={reviews} saveReview={saveReview}
             subTab={progressSubTab} setSubTab={setProgressSubTab}
             goToCategory={goToCategory}
+            updateThought={updateThought} setModal={setModal}
           />
         )}
       </main>
@@ -429,6 +431,15 @@ function App() {
       {modal?.type === 'promote' && (
         <Modal title={`Promote to Today's ${modal.slot === 'main' ? 'Main Mission' : 'Life Win'}`} onClose={() => setModal(null)}>
           <PromoteModal slot={modal.slot} missions={missions} tasks={openTasks} loops={openLoops} onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }} />
+        </Modal>
+      )}
+      {modal?.type === 'close-day' && (
+        <Modal title="Close the Day" onClose={() => setModal(null)}>
+          <CloseDayModal
+            thoughts={thoughts}
+            missions={missions}
+            onClose={() => setModal(null)}
+          />
         </Modal>
       )}
     </div>
@@ -534,6 +545,10 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
           <ThoughtCard thought={noiseItems[0]} updateThought={updateThought} compact />
         ) : <p className="muted small">No noise entries yet. When a thought repeats with no clear action, put it here.</p>}
       </div>
+      <button className="close-day-btn" onClick={() => setModal({ type: 'close-day' })}>
+        <MoonStar size={20} />
+        <span>Close the Day</span>
+      </button>
     </section>
   );
 }
@@ -570,6 +585,134 @@ function PromoteModal({ missions, tasks, loops, onSelect }) {
         <div className="promote-group">
           <p className="promote-group-label">Open Loops</p>
           {loops.slice(0, 5).map((l) => { const cat = getCategory(l.category); return <button key={l.id} className="promote-item" onClick={() => onSelect(l.id, l.text)}><cat.icon size={15} /><span>{l.text}</span></button>; })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Close Day Modal ───────────────────────────────────────────────────────
+const CLOSE_DAY_QUESTIONS = [
+  { id: 'mission',    label: 'Mission',          question: 'Did I move a mission forward today?' },
+  { id: 'body',       label: 'Body & Discipline', question: 'Did I keep my body and discipline standards?' },
+  { id: 'courage',    label: 'Courage',           question: 'Did I face the thing I was avoiding?' },
+  { id: 'mind',       label: 'Mind',              question: 'Did I quiet the noise and not let worry loops run me?' },
+  { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
+];
+
+function CloseDayModal({ thoughts, missions, onClose }) {
+  const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary'
+  const [gutCall, setGutCall] = useState('');
+  const [answers, setAnswers] = useState({});
+  const [copied, setCopied] = useState(false);
+
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  const todayDone = thoughts.filter((t) => t.status === 'Done' && getDayKey(t.completedAt || t.createdAt) === todayKey);
+  const todayActive = thoughts.filter((t) => t.status !== 'Done' && getDayKey(t.createdAt) === todayKey);
+  const missionsTouched = missions.filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
+
+  const score = Object.values(answers).filter(Boolean).length;
+
+  function answerQuestion(id, val) {
+    const updated = { ...answers, [id]: val };
+    setAnswers(updated);
+    const allAnswered = CLOSE_DAY_QUESTIONS.every((q) => updated[q.id] !== undefined);
+    if (allAnswered) setTimeout(() => setStep('summary'), 300);
+  }
+
+  function buildSummary() {
+    const dateStr = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    const lines = [];
+    lines.push(`📅 Day Close — ${dateStr}`);
+    lines.push(`Overall: ${gutCall}  |  Score: ${score}/5`);
+    lines.push('');
+    lines.push('✅ Completed Today:');
+    if (todayDone.length) todayDone.forEach((t) => lines.push(`  • ${t.text}`));
+    else lines.push('  • Nothing marked done today');
+    lines.push('');
+    lines.push('🎯 Missions Touched:');
+    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  • ${m.title}`));
+    else lines.push('  • None directly linked');
+    lines.push('');
+    lines.push('💭 New Thoughts Captured Today:');
+    if (todayActive.length) todayActive.forEach((t) => lines.push(`  • ${t.text}${t.category ? ` (${t.category})` : ''}`));
+    else lines.push('  • None');
+    lines.push('');
+    lines.push('📊 Score Breakdown:');
+    CLOSE_DAY_QUESTIONS.forEach((q) => lines.push(`  ${answers[q.id] ? '✓' : '✗'} ${q.label} — ${q.question}`));
+    lines.push('');
+    lines.push('— paste into Apple Journal and write your personal review below —');
+    return lines.join('\n');
+  }
+
+  function copyToClipboard() {
+    navigator.clipboard.writeText(buildSummary()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  const currentQIndex = CLOSE_DAY_QUESTIONS.findIndex((q) => answers[q.id] === undefined);
+  const currentQ = currentQIndex >= 0 ? CLOSE_DAY_QUESTIONS[currentQIndex] : null;
+
+  return (
+    <div className="closeday-modal">
+      {step === 'gut' && (
+        <div className="closeday-step">
+          <p className="closeday-subtitle">Start with your gut. How did today go overall?</p>
+          <div className="closeday-gut-row">
+            {['Yes', 'Neutral', 'No'].map((opt) => (
+              <button
+                key={opt}
+                className={`closeday-gut-btn ${gutCall === opt ? 'selected' : ''} gut-${opt.toLowerCase()}`}
+                onClick={() => { setGutCall(opt); setStep('questions'); }}
+              >
+                {opt === 'Yes' ? '✓' : opt === 'No' ? '✗' : '~'} {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 'questions' && currentQ && (
+        <div className="closeday-step">
+          <div className="closeday-progress">
+            {CLOSE_DAY_QUESTIONS.map((q, i) => (
+              <div key={q.id} className={`closeday-progress-dot ${answers[q.id] !== undefined ? 'done' : i === currentQIndex ? 'active' : ''}`} />
+            ))}
+          </div>
+          <p className="closeday-q-label">{currentQ.label}</p>
+          <p className="closeday-q-text">{currentQ.question}</p>
+          <div className="closeday-yn-row">
+            <button className="closeday-yn-btn yn-yes" onClick={() => answerQuestion(currentQ.id, true)}>Yes — +1</button>
+            <button className="closeday-yn-btn yn-no" onClick={() => answerQuestion(currentQ.id, false)}>No</button>
+          </div>
+          <p className="closeday-progress-label">{currentQIndex + 1} of {CLOSE_DAY_QUESTIONS.length}</p>
+        </div>
+      )}
+
+      {step === 'summary' && (
+        <div className="closeday-step">
+          <div className="closeday-score-block">
+            <div className="closeday-score-num">{score}<span>/5</span></div>
+            <div className="closeday-score-gut">Overall: <strong>{gutCall}</strong></div>
+          </div>
+          <div className="closeday-score-bars">
+            {CLOSE_DAY_QUESTIONS.map((q) => (
+              <div key={q.id} className={`closeday-bar-row ${answers[q.id] ? 'bar-yes' : 'bar-no'}`}>
+                <span className="closeday-bar-icon">{answers[q.id] ? '✓' : '✗'}</span>
+                <span className="closeday-bar-label">{q.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="closeday-summary-box">
+            <pre className="closeday-summary-text">{buildSummary()}</pre>
+          </div>
+          <button className="primary-button" onClick={copyToClipboard}>
+            {copied ? <><Check size={17} /> Copied!</> : <><Copy size={17} /> Copy for Apple Journal</>}
+          </button>
         </div>
       )}
     </div>
@@ -869,7 +1012,7 @@ function MissionsView({ missions, thoughts, addMission, updateMission, deleteMis
 }
 
 // ─── Progress ──────────────────────────────────────────────────────────────
-function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory }) {
+function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
   return (
     <section className="screen stack">
       <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
@@ -877,13 +1020,13 @@ function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTa
         <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
         <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
       </div>
-      {subTab === 'accomplishments' && <AccomplishmentsTab doneThoughts={doneThoughts} />}
+      {subTab === 'accomplishments' && <AccomplishmentsTab doneThoughts={doneThoughts} updateThought={updateThought} setModal={setModal} />}
       {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
     </section>
   );
 }
 
-function AccomplishmentsTab({ doneThoughts }) {
+function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
   const byDay = useMemo(() => {
     const map = {};
     doneThoughts.forEach((t) => {
@@ -921,7 +1064,20 @@ function AccomplishmentsTab({ doneThoughts }) {
                   <div key={catId} className="accomplish-cat-group">
                     <div className="accomplish-cat-header"><CatIcon size={14} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
                     <div className="accomplish-items">
-                      {catItems.map((t) => <div key={t.id} className="accomplish-item"><CheckCircle2 size={14} className="accomplish-check" /><span>{t.text}</span></div>)}
+                      {catItems.map((t) => (
+                        <div key={t.id} className="accomplish-item accomplish-item-editable">
+                          <CheckCircle2 size={14} className="accomplish-check" />
+                          <span className="accomplish-item-text">{t.text}</span>
+                          <div className="accomplish-item-actions">
+                            <button className="accomplish-action-btn" title="Edit" onClick={() => setModal({ type: 'edit-thought', thought: t })}>
+                              <Edit3 size={13} />
+                            </button>
+                            <button className="accomplish-action-btn revert-btn" title="Revert to active" onClick={() => updateThought(t.id, { status: 'Open', completedAt: '' })}>
+                              <RotateCcw size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
