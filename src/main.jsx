@@ -77,12 +77,15 @@ function formatDateFull(value) {
 function getDayKey(isoString) {
   if (!isoString) return '';
   const d = new Date(isoString);
-  // Use local time parts to avoid UTC-vs-local off-by-one
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const offset = d.getTimezoneOffset() * 60000;
+  const local = new Date(d.getTime() - offset);
+  return local.toISOString().slice(0, 10);
 }
 function getLocalTodayKey() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const offset = d.getTimezoneOffset() * 60000;
+  const local = new Date(d.getTime() - offset);
+  return local.toISOString().slice(0, 10);
 }
 function getCategory(id) { return categories.find((c) => c.id === id) || categories[0]; }
 
@@ -1296,8 +1299,8 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     <div className="stack">
       <div className="accomplish-summary">
         <div className="accomplish-stat"><strong>{doneThoughts.length}</strong><span>Total completed</span></div>
-        <div className="accomplish-stat"><strong>{thisWeekCount}</strong><span>This week</span></div>
-        <div className="accomplish-stat"><strong>{byDay[0] ? byDay[0][1].length : 0}</strong><span>Total completed most recent day</span></div>
+        <div className="accomplish-stat"><strong>{thisWeekCount}</strong><span>Total this week</span></div>
+        <div className="accomplish-stat"><strong>{byDay[1] ? byDay[1][1].length : 0}</strong><span>Total previous day</span></div>
       </div>
       {byDay.map(([dayKey, items]) => {
         const byCat = {};
