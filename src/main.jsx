@@ -36,14 +36,14 @@ const categoryItemLabel = {
 const categories = [
   { id: 'active-missions', label: 'Active Missions', short: 'Missions', icon: Target, color: 'amber', tier: 'act-now', description: 'The major priorities you are actively focused on right now. Keep this capped at 3.', prompt: 'What bigger priority does this connect to?' },
   { id: 'next-actions', label: 'Next Actions', short: 'Actions', icon: CheckCircle2, color: 'green', tier: 'act-now', description: 'Small specific tasks you can actually do right now.', prompt: 'What is the next physical action?' },
-  { id: 'problems', label: 'Problems to Solve', short: 'Problems', icon: HelpCircle, color: 'orange', tier: 'needs-thinking', description: 'Things that need thinking, planning, or breaking down before action.', prompt: 'What question needs to be solved?' },
+  { id: 'problems', label: 'Problems to Solve', short: 'Problems', icon: AlertCircle, color: 'orange', tier: 'needs-thinking', description: 'Things that need thinking, planning, or breaking down before action.', prompt: 'What question needs to be solved?' },
   { id: 'decisions', label: 'Decisions', short: 'Decisions', icon: Compass, color: 'purple', tier: 'needs-thinking', description: 'Open choices that are draining attention until you close them.', prompt: 'What options are you choosing between?' },
-  { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: TimerReset, color: 'yellow', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
+  { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: Clock3, color: 'yellow', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
   { id: 'maintenance', label: 'Maintenance', short: 'Maintenance', icon: ShieldCheck, color: 'teal', tier: 'hold', description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.', prompt: 'What keeps this from becoming chaos?' },
   { id: 'relationships', label: 'Relationships', short: 'People', icon: Users, color: 'pink', tier: 'hold', description: 'Gabi, family, siblings, friends, work relationships, networking, and conversations.', prompt: 'Who does this involve and what would showing up well look like?' },
-  { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: DollarSign, color: 'emerald', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
+  { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: ClipboardList, color: 'emerald', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
   { id: 'someday', label: 'Someday / Parking Lot', short: 'Someday', icon: Archive, color: 'slate', tier: 'hold', description: 'Good ideas that matter, but not right now.', prompt: 'Why is this not for this week?' },
-  { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
+  { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: AlertCircle, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
 ];
 
 const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
@@ -515,7 +515,7 @@ function App() {
 // ─── Today View ────────────────────────────────────────────────────────────
 function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday }) {
   return (
-    <section className="screen stack">
+    <section className="screen screen-today stack">
       <div className="hero-card">
         <div className="hero-copy">
           <p className="eyebrow">Daily Operating System</p>
@@ -543,7 +543,7 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
       </div>
       <div className="mission-list">
         {missions.slice(0, 3).map((m) => (
-          <article className="mission-card" key={m.id}>
+          <article className="mission-card accent-amber" key={m.id}>
             <div><p className="eyebrow">{m.area}</p><h3>{m.title}</h3><p>{m.why || 'No why added yet.'}</p></div>
             <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
           </article>
@@ -793,7 +793,7 @@ function CloseDayModal({ thoughts, missions, onClose }) {
 // ─── Capture ───────────────────────────────────────────────────────────────
 function CaptureView({ addThought, missions, setActiveTab }) {
   return (
-    <section className="screen stack">
+    <section className="screen screen-capture stack">
       <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Capture</h2><p className="muted">Get it out of your head. Sort later.</p></div></div>
       <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} missions={missions} />
     </section>
@@ -811,7 +811,7 @@ function CaptureForm({ addThought, missions, compact = false }) {
     setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
   }
   return (
-    <form className="capture-form card" onSubmit={submit}>
+    <form className="capture-form card accent-slate" onSubmit={submit}>
       <Field label="What is on your mind?">
         <textarea className="big-input" placeholder="Dump the thought here. Sorting can happen after." value={form.text} onChange={(e) => set('text', e.target.value)} autoFocus={compact} />
       </Field>
@@ -857,7 +857,7 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
   const [collapsedTiers, setCollapsedTiers] = useState({});
   function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
   return (
-    <section className="screen stack">
+    <section className="screen screen-sort stack">
       <div className="section-header">
         <div><p className="eyebrow">Sort & Convert</p><h2>Every Thought Gets a Role</h2><p className="muted">Act, solve, decide, wait, maintain, park, or let go.</p></div>
         <Pill tone={unsorted.length ? 'red' : 'green'}>{unsorted.length} unsorted</Pill>
@@ -908,7 +908,7 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
 function CategoryDetail({ category, thoughts, updateThought, deleteThought, convertThought, setModal }) {
   const CIcon = category.icon;
   return (
-    <div className="card category-detail">
+    <div className={`card category-detail accent-${category.color}`}>
       <div className="section-header">
         <div className="category-title"><IconBadge icon={CIcon} tone={category.color} /><div><h2>{category.label}</h2><p className="muted">{category.description}</p></div></div>
       </div>
@@ -923,7 +923,7 @@ function CategoryDetail({ category, thoughts, updateThought, deleteThought, conv
 
 function TriageCard({ thought, updateThought, deleteThought, convertThought, setModal }) {
   return (
-    <article className="thought-card triage">
+    <article className="thought-card triage accent-slate">
       <div className="thought-main"><h3>{thought.text}</h3><p>{thought.notes || 'Choose what this should become.'}</p></div>
       <ConversionButtons thought={thought} convertThought={convertThought} />
       <div className="card-actions">
@@ -940,7 +940,7 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const stale = stalenessLabel(getDaysOld(thought.createdAt), thought.category);
   const itemLabel = categoryItemLabel[thought.category] || 'Item';
   return (
-    <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
+    <article className={`thought-card accent-${category.color} ${compact ? 'compact-card' : ''}`}>
       <div className="thought-topline">
         <div className="thought-labels">
           <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
@@ -982,8 +982,8 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
 
 function ConversionButtons({ thought, convertThought }) {
   const buttons = [
-    { id: 'task', label: 'Task', icon: CheckCircle2 }, { id: 'problem', label: 'Problem', icon: HelpCircle },
-    { id: 'decision', label: 'Decision', icon: Compass }, { id: 'waiting', label: 'Waiting', icon: TimerReset },
+    { id: 'task', label: 'Task', icon: CheckCircle2 }, { id: 'problem', label: 'Problem', icon: AlertCircle },
+    { id: 'decision', label: 'Decision', icon: Compass }, { id: 'waiting', label: 'Waiting', icon: Clock3 },
     { id: 'someday', label: 'Park It', icon: Archive }, { id: 'noise', label: 'Noise', icon: Brain },
   ];
   return (
@@ -1068,7 +1068,7 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
   }, [missions]);
 
   return (
-    <section className="screen stack">
+    <section className="screen screen-goals stack">
       <div className="section-header">
         <div><p className="eyebrow">Big Picture</p><h2>Goals</h2><p className="muted">Your major life objectives. Active tasks in Sort serve these.</p></div>
         <button className="primary-button compact" onClick={() => setShowForm((v) => !v)}><Plus size={16} /> Add Goal</button>
@@ -1140,7 +1140,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
     : 0;
 
   return (
-    <article className="goal-card">
+    <article className={`goal-card accent-${goalAreaColors[goal.area] || 'slate'}`}>
       <div className="goal-card-top">
         <div className="goal-card-main">
           <div className="goal-card-title-row">
@@ -1267,7 +1267,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
 // ─── Progress ──────────────────────────────────────────────────────────────
 function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
   return (
-    <section className="screen stack">
+    <section className="screen screen-progress stack">
       <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
