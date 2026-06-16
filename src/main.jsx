@@ -70,7 +70,8 @@ function formatDate(value) {
 }
 function formatDateFull(value) {
   if (!value) return '';
-  const date = new Date(value);
+  // Append T00:00:00 so date-only strings parse as local time, not UTC midnight
+  const date = new Date(value.length === 10 ? value + 'T00:00:00' : value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
