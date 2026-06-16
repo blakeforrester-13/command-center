@@ -70,10 +70,16 @@ function formatDate(value) {
 }
 function formatDateFull(value) {
   if (!value) return '';
-  // Append T00:00:00 so date-only strings parse as local time, not UTC midnight
-  const date = new Date(value.length === 10 ? value + 'T00:00:00' : value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Parse the YYYY-MM-DD parts directly — never let JS shift the date
+  const str = value.length > 10 ? value : value;
+  const year = parseInt(str.slice(0, 4), 10);
+  const month = parseInt(str.slice(5, 7), 10) - 1;
+  const day = parseInt(str.slice(8, 10), 10);
+  // Build a local date from parts to get the correct weekday
+  const d = new Date(year, month, day);
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 function getDayKey(isoString) {
   if (!isoString) return '';
