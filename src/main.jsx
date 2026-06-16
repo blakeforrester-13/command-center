@@ -1123,6 +1123,7 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
 
 function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory }) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
   const statusTone = goal.status === 'On Track' ? 'green' : goal.status === 'Slipping' ? 'amber' : goal.status === 'Blocked' ? 'red' : goal.status === 'Done' ? 'slate' : 'default';
   const progress = linkedDone.length + linkedActive.length > 0
     ? Math.round((linkedDone.length / (linkedDone.length + linkedActive.length)) * 100)
@@ -1141,10 +1142,21 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
             <p className="goal-target-date"><CalendarDays size={12} /> Target: {formatDate(goal.targetDate)}</p>
           )}
         </div>
-        <button className="icon-button" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button className="icon-button" title="Edit goal" onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
+            <Edit3 size={15} />
+          </button>
+          <button className="icon-button" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+        </div>
       </div>
+
+      {/* Status always visible */}
+      <select value={goal.status} onChange={(e) => updateMission(goal.id, { status: e.target.value })}
+        style={{ width: '100%', borderRadius: 999, fontSize: '0.8rem', padding: '7px 12px' }}>
+        {goalStatuses.map((s) => <option key={s}>{s}</option>)}
+      </select>
 
       {/* Progress bar */}
       {(linkedActive.length + linkedDone.length) > 0 && (
@@ -1158,16 +1170,39 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
 
       {expanded && (
         <div className="goal-expanded">
-          {goal.weeklyGoal && (
+          {!editing && goal.weeklyGoal && (
             <div className="goal-section">
               <span className="goal-section-label">This week's push</span>
               <p className="goal-section-text">{goal.weeklyGoal}</p>
             </div>
           )}
-          {goal.nextAction && (
+          {!editing && goal.nextAction && (
             <div className="goal-section">
               <span className="goal-section-label">Next action</span>
               <p className="goal-section-text"><ArrowRight size={13} /> {goal.nextAction}</p>
+            </div>
+          )}
+
+          {editing && (
+            <div className="goal-card-actions">
+              <div className="form-grid" style={{ gap: 8 }}>
+                <Field label="This week's push">
+                  <input value={goal.weeklyGoal} onChange={(e) => updateMission(goal.id, { weeklyGoal: e.target.value })} />
+                </Field>
+                <Field label="Target date">
+                  <input type="date" value={goal.targetDate || ''} onChange={(e) => updateMission(goal.id, { targetDate: e.target.value })} />
+                </Field>
+              </div>
+              <Field label="Next action">
+                <input value={goal.nextAction} onChange={(e) => updateMission(goal.id, { nextAction: e.target.value })} />
+              </Field>
+              <Field label="Why it matters">
+                <textarea value={goal.why} onChange={(e) => updateMission(goal.id, { why: e.target.value })} />
+              </Field>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="secondary-button compact" onClick={() => setEditing(false)}><Check size={14} /> Done editing</button>
+                <button className="danger-button" onClick={() => deleteMission(goal.id)}><Trash2 size={14} /> Delete</button>
+              </div>
             </div>
           )}
 
@@ -1205,30 +1240,14 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
           )}
 
           {linkedActive.length === 0 && linkedDone.length === 0 && (
-            <p className="muted small">No active items linked to this goal yet. When capturing a thought, set "Related Goal" to this goal.</p>
+            <p className="muted small">No active items linked yet. Set "Related Goal" when capturing a thought.</p>
           )}
 
-          <div className="goal-card-actions">
-            <div className="form-grid" style={{ gap: 8 }}>
-              <Field label="Status">
-                <select value={goal.status} onChange={(e) => updateMission(goal.id, { status: e.target.value })}>
-                  {goalStatuses.map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="This week's push">
-                <input value={goal.weeklyGoal} onChange={(e) => updateMission(goal.id, { weeklyGoal: e.target.value })} />
-              </Field>
-            </div>
-            <Field label="Next action">
-              <input value={goal.nextAction} onChange={(e) => updateMission(goal.id, { nextAction: e.target.value })} />
-            </Field>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <button className="secondary-button compact" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
-                <Layers size={14} /> Go to Sort
-              </button>
-              <button className="danger-button" onClick={() => deleteMission(goal.id)}><Trash2 size={14} /> Delete Goal</button>
-            </div>
-          </div>
+          {!editing && (
+            <button className="secondary-button compact" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
+              <Layers size={14} /> Go to Sort
+            </button>
+          )}
         </div>
       )}
     </article>
