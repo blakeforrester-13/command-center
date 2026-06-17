@@ -41,7 +41,7 @@ const categories = [
   { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: TimerReset, color: 'yellow', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
   { id: 'maintenance', label: 'Maintenance', short: 'Maintenance', icon: ShieldCheck, color: 'teal', tier: 'hold', description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.', prompt: 'What keeps this from becoming chaos?' },
   { id: 'relationships', label: 'Relationships', short: 'People', icon: Users, color: 'pink', tier: 'hold', description: 'Gabi, family, siblings, friends, work relationships, networking, and conversations.', prompt: 'Who does this involve and what would showing up well look like?' },
-  { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: DollarSign, color: 'emerald', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
+  { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: DollarSign, color: 'blue', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
   { id: 'someday', label: 'Someday / Parking Lot', short: 'Someday', icon: Archive, color: 'slate', tier: 'hold', description: 'Good ideas that matter, but not right now.', prompt: 'Why is this not for this week?' },
   { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
 ];
@@ -414,11 +414,11 @@ function App() {
   }
 
   const navItems = [
-    { id: 'today', label: 'Today', icon: Home },
-    { id: 'capture', label: 'Capture', icon: Plus },
-    { id: 'sort', label: 'Sort', icon: Layers },
-    { id: 'goals', label: 'Goals', icon: Mountain },
-    { id: 'progress', label: 'Progress', icon: TrendingUp },
+    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
+    { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-green'  },
+    { id: 'sort',     label: 'Sort',     icon: Layers,     color: 'nav-purple' },
+    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-teal'   },
+    { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-orange' },
   ];
 
   if (loading) return <LoadingScreen />;
@@ -473,11 +473,12 @@ function App() {
         )}
       </main>
 
-      <nav className={`bottom-nav nav-${activeTab}`}>
+      <nav className="bottom-nav">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = activeTab === item.id;
           return (
-            <button key={item.id} className={activeTab === item.id ? 'active' : ''} onClick={() => setActiveTab(item.id)}>
+            <button key={item.id} className={isActive ? `active ${item.color}` : ''} onClick={() => setActiveTab(item.id)}>
               <Icon size={19} /><span>{item.label}</span>
             </button>
           );
@@ -898,7 +899,7 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
                     const count = thoughts.filter((t) => t.category === cat.id).length;
                     const staleCt = thoughts.filter((t) => t.category === cat.id && stalenessLabel(getDaysOld(t.createdAt), cat.id)?.urgent).length;
                     return (
-                      <button key={cat.id} className={`category-chip ${selectedCategory === cat.id ? 'active' : ''}`} onClick={() => setSelectedCategory(cat.id)}>
+                      <button key={cat.id} className={`category-chip ${selectedCategory === cat.id ? `active chip-active-${cat.color}` : ''}`} onClick={() => setSelectedCategory(cat.id)}>
                         <CIcon size={16} /><span>{cat.short}</span><small>{count}</small>
                         {staleCt > 0 && <span className="stale-dot">{staleCt}</span>}
                       </button>
