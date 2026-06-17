@@ -39,6 +39,7 @@
   --cat-emerald: #10b981;
   --cat-slate:   #94a3b8;
   --cat-red:     #f87171;
+  --cat-blue:    #60a5fa;
 
   --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
   --shadow:     0 8px 32px rgba(0,0,0,0.4);
@@ -383,6 +384,7 @@ input:focus, textarea:focus, select:focus {
 .pill-teal    { background: rgba(45,212,191,0.12); color: #5eead4; border-color: rgba(45,212,191,0.2); }
 .pill-pink    { background: rgba(244,114,182,0.12); color: #f9a8d4; border-color: rgba(244,114,182,0.2); }
 .pill-emerald { background: rgba(16,185,129,0.12); color: #6ee7b7; border-color: rgba(16,185,129,0.2); }
+.pill-blue    { background: rgba(96,165,250,0.12); color: #93c5fd; border-color: rgba(96,165,250,0.2); }
 .pill-slate   { background: rgba(148,163,184,0.08); color: #94a3b8; border-color: rgba(148,163,184,0.15); }
 .pill-default { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
 
@@ -539,11 +541,19 @@ input:focus, textarea:focus, select:focus {
   transition: all 0.15s;
 }
 .category-chip:hover { border-color: var(--line-strong); color: var(--text); }
-.category-chip.active {
-  background: var(--accent-dim);
-  border-color: var(--accent-border);
-  color: var(--accent);
-}
+.category-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+/* Per-category active colors */
+.chip-active-amber   { background: rgba(245,158,11,0.14)  !important; border-color: rgba(245,158,11,0.3)  !important; color: var(--cat-amber)   !important; }
+.chip-active-green   { background: rgba(52,211,153,0.14)  !important; border-color: rgba(52,211,153,0.3)  !important; color: var(--cat-green)   !important; }
+.chip-active-orange  { background: rgba(251,146,60,0.14)  !important; border-color: rgba(251,146,60,0.3)  !important; color: var(--cat-orange)  !important; }
+.chip-active-purple  { background: rgba(167,139,250,0.14) !important; border-color: rgba(167,139,250,0.3) !important; color: var(--cat-purple)  !important; }
+.chip-active-yellow  { background: rgba(251,191,36,0.14)  !important; border-color: rgba(251,191,36,0.3)  !important; color: var(--cat-yellow)  !important; }
+.chip-active-teal    { background: rgba(45,212,191,0.14)  !important; border-color: rgba(45,212,191,0.3)  !important; color: var(--cat-teal)    !important; }
+.chip-active-pink    { background: rgba(244,114,182,0.14) !important; border-color: rgba(244,114,182,0.3) !important; color: var(--cat-pink)    !important; }
+.chip-active-emerald { background: rgba(16,185,129,0.14)  !important; border-color: rgba(16,185,129,0.3)  !important; color: var(--cat-emerald) !important; }
+.chip-active-slate   { background: rgba(148,163,184,0.1)  !important; border-color: rgba(148,163,184,0.25)!important; color: var(--cat-slate)   !important; }
+.chip-active-red     { background: rgba(248,113,113,0.14) !important; border-color: rgba(248,113,113,0.3) !important; color: var(--cat-red)     !important; }
+.chip-active-blue    { background: rgba(96,165,250,0.14)  !important; border-color: rgba(96,165,250,0.3)  !important; color: var(--cat-blue)    !important; }
 .category-chip small { opacity: 0.7; font-size: 0.72rem; }
 
 /* ── Search ───────────────────────────────────────────────────────── */
@@ -582,6 +592,7 @@ input:focus, textarea:focus, select:focus {
 .icon-emerald{ background: rgba(16,185,129,0.14); color: var(--cat-emerald); }
 .icon-slate  { background: rgba(148,163,184,0.1); color: var(--cat-slate); }
 .icon-red    { background: rgba(248,113,113,0.14); color: var(--cat-red); }
+.icon-blue   { background: rgba(96,165,250,0.14); color: var(--cat-blue); }
 
 /* ── Thought cards ────────────────────────────────────────────────── */
 .thought-card { padding: 15px; display: grid; gap: 12px; }
@@ -747,6 +758,12 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent);
   background: var(--accent-dim);
 }
+/* Per-tab active nav colors */
+.bottom-nav button.active.nav-amber  { color: var(--cat-amber);   background: rgba(245,158,11,0.14); }
+.bottom-nav button.active.nav-green  { color: var(--cat-green);   background: rgba(52,211,153,0.14); }
+.bottom-nav button.active.nav-purple { color: var(--cat-purple);  background: rgba(167,139,250,0.14); }
+.bottom-nav button.active.nav-teal   { color: var(--cat-teal);    background: rgba(45,212,191,0.14); }
+.bottom-nav button.active.nav-orange { color: var(--cat-orange);  background: rgba(251,146,60,0.14); }
 .bottom-nav button:hover:not(.active) { color: var(--text); }
 
 /* ── Noise card ───────────────────────────────────────────────────── */
@@ -922,6 +939,7 @@ input:focus, textarea:focus, select:focus {
 .cat-label-emerald{ color: var(--cat-emerald); }
 .cat-label-slate  { color: var(--cat-slate); }
 .cat-label-red    { color: var(--cat-red); }
+.cat-label-blue   { color: var(--cat-blue); }
 
 .accomplish-cat-count {
   font-size: 0.68rem;
@@ -1391,7 +1409,7 @@ input:focus, textarea:focus, select:focus {
 /* ── Fix 1: Today mission cards — life area background tints ─────── */
 .mission-card-area-work        { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.18); }
 .mission-card-area-school      { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); }
-.mission-card-area-money       { background: rgba(16,185,129,0.07); border-color: rgba(16,185,129,0.18); }
+.mission-card-area-money       { background: rgba(96,165,250,0.07); border-color: rgba(96,165,250,0.18); }
 .mission-card-area-health      { background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
 .mission-card-area-relationships { background: rgba(244,114,182,0.07); border-color: rgba(244,114,182,0.18); }
 .mission-card-area-family      { background: rgba(251,146,60,0.07); border-color: rgba(251,146,60,0.18); }
@@ -1407,16 +1425,10 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-teal    { color: var(--cat-teal); }
 .task-cat-icon-pink    { color: var(--cat-pink); }
 .task-cat-icon-emerald { color: var(--cat-emerald); }
+.task-cat-icon-blue    { color: var(--cat-blue); }
 .task-cat-icon-slate   { color: var(--cat-slate); }
 .task-cat-icon-red     { color: var(--cat-red); }
 .task-cat-icon-yellow  { color: var(--cat-yellow); }
-
-/* ── Nav background tints per tab ────────────────────────────────── */
-.nav-today    { background: rgba(245,158,11,0.08) !important; }
-.nav-capture  { background: rgba(52,211,153,0.08) !important; }
-.nav-sort     { background: rgba(167,139,250,0.08) !important; }
-.nav-goals    { background: rgba(45,212,191,0.08) !important; }
-.nav-progress { background: rgba(251,146,60,0.08) !important; }
 
 /* ── Fix 5: Tier icons ───────────────────────────────────────────── */
 .tier-icon-tier-act   { color: var(--accent); }
