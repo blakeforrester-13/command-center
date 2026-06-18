@@ -471,7 +471,7 @@ function App() {
   }
 
   const navItems = [
-    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
+    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-red'    },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
     { id: 'sort',     label: 'Command',  icon: Layers,     color: 'nav-purple' },
     { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
