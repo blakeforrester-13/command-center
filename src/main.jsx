@@ -10,6 +10,7 @@ import {
   Clock, BatteryLow, BatteryMedium, BatteryFull,
   ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
   MoonStar, RotateCcw, Copy, Check, Mountain, Flame, Lightbulb, PauseCircle,
+  Briefcase, GraduationCap, Heart, User, Code, Telescope,
 } from 'lucide-react';
 import './styles.css';
 
@@ -45,6 +46,21 @@ const categories = [
   { id: 'someday', label: 'Someday / Parking Lot', short: 'Someday', icon: Archive, color: 'slate', tier: 'hold', description: 'Good ideas that matter, but not right now.', prompt: 'Why is this not for this week?' },
   { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
 ];
+
+const lifeAreaMeta = {
+  'Work':         { color: 'amber',   icon: Briefcase },
+  'School':       { color: 'purple',  icon: GraduationCap },
+  'Money':        { color: 'blue',    icon: DollarSign },
+  'Health':       { color: 'rose',    icon: Heart },
+  'Relationships':{ color: 'pink',    icon: Users },
+  'Family':       { color: 'orange',  icon: Mountain },
+  'Personal':     { color: 'teal',    icon: User },
+  'App/Projects': { color: 'yellow',  icon: Code },
+  'Future':       { color: 'slate',   icon: Telescope },
+};
+function getAreaMeta(area) {
+  return lifeAreaMeta[area] || { color: 'slate', icon: CircleDashed };
+}
 
 const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
 const energyLevels = ['Low', 'Medium', 'High'];
@@ -284,6 +300,7 @@ function App() {
   const openTasks = activeThoughts.filter((t) => t.category === 'next-actions');
   const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
+  const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
 
   const filteredThoughts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -415,10 +432,10 @@ function App() {
 
   const navItems = [
     { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
-    { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-green'  },
+    { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
     { id: 'sort',     label: 'Sort',     icon: Layers,     color: 'nav-purple' },
-    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-teal'   },
-    { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-orange' },
+    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-cyan'   },
+    { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
   ];
 
   if (loading) return <LoadingScreen />;
@@ -497,7 +514,7 @@ function App() {
       )}
       {modal?.type === 'promote' && (
         <Modal title={`Pull into: ${modal.slot === 'main' ? 'Main Mission' : modal.slot === 'life' ? 'Life Win' : modal.slot === 'body' ? 'Body / Stability Win' : 'One Thing I\'m Avoiding'}`} onClose={() => setModal(null)}>
-          <PromoteModal slot={modal.slot} missions={missions} tasks={openTasks} loops={openLoops} onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }} />
+          <PromoteModal activeMissions={activeMissionItems} tasks={openTasks} loops={openLoops} onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }} />
         </Modal>
       )}
       {modal?.type === 'close-day' && (
@@ -645,14 +662,14 @@ function TodaySlot({ label, value, onChange, onPromote, linkedId }) {
   );
 }
 
-function PromoteModal({ missions, tasks, loops, onSelect }) {
+function PromoteModal({ activeMissions, tasks, loops, onSelect }) {
   return (
     <div className="promote-modal">
       <p className="muted small">Choose something from your actual lists to promote to today's focus.</p>
-      {missions.length > 0 && (
+      {activeMissions.length > 0 && (
         <div className="promote-group">
           <p className="promote-group-label">Active Missions</p>
-          {missions.slice(0, 3).map((m) => <button key={m.id} className="promote-item" onClick={() => onSelect(m.id, m.title)}><Target size={15} /><span>{m.title}</span></button>)}
+          {activeMissions.slice(0, 5).map((m) => <button key={m.id} className="promote-item" onClick={() => onSelect(m.id, m.text)}><Target size={15} /><span>{m.text}</span></button>)}
         </div>
       )}
       {tasks.length > 0 && (
@@ -951,14 +968,17 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const CIcon = category.icon;
   const stale = stalenessLabel(getDaysOld(thought.createdAt), thought.category);
   const itemLabel = categoryItemLabel[thought.category] || 'Item';
+  const areaMeta = getAreaMeta(thought.area);
+  const AreaIcon = areaMeta.icon;
+  const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'yellow';
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
       <div className="thought-topline">
         <div className="thought-labels">
           <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
-          <Pill tone="default">{thought.area}</Pill>
+          <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
           {thought.dueDate && <Pill tone="yellow"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
-          {thought.energy && <Pill tone="default"><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
+          {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
           {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
         </div>
         {!compact && <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })}><Flag size={16} className={thought.pinned ? 'filled-flag' : ''} /></button>}
@@ -1114,11 +1134,11 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
       )}
 
       {byArea.map(([area, areaGoals]) => {
-        const color = goalAreaColors[area] || 'slate';
+        const areaMeta = getAreaMeta(area);
         return (
           <div key={area} className="goals-area-group">
             <div className="goals-area-header">
-              <IconBadge icon={Mountain} tone={color} />
+              <IconBadge icon={areaMeta.icon} tone={areaMeta.color} />
               <h3 className="goals-area-label">{area}</h3>
               <span className="goals-area-count">{areaGoals.length} goal{areaGoals.length !== 1 ? 's' : ''}</span>
             </div>
@@ -1236,11 +1256,11 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
                 {linkedActive.map((t) => {
                   const cat = getCategory(t.category);
                   return (
-                    <div key={t.id} className="goal-linked-item">
-                      <cat.icon size={13} />
+                    <button key={t.id} className="goal-linked-item goal-linked-btn" onClick={() => { setSelectedCategory(t.category); setActiveTab('sort'); }}>
+                      <cat.icon size={13} className={`task-cat-icon-${cat.color}`} />
                       <span>{t.text}</span>
                       <Pill tone={cat.color}>{cat.short}</Pill>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1345,18 +1365,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
                       <div className="accomplish-cat-header"><CatIcon size={14} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
                       <div className="accomplish-items">
                         {catItems.map((t) => (
-                          <div key={t.id} className="accomplish-item accomplish-item-editable">
-                            <CheckCircle2 size={14} className="accomplish-check" />
-                            <span className="accomplish-item-text">{t.text}</span>
-                            <div className="accomplish-item-actions">
-                              <button className="accomplish-action-btn" title="Edit" onClick={() => setModal({ type: 'edit-thought', thought: t })}>
-                                <Edit3 size={13} />
-                              </button>
-                              <button className="accomplish-action-btn revert-btn" title="Revert to active" onClick={() => updateThought(t.id, { status: 'Open', completedAt: '' })}>
-                                <RotateCcw size={13} />
-                              </button>
-                            </div>
-                          </div>
+                          <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
                         ))}
                       </div>
                     </div>
@@ -1367,6 +1376,50 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function AccomplishItem({ t, updateThought, setModal }) {
+  const [showMove, setShowMove] = useState(false);
+  const currentDay = getDayKey(t.completedAt || t.createdAt);
+
+  function moveToDay(newDate) {
+    // Build a completedAt timestamp at noon local time on the chosen date
+    const [year, month, day] = newDate.split('-').map(Number);
+    const d = new Date(year, month - 1, day, 12, 0, 0);
+    updateThought(t.id, { completedAt: d.toISOString() });
+    setShowMove(false);
+  }
+
+  return (
+    <div className="accomplish-item accomplish-item-editable">
+      <CheckCircle2 size={14} className="accomplish-check" />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span className="accomplish-item-text">{t.text}</span>
+        {showMove && (
+          <div className="accomplish-move-row">
+            <input
+              type="date"
+              defaultValue={currentDay}
+              style={{ flex: 1, fontSize: '0.78rem', padding: '4px 8px' }}
+              onChange={(e) => { if (e.target.value) moveToDay(e.target.value); }}
+            />
+            <button className="accomplish-action-btn" onClick={() => setShowMove(false)}><X size={12} /></button>
+          </div>
+        )}
+      </div>
+      <div className="accomplish-item-actions">
+        <button className="accomplish-action-btn" title="Move to day" onClick={() => setShowMove((v) => !v)}>
+          <CalendarDays size={13} />
+        </button>
+        <button className="accomplish-action-btn" title="Edit" onClick={() => setModal({ type: 'edit-thought', thought: t })}>
+          <Edit3 size={13} />
+        </button>
+        <button className="accomplish-action-btn revert-btn" title="Revert to active" onClick={() => updateThought(t.id, { status: 'Open', completedAt: '' })}>
+          <RotateCcw size={13} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1388,8 +1441,8 @@ function ReviewTab({ activeThoughts, reviews, saveReview, goToCategory }) {
           {counts.map((item) => {
             const SIcon = item.icon;
             return (
-              <button key={item.id} className="stat-card stat-card-btn" onClick={() => goToCategory(item.id)}>
-                <SIcon size={16} /><strong>{item.count}</strong><span>{item.short}</span>
+              <button key={item.id} className={`stat-card stat-card-btn stat-card-${item.color}`} onClick={() => goToCategory(item.id)}>
+                <SIcon size={16} className={`stat-icon-${item.color}`} /><strong>{item.count}</strong><span>{item.short}</span>
                 {item.staleCount > 0 && <span className="stat-stale">{item.staleCount} stale</span>}
               </button>
             );
