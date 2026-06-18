@@ -273,6 +273,7 @@ function App() {
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(null);
   const [energyFilter, setEnergyFilter] = useState('');
+  const [highlightGoalId, setHighlightGoalId] = useState('');
 
   // ── Load all data from Supabase on mount ──
   useEffect(() => {
@@ -476,6 +477,7 @@ function App() {
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             setModal={setModal} updateThought={updateThought}
             promoteToToday={promoteToToday}
+            goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('goals'); }}
           />
         )}
         {activeTab === 'capture' && <CaptureView addThought={addThought} missions={missions} setActiveTab={setActiveTab} />}
@@ -494,6 +496,7 @@ function App() {
             addMission={addMission} updateMission={updateMission}
             deleteMission={deleteMission}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
+            highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
           />
         )}
         {activeTab === 'progress' && (
@@ -548,7 +551,7 @@ function App() {
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday }) {
+function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal }) {
   const defaultSlots = {
     mainMissionText: 'Pick one thing that moves life forward today.',
     bodyWin: 'Do one action that keeps your body/life stable.',
@@ -567,7 +570,7 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
     },
     {
       id: 'body', number: '02', label: 'Body / Stability Win', subtitle: 'Keep the machine stable',
-      tone: 'rose', icon: Heart, value: today.bodyWin,
+      tone: 'emerald', icon: Heart, value: today.bodyWin,
       fallback: defaultSlots.bodyWin,
       linkedId: '',
       onChange: (v) => updateToday('bodyWin', v),
@@ -650,7 +653,11 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
           return (
-            <article className={`mission-card mission-card-area-${areaMeta.color}`} key={m.id}>
+            <button
+              key={m.id}
+              className={`mission-card mission-card-btn mission-card-area-${areaMeta.color}`}
+              onClick={() => goToGoal(m.id)}
+            >
               <div>
                 <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
                   <AreaIcon size={13} /><span>{m.area}</span>
@@ -658,8 +665,11 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
                 <h3>{m.title}</h3>
                 <p>{m.why || 'No why added yet.'}</p>
               </div>
-              <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
-            </article>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
+                <ChevronRight size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              </div>
+            </button>
           );
         })}
         {missions.length === 0 && <EmptyState title="No goals yet" text="Go to Goals to set your top priorities." />}
@@ -1227,7 +1237,7 @@ const goalAreaColors = {
   'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
 };
 
-function GoalsView({ missions, thoughts, addMission, updateMission, deleteMission, setActiveTab, setSelectedCategory }) {
+function GoalsView({ missions, thoughts, addMission, updateMission, deleteMission, setActiveTab, setSelectedCategory, highlightGoalId, setHighlightGoalId }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work', targetDate: '' });
   const [customArea, setCustomArea] = useState('');
@@ -1303,6 +1313,8 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
                     key={m.id} goal={m} linkedActive={linkedActive} linkedDone={linkedDone}
                     updateMission={updateMission} deleteMission={deleteMission}
                     setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
+                    isHighlighted={highlightGoalId === m.id}
+                    onHighlightClear={() => setHighlightGoalId('')}
                   />
                 );
               })}
@@ -1314,16 +1326,28 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
   );
 }
 
-function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory }) {
+function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory, isHighlighted, onHighlightClear }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const cardRef = React.useRef(null);
+
+  useEffect(() => {
+    if (isHighlighted) {
+      setExpanded(true);
+      setTimeout(() => {
+        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (onHighlightClear) setTimeout(onHighlightClear, 1800);
+      }, 80);
+    }
+  }, [isHighlighted]);
+
   const statusTone = goal.status === 'On Track' ? 'green' : goal.status === 'Slipping' ? 'amber' : goal.status === 'Blocked' ? 'red' : goal.status === 'Done' ? 'slate' : 'default';
   const progress = linkedDone.length + linkedActive.length > 0
     ? Math.round((linkedDone.length / (linkedDone.length + linkedActive.length)) * 100)
     : 0;
 
   return (
-    <article className="goal-card">
+    <article className={`goal-card ${isHighlighted ? 'goal-card-highlighted' : ''}`} ref={cardRef}>
       <div className="goal-card-top">
         <div className="goal-card-main">
           <div className="goal-card-title-row">
