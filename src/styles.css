@@ -16,10 +16,10 @@
   --line:         rgba(255, 255, 255, 0.07);
   --line-strong:  rgba(255, 255, 255, 0.12);
 
-  /* Accent â€” single amber accent for momentum/action */
-  --accent:       #f59e0b;
-  --accent-dim:   rgba(245, 158, 11, 0.14);
-  --accent-border: rgba(245, 158, 11, 0.28);
+  /* Accent — red-orange accent for momentum/action */
+  --accent:       #f1502f;
+  --accent-dim:   rgba(241, 80, 47, 0.14);
+  --accent-border: rgba(241, 80, 47, 0.28);
 
   /* Status colors â€” color carries meaning, not decoration */
   --status-open:    #a8b0c0;
@@ -59,7 +59,7 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(245,158,11,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(241,80,47,0.06) 0%, transparent 50%),
     radial-gradient(ellipse 60% 40% at 90% 20%, rgba(52,211,153,0.04) 0%, transparent 40%),
     var(--bg);
 }
@@ -147,7 +147,7 @@ h3 {
   align-items: center;
   gap: 20px;
   padding: 24px;
-  background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(20,26,36,0.95) 60%);
+  background: linear-gradient(135deg, rgba(241,80,47,0.1) 0%, rgba(20,26,36,0.95) 60%);
   border-color: var(--accent-border);
 }
 .hero-copy { max-width: 640px; }
@@ -1608,7 +1608,7 @@ input:focus, textarea:focus, select:focus {
   display: grid;
   place-items: center;
   background: conic-gradient(var(--accent) var(--command-score), rgba(255,255,255,0.08) 0deg);
-  box-shadow: 0 0 32px rgba(245,158,11,0.18);
+  box-shadow: 0 0 32px rgba(241,80,47,0.18);
   flex-shrink: 0;
 }
 .command-ring-inner {
