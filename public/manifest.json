@@ -1,0 +1,24 @@
+{
+  "name": "BlakeOS Command Center",
+  "short_name": "Command",
+  "description": "BlakeOS — Did I get better today?",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080c14",
+  "theme_color": "#080c14",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/Commandicon/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Commandicon/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
