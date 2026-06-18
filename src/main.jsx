@@ -434,7 +434,7 @@ function App() {
     { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
     { id: 'sort',     label: 'Sort',     icon: Layers,     color: 'nav-purple' },
-    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-cyan'   },
+    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
     { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
   ];
 
@@ -970,14 +970,14 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const itemLabel = categoryItemLabel[thought.category] || 'Item';
   const areaMeta = getAreaMeta(thought.area);
   const AreaIcon = areaMeta.icon;
-  const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'yellow';
+  const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'amber';
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
       <div className="thought-topline">
         <div className="thought-labels">
           <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
           <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
-          {thought.dueDate && <Pill tone="yellow"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
+          {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
           {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
           {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
         </div>
