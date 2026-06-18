@@ -2020,3 +2020,46 @@ input:focus, textarea:focus, select:focus {
   .identity-day-badge { display: none; }
   .accomplishment-hero-card { padding: 18px; }
 }
+
+/* ── Manage Goals Modal ─────────────────────────────────────────────────── */
+.manage-goals-modal { display: grid; gap: 14px; }
+.manage-goals-list { display: grid; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.manage-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.manage-goal-item:hover:not(.manage-goal-disabled) { filter: brightness(1.12); }
+.manage-goal-selected {
+  border-color: var(--accent-border) !important;
+  background: var(--accent-dim) !important;
+}
+.manage-goal-disabled { opacity: 0.4; cursor: not-allowed; }
+.manage-goal-check { color: var(--text-muted); flex-shrink: 0; }
+.manage-goal-selected .manage-goal-check { color: var(--accent); }
+.manage-goal-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.manage-goal-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.manage-goal-badge {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.manage-goals-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
