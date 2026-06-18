@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blakeos-v1';
+const CACHE_NAME = 'blakeos-v3';
 
 // Core app shell files to cache on install
 const PRECACHE_URLS = [
