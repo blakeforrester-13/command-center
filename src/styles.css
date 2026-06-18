@@ -74,7 +74,7 @@ p { line-height: 1.55; }
   width: min(1120px, 100%);
   margin: 0 auto;
   min-height: 100vh;
-  padding: 60px 16px max(108px, calc(80px + env(safe-area-inset-bottom)));
+  padding: 18px 16px 108px;
 }
 
 .topbar {
@@ -84,9 +84,8 @@ p { line-height: 1.55; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 54px 0 16px;
+  padding: 14px 0 16px;
   backdrop-filter: blur(20px);
-  margin-top: -54px;
 }
 .topbar-title-row {
   display: flex;
@@ -779,7 +778,7 @@ input:focus, textarea:focus, select:focus {
   position: fixed;
   z-index: 20;
   left: 50%;
-  bottom: max(14px, calc(env(safe-area-inset-bottom) + 6px));
+  bottom: 14px;
   transform: translateX(-50%);
   width: min(680px, calc(100% - 24px));
   display: grid;
