@@ -1500,6 +1500,7 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav button.active.nav-amber  { color: var(--cat-amber);  background: rgba(245,158,11,0.14); }
 .bottom-nav button.active.nav-gray   { color: #cbd5e1;           background: rgba(148,163,184,0.14); }
 .bottom-nav button.active.nav-purple { color: var(--cat-purple); background: rgba(167,139,250,0.14); }
+.bottom-nav button.active.nav-blue   { color: var(--cat-blue);   background: rgba(96,165,250,0.14); }
 .bottom-nav button.active.nav-cyan   { color: #22d3ee;           background: rgba(34,211,238,0.14); }
 .bottom-nav button.active.nav-green  { color: var(--cat-green);  background: rgba(52,211,153,0.14); }
 
