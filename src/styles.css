@@ -1,6 +1,6 @@
-/* ── Design tokens ────────────────────────────────────────────────── */
+/* â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
-  /* Base palette — dark charcoal, not pure black */
+  /* Base palette â€” dark charcoal, not pure black */
   --bg:           #0c0f14;
   --bg-soft:      #141820;
   --bg-card:      rgba(20, 26, 36, 0.92);
@@ -16,19 +16,19 @@
   --line:         rgba(255, 255, 255, 0.07);
   --line-strong:  rgba(255, 255, 255, 0.12);
 
-  /* Accent — single amber accent for momentum/action */
+  /* Accent â€” single amber accent for momentum/action */
   --accent:       #f59e0b;
   --accent-dim:   rgba(245, 158, 11, 0.14);
   --accent-border: rgba(245, 158, 11, 0.28);
 
-  /* Status colors — color carries meaning, not decoration */
+  /* Status colors â€” color carries meaning, not decoration */
   --status-open:    #a8b0c0;
   --status-track:   #34d399;   /* green */
   --status-slip:    #f59e0b;   /* amber */
   --status-blocked: #f87171;   /* red */
   --status-done:    #4b5668;
 
-  /* Category accent palette — muted, not rainbow */
+  /* Category accent palette â€” muted, not rainbow */
   --cat-amber:   #f59e0b;
   --cat-green:   #34d399;
   --cat-orange:  #fb923c;
@@ -52,7 +52,7 @@
   font-feature-settings: "cv11", "ss01";
 }
 
-/* ── Reset ────────────────────────────────────────────────────────── */
+/* â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 *, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0;
@@ -69,7 +69,7 @@ textarea { resize: vertical; min-height: 76px; }
 h1, h2, h3, p { margin: 0; }
 p { line-height: 1.55; }
 
-/* ── Layout ───────────────────────────────────────────────────────── */
+/* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .app-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -121,7 +121,7 @@ h3 {
 .main-content { padding-top: 4px; }
 .screen.stack { display: grid; gap: 16px; }
 
-/* ── Cards ────────────────────────────────────────────────────────── */
+/* â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .card,
 .hero-card,
 .mission-card,
@@ -154,7 +154,7 @@ h3 {
 .hero-copy p:last-child { color: var(--text-secondary); margin-top: 8px; }
 .hero-icon { color: var(--accent); opacity: 0.7; }
 
-/* ── Section layout helpers ───────────────────────────────────────── */
+/* â”€â”€ Section layout helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .section-header, .mission-detail-top, .thought-topline, .mission-footer {
   display: flex;
   align-items: flex-start;
@@ -171,7 +171,7 @@ h3 {
 }
 .mini-header h3 { color: var(--text); }
 
-/* ── Buttons ──────────────────────────────────────────────────────── */
+/* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .primary-button,
 .secondary-button,
 .text-button,
@@ -230,7 +230,7 @@ h3 {
   flex-shrink: 0;
 }
 
-/* ── Form elements ────────────────────────────────────────────────── */
+/* â”€â”€ Form elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .field { display: grid; gap: 6px; }
 .field > span, .field-label {
   color: var(--text-secondary);
@@ -270,7 +270,7 @@ input:focus, textarea:focus, select:focus {
 .today-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .two-column { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-/* ── Today Slot ───────────────────────────────────────────────────── */
+/* â”€â”€ Today Slot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .today-slot { display: grid; gap: 6px; }
 .today-slot-header {
   display: flex;
@@ -294,7 +294,7 @@ input:focus, textarea:focus, select:focus {
 .promote-btn:hover { opacity: 0.8; }
 .linked-slot { border-color: var(--accent-border) !important; }
 
-/* ── Promote Modal ────────────────────────────────────────────────── */
+/* â”€â”€ Promote Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .promote-modal { display: grid; gap: 16px; padding-top: 4px; }
 .promote-group { display: grid; gap: 6px; }
 .promote-group-label {
@@ -324,7 +324,7 @@ input:focus, textarea:focus, select:focus {
 }
 .promote-item span { font-size: 0.9rem; line-height: 1.4; }
 
-/* ── Energy toggle ────────────────────────────────────────────────── */
+/* â”€â”€ Energy toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .energy-toggle {
   display: flex;
   gap: 6px;
@@ -350,7 +350,7 @@ input:focus, textarea:focus, select:focus {
 }
 .energy-btn:hover:not(.active) { border-color: var(--line-strong); color: var(--text); }
 
-/* ── Missions ─────────────────────────────────────────────────────── */
+/* â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .mission-list { display: grid; gap: 10px; }
 .mission-list.detailed { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -369,7 +369,7 @@ input:focus, textarea:focus, select:focus {
 .mission-detail-card textarea { min-height: 76px; }
 .mission-footer { margin-top: 4px; }
 
-/* ── Pills ────────────────────────────────────────────────────────── */
+/* â”€â”€ Pills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -384,7 +384,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.05);
 }
 
-/* Status-driven pill tones — color = meaning */
+/* Status-driven pill tones â€” color = meaning */
 .pill-green   { background: rgba(52,211,153,0.12); color: #6ee7b7; border-color: rgba(52,211,153,0.2); }
 .pill-amber,
 .pill-yellow  { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.22); }
@@ -398,7 +398,7 @@ input:focus, textarea:focus, select:focus {
 .pill-slate   { background: rgba(148,163,184,0.08); color: #94a3b8; border-color: rgba(148,163,184,0.15); }
 .pill-default { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
 
-/* ── Compact list ─────────────────────────────────────────────────── */
+/* â”€â”€ Compact list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .compact-list, .thought-list { display: grid; gap: 8px; }
 .compact-item {
   border: 1px solid var(--line);
@@ -426,7 +426,7 @@ input:focus, textarea:focus, select:focus {
 .done-item span { text-decoration: line-through; }
 .check-done { color: var(--status-track); }
 
-/* ── Staleness ────────────────────────────────────────────────────── */
+/* â”€â”€ Staleness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stale-tag {
   display: inline-flex;
   align-items: center;
@@ -454,7 +454,7 @@ input:focus, textarea:focus, select:focus {
   font-weight: 700;
 }
 
-/* ── Noise bridge — Noise → Action feature ────────────────────────── */
+/* â”€â”€ Noise bridge â€” Noise â†’ Action feature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .noise-bridge {
   background: rgba(245,158,11,0.07);
   border: 1px solid rgba(245,158,11,0.18);
@@ -482,7 +482,7 @@ input:focus, textarea:focus, select:focus {
 }
 .convert-action-btn:hover { opacity: 0.8; }
 
-/* ── Tier navigation ──────────────────────────────────────────────── */
+/* â”€â”€ Tier navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .tier-nav { display: grid; gap: 8px; }
 
 .tier-group {
@@ -566,7 +566,7 @@ input:focus, textarea:focus, select:focus {
 .chip-active-blue    { background: rgba(96,165,250,0.14)  !important; border-color: rgba(96,165,250,0.3)  !important; color: var(--cat-blue)    !important; }
 .category-chip small { opacity: 0.7; font-size: 0.72rem; }
 
-/* ── Search ───────────────────────────────────────────────────────── */
+/* â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .search-bar {
   display: flex;
   gap: 10px;
@@ -580,7 +580,7 @@ input:focus, textarea:focus, select:focus {
 .search-bar input { border: 0; background: transparent; padding-left: 0; }
 .search-bar:focus-within { border-color: var(--accent-border); }
 
-/* ── Category detail ──────────────────────────────────────────────── */
+/* â”€â”€ Category detail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .category-title { display: flex; gap: 12px; align-items: flex-start; }
 .icon-badge {
   width: 40px;
@@ -604,7 +604,7 @@ input:focus, textarea:focus, select:focus {
 .icon-red    { background: rgba(248,113,113,0.14); color: var(--cat-red); }
 .icon-blue   { background: rgba(96,165,250,0.14); color: var(--cat-blue); }
 
-/* ── Thought cards ────────────────────────────────────────────────── */
+/* â”€â”€ Thought cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .thought-card { padding: 15px; display: grid; gap: 12px; }
 .thought-topline { align-items: flex-start; }
 .thought-labels { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -646,7 +646,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.07);
 }
 
-/* ── Category hint ────────────────────────────────────────────────── */
+/* â”€â”€ Category hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .category-hint {
   display: flex;
   gap: 11px;
@@ -668,7 +668,7 @@ input:focus, textarea:focus, select:focus {
 .hint-red    { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
 .hint-slate  { background: rgba(148,163,184,0.06); border-color: rgba(148,163,184,0.15); }
 
-/* ── Stats grid ───────────────────────────────────────────────────── */
+/* â”€â”€ Stats grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -683,13 +683,13 @@ input:focus, textarea:focus, select:focus {
 .stat-card strong { font-size: 1.25rem; color: var(--text); }
 .stat-card span { font-size: 0.74rem; }
 
-/* ── Review card ──────────────────────────────────────────────────── */
+/* â”€â”€ Review card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .review-card { padding: 14px; display: grid; gap: 8px; }
 .review-card details { color: var(--text-secondary); font-size: 0.875rem; }
 .review-card summary { cursor: pointer; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .review-card details p { margin: 6px 0; }
 
-/* ── Empty state ──────────────────────────────────────────────────── */
+/* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .empty-state {
   border: 1px dashed rgba(255,255,255,0.08);
   border-radius: var(--radius-sm);
@@ -703,7 +703,7 @@ input:focus, textarea:focus, select:focus {
 .empty-state h3 { color: var(--text); font-size: 0.95rem; }
 .empty-state p { font-size: 0.82rem; }
 
-/* ── Modal ────────────────────────────────────────────────────────── */
+/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -731,7 +731,7 @@ input:focus, textarea:focus, select:focus {
   margin-bottom: 16px;
 }
 
-/* ── Bottom nav ───────────────────────────────────────────────────── */
+/* â”€â”€ Bottom nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .bottom-nav {
   position: fixed;
   z-index: 20;
@@ -776,13 +776,13 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav button.active.nav-orange { color: var(--cat-orange);  background: rgba(251,146,60,0.14); }
 .bottom-nav button:hover:not(.active) { color: var(--text); }
 
-/* ── Noise card ───────────────────────────────────────────────────── */
+/* â”€â”€ Noise card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .noise-card { border-color: rgba(248,113,113,0.15); }
 
-/* ── Inbox triage ─────────────────────────────────────────────────── */
+/* â”€â”€ Inbox triage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .inbox-triage { border-color: var(--accent-border); }
 
-/* ── Responsive ───────────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 860px) {
   .mission-list.detailed { grid-template-columns: 1fr; }
   .two-column, .form-grid, .today-grid { grid-template-columns: 1fr; }
@@ -805,7 +805,7 @@ input:focus, textarea:focus, select:focus {
   .energy-btn { padding: 5px 8px; font-size: 0.72rem; }
 }
 
-/* ── Thought card labeled sections ────────────────────────────────── */
+/* â”€â”€ Thought card labeled sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .thought-item-header {
   display: flex;
   align-items: center;
@@ -852,7 +852,7 @@ input:focus, textarea:focus, select:focus {
   margin: 0;
 }
 
-/* ── Sub-tab switcher (Progress page) ────────────────────────────── */
+/* â”€â”€ Sub-tab switcher (Progress page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .subtab-row {
   display: flex;
   gap: 8px;
@@ -877,7 +877,7 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent);
 }
 
-/* ── Accomplishments ──────────────────────────────────────────────── */
+/* â”€â”€ Accomplishments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .accomplish-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -987,14 +987,14 @@ input:focus, textarea:focus, select:focus {
 /* stack helper for subtab content */
 .stack { display: grid; gap: 16px; }
 
-/* ── Responsive additions ─────────────────────────────────────────── */
+/* â”€â”€ Responsive additions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 520px) {
   .accomplish-summary { grid-template-columns: repeat(3, 1fr); }
   .subtab-row { width: 100%; }
   .subtab-btn { flex: 1; justify-content: center; }
 }
 
-/* ── Loading screen ───────────────────────────────────────────────── */
+/* â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .loading-screen {
   min-height: 100vh;
   display: grid;
@@ -1012,7 +1012,7 @@ input:focus, textarea:focus, select:focus {
   50% { opacity: 0.5; transform: scale(0.92); }
 }
 
-/* ── Close the Day button ─────────────────────────────────────────── */
+/* â”€â”€ Close the Day button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .close-day-btn {
   width: 100%;
   display: flex;
@@ -1033,7 +1033,7 @@ input:focus, textarea:focus, select:focus {
 }
 .close-day-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
-/* ── Close Day Modal ──────────────────────────────────────────────── */
+/* â”€â”€ Close Day Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .closeday-modal { display: grid; gap: 20px; }
 
 .closeday-step { display: grid; gap: 16px; }
@@ -1177,7 +1177,7 @@ input:focus, textarea:focus, select:focus {
   line-height: 1.6;
 }
 
-/* ── Accomplishments — edit/revert ────────────────────────────────── */
+/* â”€â”€ Accomplishments â€” edit/revert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .accomplish-item-editable {
   justify-content: space-between;
   align-items: flex-start;
@@ -1208,7 +1208,7 @@ input:focus, textarea:focus, select:focus {
 .accomplish-action-btn:hover { border-color: var(--line-strong); color: var(--text); background: rgba(255,255,255,0.09); }
 .revert-btn:hover { border-color: rgba(245,158,11,0.3); color: var(--accent); background: var(--accent-dim); }
 
-/* ── Fix 1: Next Actions task row ─────────────────────────────────── */
+/* â”€â”€ Fix 1: Next Actions task row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .task-action-row {
   display: flex;
   align-items: center;
@@ -1248,7 +1248,7 @@ input:focus, textarea:focus, select:focus {
 }
 .task-done-btn:hover { color: var(--status-track); background: rgba(52,211,153,0.08); }
 
-/* ── Fix 5: Daily Quote ───────────────────────────────────────────── */
+/* â”€â”€ Fix 5: Daily Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .daily-quote-card {
   padding: 16px 20px;
   border-radius: var(--radius);
@@ -1272,7 +1272,7 @@ input:focus, textarea:focus, select:focus {
   text-align: right;
 }
 
-/* ── Fix 3: Accomplishments collapsible day header ────────────────── */
+/* â”€â”€ Fix 3: Accomplishments collapsible day header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .accomplish-day-toggle {
   width: 100%;
   display: flex;
@@ -1290,7 +1290,7 @@ input:focus, textarea:focus, select:focus {
 .accomplish-day-toggle:hover { opacity: 0.85; }
 .accomplish-cat-list { padding-top: 12px; }
 
-/* ── Fix 6: Goals View ────────────────────────────────────────────── */
+/* â”€â”€ Fix 6: Goals View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .goals-area-group { display: grid; gap: 10px; }
 .goals-area-header {
   display: flex;
@@ -1416,7 +1416,7 @@ input:focus, textarea:focus, select:focus {
 
 .goal-card-actions { display: grid; gap: 10px; }
 
-/* ── Fix 1: Today mission cards — life area background tints ─────── */
+/* â”€â”€ Fix 1: Today mission cards â€” life area background tints â”€â”€â”€â”€â”€â”€â”€ */
 .mission-card-area-work        { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.18); }
 .mission-card-area-school      { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); }
 .mission-card-area-money       { background: rgba(96,165,250,0.07); border-color: rgba(96,165,250,0.18); }
@@ -1427,7 +1427,7 @@ input:focus, textarea:focus, select:focus {
 .mission-card-area-appprojects { background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.18); }
 .mission-card-area-future      { background: rgba(148,163,184,0.07); border-color: rgba(148,163,184,0.18); }
 
-/* ── Fix 1: Next Actions — colored category icon ─────────────────── */
+/* â”€â”€ Fix 1: Next Actions â€” colored category icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .task-cat-icon-green   { color: var(--cat-green); }
 .task-cat-icon-amber   { color: var(--cat-amber); }
 .task-cat-icon-orange  { color: var(--cat-orange); }
@@ -1440,12 +1440,12 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-red     { color: var(--cat-red); }
 .task-cat-icon-yellow  { color: var(--cat-yellow); }
 
-/* ── Fix 5: Tier icons ───────────────────────────────────────────── */
+/* â”€â”€ Fix 5: Tier icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .tier-icon-tier-act   { color: var(--accent); }
 .tier-icon-tier-think { color: #a78bfa; }
 .tier-icon-tier-hold  { color: var(--text-muted); }
 
-/* ── Weekly Review stat card tints + colored icons ───────────────── */
+/* â”€â”€ Weekly Review stat card tints + colored icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stat-card-amber   { background: rgba(245,158,11,0.07)  !important; border-color: rgba(245,158,11,0.18)  !important; }
 .stat-card-green   { background: rgba(52,211,153,0.07)  !important; border-color: rgba(52,211,153,0.18)  !important; }
 .stat-card-orange  { background: rgba(251,146,60,0.07)  !important; border-color: rgba(251,146,60,0.18)  !important; }
@@ -1470,7 +1470,7 @@ input:focus, textarea:focus, select:focus {
 .stat-icon-red     { color: var(--cat-red); }
 .stat-icon-blue    { color: var(--cat-blue); }
 
-/* ── Goal linked item as clickable button ────────────────────────── */
+/* â”€â”€ Goal linked item as clickable button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .goal-linked-btn {
   width: 100%;
   text-align: left;
@@ -1484,7 +1484,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.06);
 }
 
-/* ── Rose token ───────────────────────────────────────────────────── */
+/* â”€â”€ Rose token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root { --cat-rose: #fb7185; }
 
 .pill-rose    { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
@@ -1496,7 +1496,7 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-rose { color: var(--cat-rose); }
 .mission-card-area-health { background: rgba(251,113,133,0.07); border-color: rgba(251,113,133,0.18); }
 
-/* ── Nav active colors ────────────────────────────────────────────── */
+/* â”€â”€ Nav active colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .bottom-nav button.active.nav-amber  { color: var(--cat-amber);  background: rgba(245,158,11,0.14); }
 .bottom-nav button.active.nav-gray   { color: #cbd5e1;           background: rgba(148,163,184,0.14); }
 .bottom-nav button.active.nav-purple { color: var(--cat-purple); background: rgba(167,139,250,0.14); }
@@ -1504,13 +1504,13 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav button.active.nav-cyan   { color: #22d3ee;           background: rgba(34,211,238,0.14); }
 .bottom-nav button.active.nav-green  { color: var(--cat-green);  background: rgba(52,211,153,0.14); }
 
-/* ── Area pill colors ─────────────────────────────────────────────── */
+/* â”€â”€ Area pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pill-rose { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
 
-/* ── Energy pill colors ───────────────────────────────────────────── */
-/* Low=slate, Medium=yellow, High=rose — already covered by existing pill-slate/yellow/rose */
+/* â”€â”€ Energy pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Low=slate, Medium=yellow, High=rose â€” already covered by existing pill-slate/yellow/rose */
 
-/* ── Accomplish move-to-day row ───────────────────────────────────── */
+/* â”€â”€ Accomplish move-to-day row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .accomplish-move-row {
   display: flex;
   align-items: center;
@@ -1522,3 +1522,382 @@ input:focus, textarea:focus, select:focus {
   transition: opacity 0.15s;
 }
 .accomplish-item-editable:hover .accomplish-item-actions { opacity: 1; }
+
+/* â”€â”€ BlakeOS Command upgrade: ring, strip, and Today cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.hero-command-layout {
+  align-items: stretch;
+}
+.command-ring-panel {
+  min-width: 228px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: rgba(10,14,22,0.52);
+  border: 1px solid rgba(245,158,11,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.command-ring {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--accent) var(--command-score), rgba(255,255,255,0.08) 0deg);
+  box-shadow: 0 0 32px rgba(245,158,11,0.18);
+  flex-shrink: 0;
+}
+.command-ring-inner {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  background: #101620;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.command-ring-inner strong {
+  font-size: 1.25rem;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--text);
+}
+.command-ring-inner span {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.command-ring-copy { display: grid; gap: 7px; min-width: 0; }
+.command-state-label {
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.command-ring-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.command-ring-metrics span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+.daily-command-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: rgba(14,18,28,0.72);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.daily-command-strip::-webkit-scrollbar { display: none; }
+.command-strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.command-strip-state {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+.command-strip-load {
+  color: var(--cat-teal);
+  background: rgba(45,212,191,0.09);
+  border-color: rgba(45,212,191,0.2);
+}
+.todays-command-card {
+  border-color: rgba(245,158,11,0.16);
+  background: linear-gradient(180deg, rgba(245,158,11,0.035), var(--bg-card));
+}
+.today-command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.today-command-card-slot {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.035);
+  overflow: hidden;
+}
+.today-command-card-slot::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: 0.95;
+}
+.today-command-card-slot::after {
+  content: "";
+  position: absolute;
+  inset: -60px -40px auto auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--slot-glow, rgba(245,158,11,0.14));
+  filter: blur(12px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.today-command-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.today-command-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.today-command-title-wrap { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.today-command-label-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.today-command-title-wrap p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.today-command-card-slot textarea {
+  position: relative;
+  z-index: 1;
+  min-height: 104px;
+  background: rgba(10,14,22,0.55);
+  border-color: rgba(255,255,255,0.08);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.today-command-card-slot textarea::placeholder { color: rgba(168,176,192,0.6); }
+.today-command-pull {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+}
+.today-command-amber {
+  --slot-glow: rgba(245,158,11,0.16);
+  border-color: rgba(245,158,11,0.24);
+  background: linear-gradient(135deg, rgba(245,158,11,0.09), rgba(255,255,255,0.025));
+}
+.today-command-amber::before { background: var(--cat-amber); }
+.today-command-amber .today-command-label-row,
+.today-command-amber .today-command-number { color: var(--cat-amber); }
+.today-command-rose {
+  --slot-glow: rgba(251,113,133,0.16);
+  border-color: rgba(251,113,133,0.24);
+  background: linear-gradient(135deg, rgba(251,113,133,0.085), rgba(255,255,255,0.025));
+}
+.today-command-rose::before { background: var(--cat-rose); }
+.today-command-rose .today-command-label-row,
+.today-command-rose .today-command-number { color: var(--cat-rose); }
+.today-command-blue {
+  --slot-glow: rgba(96,165,250,0.16);
+  border-color: rgba(96,165,250,0.24);
+  background: linear-gradient(135deg, rgba(96,165,250,0.085), rgba(255,255,255,0.025));
+}
+.today-command-blue::before { background: var(--cat-blue); }
+.today-command-blue .today-command-label-row,
+.today-command-blue .today-command-number { color: var(--cat-blue); }
+.today-command-red {
+  --slot-glow: rgba(248,113,113,0.16);
+  border-color: rgba(248,113,113,0.24);
+  background: linear-gradient(135deg, rgba(248,113,113,0.085), rgba(255,255,255,0.025));
+}
+.today-command-red::before { background: var(--cat-red); }
+.today-command-red .today-command-label-row,
+.today-command-red .today-command-number { color: var(--cat-red); }
+.today-command-card-slot.needs-set { opacity: 0.86; }
+.today-command-card-slot.is-set {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 10px 30px rgba(0,0,0,0.18);
+}
+.linked-slot-card textarea { border-color: var(--accent-border) !important; }
+
+/* â”€â”€ Progress psychology: accomplishments as identity evidence â”€â”€â”€â”€â”€ */
+.accomplishments-page { gap: 14px; }
+.accomplishment-hero-card {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(245,158,11,0.18);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(245,158,11,0.16), transparent 36%),
+    linear-gradient(135deg, rgba(20,26,36,0.98), rgba(13,17,25,0.96));
+  box-shadow: var(--shadow-sm);
+}
+.accomplishment-hero-copy { display: grid; gap: 8px; max-width: 720px; }
+.accomplishment-hero-copy h2 {
+  font-size: clamp(1.55rem, 5vw, 2.25rem);
+  letter-spacing: -0.055em;
+  font-weight: 900;
+}
+.accomplishment-hero-copy p:last-child { color: var(--text-secondary); }
+.proof-score-card {
+  min-width: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: rgba(245,158,11,0.1);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+}
+.proof-score-card strong {
+  font-size: 2.3rem;
+  font-weight: 950;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+.proof-score-card span {
+  max-width: 110px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+}
+.identity-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.identity-stat {
+  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.02));
+}
+.identity-stat strong { color: var(--accent); }
+.momentum-signal-card {
+  border-color: rgba(45,212,191,0.18);
+  background: linear-gradient(135deg, rgba(45,212,191,0.07), var(--bg-card));
+}
+.momentum-signal-card p { color: var(--text-secondary); font-size: 0.92rem; }
+.momentum-signal-card strong { color: var(--cat-teal); }
+.evidence-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 4px 2px 0;
+}
+.identity-day-card {
+  overflow: hidden;
+  padding: 0;
+  border-color: rgba(255,255,255,0.09);
+}
+.identity-day-toggle {
+  padding: 15px 18px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(245,158,11,0.055), rgba(255,255,255,0.015));
+}
+.identity-day-medal {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--status-track);
+  background: rgba(52,211,153,0.11);
+  border: 1px solid rgba(52,211,153,0.22);
+  flex-shrink: 0;
+}
+.identity-day-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.identity-evidence-list {
+  padding: 14px 18px 18px;
+}
+.identity-cat-group {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.018);
+}
+.identity-cat-header { margin-bottom: 6px; }
+.identity-proof-items { padding-left: 0; }
+.accomplishment-empty-card {
+  background: linear-gradient(135deg, rgba(245,158,11,0.06), var(--bg-card));
+  border-color: rgba(245,158,11,0.15);
+}
+
+@media (max-width: 860px) {
+  .hero-command-layout { flex-direction: column; }
+  .command-ring-panel { width: 100%; justify-content: space-between; }
+  .today-command-grid { grid-template-columns: 1fr; }
+  .identity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .accomplishment-hero-card { flex-direction: column; }
+  .proof-score-card { width: 100%; min-width: 0; }
+}
+
+@media (max-width: 520px) {
+  .command-ring-panel { align-items: flex-start; }
+  .command-ring { width: 82px; height: 82px; }
+  .command-ring-inner { width: 62px; height: 62px; }
+  .command-ring-inner strong { font-size: 1.08rem; }
+  .daily-command-strip { border-radius: 18px; }
+  .today-command-card-slot { padding: 13px; }
+  .today-command-card-top { gap: 8px; }
+  .today-command-label-row { font-size: 0.72rem; }
+  .today-command-card-slot textarea { min-height: 92px; }
+  .identity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .identity-day-badge { display: none; }
+  .accomplishment-hero-card { padding: 18px; }
+}
