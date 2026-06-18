@@ -436,10 +436,33 @@ function App() {
   }
 
   function promoteToToday(slot, id, text) {
-    if (slot === 'main') { updateToday('mainMissionId', id); updateToday('mainMissionText', text); }
-    if (slot === 'life') { updateToday('lifeWinId', id); updateToday('lifeWinText', text); }
-    if (slot === 'body') { updateToday('bodyWin', text); }
-    if (slot === 'avoiding') { updateToday('avoiding', text); }
+    const defaults = {
+      main: 'Pick one thing that moves life forward today.',
+      body: 'Do one action that keeps your body/life stable.',
+      life: 'Clear one small real-life open loop.',
+      avoiding: 'Name the thing you do not want to deal with.',
+    };
+    const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
+    const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
+    const valueKey = keyMap[slot];
+    if (!valueKey) return;
+
+    const current = today?.[valueKey] || '';
+    const isDefault = current.trim() === defaults[slot];
+    const lines = current.split('\n').map((line) => line.replace(/^•\s*/, '').trim()).filter(Boolean);
+    const cleanText = text.trim();
+    let nextValue = cleanText;
+
+    if (current.trim() && !isDefault) {
+      if (lines.some((line) => line.toLowerCase() === cleanText.toLowerCase())) nextValue = current;
+      else {
+        const nextLines = [...lines.slice(0, 1), cleanText];
+        nextValue = nextLines.map((line) => `• ${line}`).join('\n');
+      }
+    }
+
+    if (idKeyMap[slot]) updateToday(idKeyMap[slot], id);
+    updateToday(valueKey, nextValue);
   }
 
   function goToCategory(catId) {
@@ -488,6 +511,7 @@ function App() {
           <TodayView
             today={today} updateToday={updateToday} missions={pinnedMissions} allMissions={missions}
             openTasks={openTasks} openLoops={openLoops} noiseItems={noiseItems}
+            activeThoughts={activeThoughts}
             energyFilter={energyFilter} setEnergyFilter={setEnergyFilter}
             energyFilteredTasks={energyFilteredTasks}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
@@ -550,8 +574,15 @@ function App() {
         </Modal>
       )}
       {modal?.type === 'promote' && (
-        <Modal title={`Pull into: ${modal.slot === 'main' ? 'Main Mission' : modal.slot === 'life' ? 'Life Win' : modal.slot === 'body' ? 'Body / Stability Win' : 'One Thing I\'m Avoiding'}`} onClose={() => setModal(null)}>
-          <PromoteModal activeMissions={activeMissionItems} tasks={openTasks} loops={openLoops} onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }} />
+        <Modal title={`Pull into: ${modal.modeLabel || 'Command Card'}`} onClose={() => setModal(null)}>
+          <PromoteModal
+            mode={modal.slot}
+            thoughts={activeThoughts}
+            activeMissions={activeMissionItems}
+            tasks={openTasks}
+            loops={openLoops}
+            onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }}
+          />
         </Modal>
       )}
       {modal?.type === 'close-day' && (
@@ -578,46 +609,42 @@ function App() {
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal, onManageGoals }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal, onManageGoals }) {
   const defaultSlots = {
-    mainMissionText: 'Pick one thing that moves life forward today.',
-    bodyWin: 'Do one action that keeps your body/life stable.',
-    lifeWinText: 'Clear one small real-life open loop.',
-    avoiding: 'Name the thing you do not want to deal with.',
+    mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
+    bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
+    lifeWinText: 'Choose 1-2 things that create growth or long-term progress.',
+    avoiding: 'Choose 1-2 things that need to get shipped or closed.',
   };
   const isMeaningful = (value, fallback) => Boolean(value && value.trim() && value.trim() !== fallback);
   const slotConfigs = [
     {
-      id: 'main', number: '01', label: 'Main Mission', subtitle: 'The win that moves life forward',
-      tone: 'amber', icon: Target, value: today.mainMissionText,
-      fallback: defaultSlots.mainMissionText,
-      linkedId: today.mainMissionId,
+      id: 'main', number: '01', label: 'Focus', subtitle: 'Deep work, decisions, and mental clarity',
+      tone: 'red', icon: Target, value: today.mainMissionText,
+      fallback: defaultSlots.mainMissionText, linkedId: today.mainMissionId,
       onChange: (v) => updateToday('mainMissionText', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'main' }),
+      onPromote: () => setModal({ type: 'promote', slot: 'main', modeLabel: 'Focus' }),
     },
     {
-      id: 'body', number: '02', label: 'Body / Stability Win', subtitle: 'Keep the machine stable',
-      tone: 'emerald', icon: Heart, value: today.bodyWin,
-      fallback: defaultSlots.bodyWin,
-      linkedId: '',
+      id: 'body', number: '02', label: 'Energy', subtitle: 'Body, recovery, stability, and fuel',
+      tone: 'orange', icon: Heart, value: today.bodyWin,
+      fallback: defaultSlots.bodyWin, linkedId: '',
       onChange: (v) => updateToday('bodyWin', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'body' }),
+      onPromote: () => setModal({ type: 'promote', slot: 'body', modeLabel: 'Energy' }),
     },
     {
-      id: 'life', number: '03', label: 'Life Win', subtitle: 'Close a real-world loop',
-      tone: 'blue', icon: CheckCircle2, value: today.lifeWinText,
-      fallback: defaultSlots.lifeWinText,
-      linkedId: today.lifeWinId,
+      id: 'life', number: '03', label: 'Growth', subtitle: 'Learning, reflection, and future progress',
+      tone: 'amber', icon: Layers, value: today.lifeWinText,
+      fallback: defaultSlots.lifeWinText, linkedId: today.lifeWinId,
       onChange: (v) => updateToday('lifeWinText', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'life' }),
+      onPromote: () => setModal({ type: 'promote', slot: 'life', modeLabel: 'Growth' }),
     },
     {
-      id: 'avoiding', number: '04', label: "Thing I'm Avoiding", subtitle: 'Face the friction directly',
-      tone: 'red', icon: AlertCircle, value: today.avoiding,
-      fallback: defaultSlots.avoiding,
-      linkedId: '',
+      id: 'avoiding', number: '04', label: 'Execution', subtitle: 'Ship, close, respond, and move forward',
+      tone: 'blue', icon: Zap, value: today.avoiding,
+      fallback: defaultSlots.avoiding, linkedId: '',
       onChange: (v) => updateToday('avoiding', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'avoiding' }),
+      onPromote: () => setModal({ type: 'promote', slot: 'avoiding', modeLabel: 'Execution' }),
     },
   ];
 
@@ -649,7 +676,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
 
       <div className="card todays-command-card">
         <div className="section-header">
-          <div><p className="eyebrow">Today's Focus</p><h2>Today's Command Cards</h2><p className="muted">Four slots. One direction. No scattered attention.</p></div>
+          <div><p className="eyebrow">Behavioral Modes</p><h2>Today's Command Cards</h2><p className="muted">Focus, Energy, Growth, and Execution — 1-2 priorities each.</p></div>
           <Pill tone="slate">Updated {formatDate(today.updatedAt)}</Pill>
         </div>
         <div className="today-command-grid">
@@ -850,28 +877,83 @@ function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon,
   );
 }
 
-function PromoteModal({ activeMissions, tasks, loops, onSelect }) {
+function getBehaviorMode(thought) {
+  const text = `${thought.text || ''} ${thought.nextAction || ''} ${thought.notes || ''}`.toLowerCase();
+  if (['problems', 'decisions', 'anxiety-noise'].includes(thought.category)) return 'main';
+  if (thought.category === 'maintenance' || thought.area === 'Health' || ['workout', 'gym', 'legs', 'sleep', 'food', 'eat', 'clean', 'room', 'laundry', 'supplement', 'recovery'].some((w) => text.includes(w))) return 'body';
+  if (thought.category === 'someday' || ['learn', 'read', 'course', 'research', 'study', 'reflect', 'vision', 'future', 'skill'].some((w) => text.includes(w))) return 'life';
+  if (['active-missions', 'next-actions', 'relationships', 'money-adult-life', 'waiting-on'].includes(thought.category)) return 'avoiding';
+  return 'avoiding';
+}
+
+const behaviorModeMeta = {
+  main: { label: 'Focus', tone: 'red', icon: Target, description: 'Decisions, problems, deep work, and the thing stealing mental bandwidth.' },
+  body: { label: 'Energy', tone: 'orange', icon: Heart, description: 'Body, recovery, stability, maintenance, and anything that keeps the machine running.' },
+  life: { label: 'Growth', tone: 'amber', icon: Layers, description: 'Learning, reflection, future-building, skills, and long-term progress.' },
+  avoiding: { label: 'Execution', tone: 'blue', icon: Zap, description: 'Ship it, respond, close the loop, move the real world forward.' },
+};
+
+function scoreBehaviorCandidate(thought, mode) {
+  const daysOld = getDaysOld(thought.createdAt);
+  let score = 0;
+  if (getBehaviorMode(thought) === mode) score += 40;
+  if (thought.pinned) score += 24;
+  if (thought.relatedMissionId) score += 18;
+  if (thought.dueDate) score += 14;
+  if (thought.energy === 'High' && ['main', 'body', 'avoiding'].includes(mode)) score += 8;
+  if (thought.energy === 'Low' && mode === 'body') score += 8;
+  if (['decisions', 'problems'].includes(thought.category) && mode === 'main') score += 12;
+  if (['next-actions', 'active-missions'].includes(thought.category) && mode === 'avoiding') score += 12;
+  if (thought.category === 'maintenance' && mode === 'body') score += 12;
+  if (thought.category === 'someday' && mode === 'life') score += 12;
+  score += Math.min(daysOld, 10);
+  return score;
+}
+
+function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks, loops, onSelect }) {
+  const meta = behaviorModeMeta[mode] || behaviorModeMeta.avoiding;
+  const ModeIcon = meta.icon;
+  const candidates = (thoughts.length ? thoughts : [...activeMissions, ...tasks, ...loops])
+    .filter((t) => t.status !== 'Done')
+    .sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
+  const recommended = candidates.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
+  const fallback = candidates.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
+
+  function renderItem(t) {
+    const cat = getCategory(t.category);
+    const CatIcon = cat.icon;
+    return (
+      <button key={t.id} className="promote-item promote-behavior-item" onClick={() => onSelect(t.id, t.text)}>
+        <CatIcon size={15} className={`task-cat-icon-${cat.color}`} />
+        <span>{t.text}</span>
+        <Pill tone={cat.color}>{cat.short}</Pill>
+      </button>
+    );
+  }
+
   return (
     <div className="promote-modal">
-      <p className="muted small">Choose something from your actual lists to promote to today's focus.</p>
-      {activeMissions.length > 0 && (
+      <div className={`behavior-mode-explainer behavior-mode-${meta.tone}`}>
+        <ModeIcon size={18} />
+        <div>
+          <strong>{meta.label}</strong>
+          <p>{meta.description}</p>
+        </div>
+      </div>
+      <p className="muted small">Pick up to 1-2 items for this mode. The app ranks by category fit, pinned items, related goals, due dates, energy, and stale open loops.</p>
+      {recommended.length > 0 && (
         <div className="promote-group">
-          <p className="promote-group-label">Active Missions</p>
-          {activeMissions.slice(0, 5).map((m) => <button key={m.id} className="promote-item" onClick={() => onSelect(m.id, m.text)}><Target size={15} /><span>{m.text}</span></button>)}
+          <p className="promote-group-label">Best fits for {meta.label}</p>
+          {recommended.map(renderItem)}
         </div>
       )}
-      {tasks.length > 0 && (
+      {fallback.length > 0 && (
         <div className="promote-group">
-          <p className="promote-group-label">Next Actions</p>
-          {tasks.slice(0, 5).map((t) => <button key={t.id} className="promote-item" onClick={() => onSelect(t.id, t.text)}><CheckCircle2 size={15} /><span>{t.text}</span></button>)}
+          <p className="promote-group-label">Other command items</p>
+          {fallback.map(renderItem)}
         </div>
       )}
-      {loops.length > 0 && (
-        <div className="promote-group">
-          <p className="promote-group-label">Open Loops</p>
-          {loops.slice(0, 5).map((l) => { const cat = getCategory(l.category); return <button key={l.id} className="promote-item" onClick={() => onSelect(l.id, l.text)}><cat.icon size={15} /><span>{l.text}</span></button>; })}
-        </div>
-      )}
+      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing to pull yet" text="Capture or sort a few items first, then this mode will have smart candidates." />}
     </div>
   );
 }
