@@ -82,11 +82,16 @@ p { line-height: 1.55; }
   top: 0;
   z-index: 10;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0 16px;
+  backdrop-filter: blur(20px);
+}
+.topbar-title-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0 20px;
-  backdrop-filter: blur(20px);
 }
 
 h1 {
@@ -347,6 +352,22 @@ input:focus, textarea:focus, select:focus {
   background: var(--accent-dim);
   border-color: var(--accent-border);
   color: var(--accent);
+}
+/* Per-level active colors */
+.energy-btn.active[data-level="Low"] {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: var(--cat-slate);
+}
+.energy-btn.active[data-level="Medium"] {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--cat-amber);
+}
+.energy-btn.active[data-level="High"] {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: var(--cat-green);
 }
 .energy-btn:hover:not(.active) { border-color: var(--line-strong); color: var(--text); }
 
@@ -1291,6 +1312,27 @@ input:focus, textarea:focus, select:focus {
 .accomplish-cat-list { padding-top: 12px; }
 
 /* â”€â”€ Fix 6: Goals View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Goals page header with border box */
+.goals-page-header {
+  padding: 18px 20px;
+  background: rgba(20, 26, 36, 0.7);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 1px rgba(96,165,250,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.goals-header-copy { flex: 1; }
+/* Mission area tag in Today view */
+.mission-area-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}
 .goals-area-group { display: grid; gap: 10px; }
 .goals-area-header {
   display: flex;
@@ -1595,8 +1637,8 @@ input:focus, textarea:focus, select:focus {
 .daily-command-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 6px;
   border-radius: 999px;
   background: rgba(14,18,28,0.72);
   border: 1px solid var(--line-strong);
@@ -1610,7 +1652,7 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  padding: 8px 11px;
+  padding: 7px 11px;
   border-radius: 999px;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--line);
@@ -1618,15 +1660,62 @@ input:focus, textarea:focus, select:focus {
   font-size: 0.76rem;
   font-weight: 800;
 }
+.command-strip-btn {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.command-strip-btn:hover { opacity: 0.85; filter: brightness(1.15); }
+.command-strip-date { cursor: default; }
 .command-strip-state {
   color: var(--accent);
   background: var(--accent-dim);
   border-color: var(--accent-border);
 }
+/* Interactive button color variants */
+.strip-blue {
+  color: var(--cat-blue);
+  background: rgba(96,165,250,0.1);
+  border-color: rgba(96,165,250,0.25);
+}
+.strip-green {
+  color: var(--cat-green);
+  background: rgba(52,211,153,0.1);
+  border-color: rgba(52,211,153,0.25);
+}
+.strip-orange {
+  color: var(--cat-orange);
+  background: rgba(251,146,60,0.1);
+  border-color: rgba(251,146,60,0.25);
+}
+.strip-red {
+  color: var(--cat-red);
+  background: rgba(248,113,113,0.1);
+  border-color: rgba(248,113,113,0.25);
+}
+.strip-amber {
+  color: var(--cat-amber);
+  background: rgba(245,158,11,0.1);
+  border-color: rgba(245,158,11,0.25);
+}
 .command-strip-load {
   color: var(--cat-teal);
   background: rgba(45,212,191,0.09);
   border-color: rgba(45,212,191,0.2);
+}
+.command-strip-load.strip-red {
+  color: var(--cat-red);
+  background: rgba(248,113,113,0.09);
+  border-color: rgba(248,113,113,0.2);
+}
+.command-strip-load.strip-amber {
+  color: var(--cat-amber);
+  background: rgba(245,158,11,0.09);
+  border-color: rgba(245,158,11,0.2);
+}
+.command-strip-load.strip-green {
+  color: var(--cat-green);
+  background: rgba(52,211,153,0.09);
+  border-color: rgba(52,211,153,0.2);
 }
 .todays-command-card {
   border-color: rgba(245,158,11,0.16);
