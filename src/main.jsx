@@ -433,7 +433,7 @@ function App() {
   const navItems = [
     { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
-    { id: 'sort',     label: 'Sort',     icon: Layers,     color: 'nav-purple' },
+    { id: 'sort',     label: 'Command',  icon: Layers,     color: 'nav-purple' },
     { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
     { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
   ];
@@ -532,27 +532,104 @@ function App() {
 
 // ─── Today View ────────────────────────────────────────────────────────────
 function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday }) {
+  const defaultSlots = {
+    mainMissionText: 'Pick one thing that moves life forward today.',
+    bodyWin: 'Do one action that keeps your body/life stable.',
+    lifeWinText: 'Clear one small real-life open loop.',
+    avoiding: 'Name the thing you do not want to deal with.',
+  };
+  const isMeaningful = (value, fallback) => Boolean(value && value.trim() && value.trim() !== fallback);
+  const slotConfigs = [
+    {
+      id: 'main', number: '01', label: 'Main Mission', subtitle: 'The win that moves life forward',
+      tone: 'amber', icon: Target, value: today.mainMissionText,
+      fallback: defaultSlots.mainMissionText,
+      linkedId: today.mainMissionId,
+      onChange: (v) => updateToday('mainMissionText', v),
+      onPromote: () => setModal({ type: 'promote', slot: 'main' }),
+    },
+    {
+      id: 'body', number: '02', label: 'Body / Stability Win', subtitle: 'Keep the machine stable',
+      tone: 'rose', icon: Heart, value: today.bodyWin,
+      fallback: defaultSlots.bodyWin,
+      linkedId: '',
+      onChange: (v) => updateToday('bodyWin', v),
+      onPromote: () => setModal({ type: 'promote', slot: 'body' }),
+    },
+    {
+      id: 'life', number: '03', label: 'Life Win', subtitle: 'Close a real-world loop',
+      tone: 'blue', icon: CheckCircle2, value: today.lifeWinText,
+      fallback: defaultSlots.lifeWinText,
+      linkedId: today.lifeWinId,
+      onChange: (v) => updateToday('lifeWinText', v),
+      onPromote: () => setModal({ type: 'promote', slot: 'life' }),
+    },
+    {
+      id: 'avoiding', number: '04', label: "Thing I'm Avoiding", subtitle: 'Face the friction directly',
+      tone: 'red', icon: AlertCircle, value: today.avoiding,
+      fallback: defaultSlots.avoiding,
+      linkedId: '',
+      onChange: (v) => updateToday('avoiding', v),
+      onPromote: () => setModal({ type: 'promote', slot: 'avoiding' }),
+    },
+  ];
+
+  const slotsSet = slotConfigs.filter((slot) => isMeaningful(slot.value, slot.fallback)).length;
+  const commandScore = Math.max(5, Math.min(100,
+    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
+  ));
+  const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
+
   return (
     <section className="screen stack">
-      <div className="hero-card">
+      <div className="hero-card hero-command-layout">
         <div className="hero-copy">
           <p className="eyebrow">Daily Operating System</p>
           <h2>What deserves your attention?</h2>
           <p>Pick the few things that make today a win. Park everything else.</p>
         </div>
-        <Sparkles size={32} className="hero-icon" />
+        <CommandRing
+          score={commandScore}
+          state={commandState}
+          slotsSet={slotsSet}
+          openTasks={openTasks.length}
+          openLoops={openLoops.length}
+          noiseCount={noiseItems.length}
+        />
       </div>
+
+      <DailyCommandStrip
+        state={commandState}
+        missions={missions.length}
+        actions={openTasks.length}
+        loops={openLoops.length}
+        noise={noiseItems.length}
+      />
+
       <DailyQuote />
-      <div className="card">
+
+      <div className="card todays-command-card">
         <div className="section-header">
-          <div><p className="eyebrow">Today's Focus</p><h2>Today's 3</h2></div>
+          <div><p className="eyebrow">Today's Focus</p><h2>Today's Command Cards</h2><p className="muted">Four slots. One direction. No scattered attention.</p></div>
           <Pill tone="slate">Updated {formatDate(today.updatedAt)}</Pill>
         </div>
-        <div className="today-grid">
-          <TodaySlot label="Main Mission" value={today.mainMissionText} onChange={(v) => updateToday('mainMissionText', v)} onPromote={() => setModal({ type: 'promote', slot: 'main' })} linkedId={today.mainMissionId} />
-          <TodaySlot label="Body / Stability Win" value={today.bodyWin} onChange={(v) => updateToday('bodyWin', v)} onPromote={() => setModal({ type: 'promote', slot: 'body' })} linkedId={''} />
-          <TodaySlot label="Life Win" value={today.lifeWinText} onChange={(v) => updateToday('lifeWinText', v)} onPromote={() => setModal({ type: 'promote', slot: 'life' })} linkedId={today.lifeWinId} />
-          <TodaySlot label="One Thing I'm Avoiding" value={today.avoiding} onChange={(v) => updateToday('avoiding', v)} onPromote={() => setModal({ type: 'promote', slot: 'avoiding' })} linkedId={''} />
+        <div className="today-command-grid">
+          {slotConfigs.map((slot) => (
+            <TodaySlot
+              key={slot.id}
+              number={slot.number}
+              label={slot.label}
+              subtitle={slot.subtitle}
+              value={slot.value}
+              fallback={slot.fallback}
+              tone={slot.tone}
+              icon={slot.icon}
+              onChange={slot.onChange}
+              onPromote={slot.onPromote}
+              linkedId={slot.linkedId}
+              isSet={isMeaningful(slot.value, slot.fallback)}
+            />
+          ))}
         </div>
       </div>
       <div className="section-header">
@@ -650,14 +727,65 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
   );
 }
 
-function TodaySlot({ label, value, onChange, onPromote, linkedId }) {
+function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount }) {
   return (
-    <div className="today-slot">
-      <div className="today-slot-header">
-        <span className="field-label">{label}</span>
-        <button className="promote-btn" onClick={onPromote}><ArrowUpCircle size={14} /> Pull from list</button>
+    <div className="command-ring-panel">
+      <div className="command-ring" style={{ '--command-score': `${score * 3.6}deg` }}>
+        <div className="command-ring-inner">
+          <strong>{score}%</strong>
+          <span>Command State</span>
+        </div>
       </div>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} className={linkedId ? 'linked-slot' : ''} />
+      <div className="command-ring-copy">
+        <p className="command-state-label">{state}</p>
+        <div className="command-ring-metrics">
+          <span>{slotsSet}/4 cards set</span>
+          <span>{openTasks} actions</span>
+          <span>{openLoops} loops</span>
+          <span>{noiseCount} noise</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DailyCommandStrip({ state, missions, actions, loops, noise }) {
+  const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
+  return (
+    <div className="daily-command-strip">
+      <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
+      <div className="command-strip-item"><CalendarDays size={15} /><span>{dayLabel}</span></div>
+      <div className="command-strip-item"><Target size={15} /><span>{missions} mission{missions === 1 ? '' : 's'}</span></div>
+      <div className="command-strip-item"><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></div>
+      <div className="command-strip-item"><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></div>
+      <div className="command-strip-item"><Brain size={15} /><span>{noise} noise</span></div>
+      <div className="command-strip-item command-strip-load"><Zap size={15} /><span>{load} load</span></div>
+    </div>
+  );
+}
+
+function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, linkedId, isSet }) {
+  return (
+    <div className={`today-slot today-command-card-slot today-command-${tone} ${linkedId ? 'linked-slot-card' : ''} ${isSet ? 'is-set' : 'needs-set'}`}>
+      <div className="today-command-card-top">
+        <div className="today-command-number">{number}</div>
+        <div className="today-command-title-wrap">
+          <div className="today-command-label-row">
+            <Icon size={16} />
+            <span>{label}</span>
+          </div>
+          <p>{subtitle}</p>
+        </div>
+        <Pill tone={isSet ? tone : 'slate'}>{isSet ? 'Set' : 'Open'}</Pill>
+      </div>
+      <textarea
+        value={value}
+        placeholder={fallback}
+        onChange={(e) => onChange(e.target.value)}
+        className={linkedId ? 'linked-slot' : ''}
+      />
+      <button className="promote-btn today-command-pull" onClick={onPromote}><ArrowUpCircle size={14} /> Pull from list</button>
     </div>
   );
 }
@@ -1331,39 +1459,72 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     return doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= cutoff).length;
   }, [doneThoughts]);
 
+  const previousDayCount = byDay[1] ? byDay[1][1].length : 0;
+  const proofDays = byDay.length;
+  const latestProof = byDay[0] ? byDay[0][1].length : 0;
+
   if (doneThoughts.length === 0) {
-    return <div className="card"><EmptyState icon={Trophy} title="Nothing completed yet" text="When you mark something Done it moves here. Start checking things off." /></div>;
+    return (
+      <div className="card accomplishment-empty-card">
+        <EmptyState icon={Trophy} title="No proof yet" text="When you mark something Done, it becomes evidence that you are becoming the person you said you wanted to be." />
+      </div>
+    );
   }
   return (
-    <div className="stack">
-      <div className="accomplish-summary">
-        <div className="accomplish-stat"><strong>{doneThoughts.length}</strong><span>Total completed</span></div>
-        <div className="accomplish-stat"><strong>{thisWeekCount}</strong><span>Total this week</span></div>
-        <div className="accomplish-stat"><strong>{byDay[1] ? byDay[1][1].length : 0}</strong><span>Total previous day</span></div>
+    <div className="stack accomplishments-page">
+      <div className="accomplishment-hero-card">
+        <div className="accomplishment-hero-copy">
+          <p className="eyebrow">Identity Evidence</p>
+          <h2>Proof I'm Becoming Him</h2>
+          <p>Every checkmark is a receipt. This page is not a task archive — it is proof that you kept promises to yourself.</p>
+        </div>
+        <div className="proof-score-card">
+          <Trophy size={22} />
+          <strong>{thisWeekCount}</strong>
+          <span>proof points this week</span>
+        </div>
       </div>
+
+      <div className="accomplish-summary identity-summary">
+        <div className="accomplish-stat identity-stat"><strong>{doneThoughts.length}</strong><span>Total promises kept</span></div>
+        <div className="accomplish-stat identity-stat"><strong>{thisWeekCount}</strong><span>Proof this week</span></div>
+        <div className="accomplish-stat identity-stat"><strong>{previousDayCount}</strong><span>Previous proof day</span></div>
+        <div className="accomplish-stat identity-stat"><strong>{proofDays}</strong><span>Days with evidence</span></div>
+      </div>
+
+      <div className="card momentum-signal-card">
+        <div className="mini-header"><Zap size={18} /><h3>Momentum Signal</h3></div>
+        <p><strong>{latestProof}</strong> item{latestProof === 1 ? '' : 's'} in your latest proof day. Keep stacking small wins; this is how confidence becomes believable.</p>
+      </div>
+
+      <div className="evidence-section-header">
+        <div><p className="eyebrow">Evidence Timeline</p><h2>Days You Kept Promises</h2><p className="muted">Grouped by day and category so you can see what kind of person you are becoming.</p></div>
+      </div>
+
       {byDay.map(([dayKey, items]) => {
         const byCat = {};
         const isCollapsed = collapsedDays[dayKey];
         items.forEach((t) => { const cid = t.category || 'unsorted'; if (!byCat[cid]) byCat[cid] = []; byCat[cid].push(t); });
         return (
-          <div key={dayKey} className="card accomplish-day">
-            <button className="accomplish-day-header accomplish-day-toggle" onClick={() => toggleDay(dayKey)}>
-              <div className="accomplish-day-dot" />
+          <div key={dayKey} className="card accomplish-day identity-day-card">
+            <button className="accomplish-day-header accomplish-day-toggle identity-day-toggle" onClick={() => toggleDay(dayKey)}>
+              <div className="identity-day-medal"><CheckCircle2 size={15} /></div>
               <div style={{ flex: 1 }}>
                 <p className="accomplish-day-date">{formatDateFull(dayKey)}</p>
-                <p className="accomplish-day-count">{items.length} completed</p>
+                <p className="accomplish-day-count">{items.length} proof point{items.length === 1 ? '' : 's'} logged</p>
               </div>
+              <span className="identity-day-badge">Evidence</span>
               {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
             </button>
             {!isCollapsed && (
-              <div className="accomplish-cat-list">
+              <div className="accomplish-cat-list identity-evidence-list">
                 {Object.entries(byCat).map(([catId, catItems]) => {
                   const cat = catId === 'unsorted' ? { label: 'Unsorted', short: 'Unsorted', icon: CircleDashed, color: 'slate' } : getCategory(catId);
                   const CatIcon = cat.icon;
                   return (
-                    <div key={catId} className="accomplish-cat-group">
-                      <div className="accomplish-cat-header"><CatIcon size={14} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
-                      <div className="accomplish-items">
+                    <div key={catId} className="accomplish-cat-group identity-cat-group">
+                      <div className="accomplish-cat-header identity-cat-header"><CatIcon size={14} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
+                      <div className="accomplish-items identity-proof-items">
                         {catItems.map((t) => (
                           <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
                         ))}
