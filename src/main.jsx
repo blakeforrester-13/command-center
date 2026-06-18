@@ -274,6 +274,14 @@ function App() {
   const [modal, setModal] = useState(null);
   const [energyFilter, setEnergyFilter] = useState('');
   const [highlightGoalId, setHighlightGoalId] = useState('');
+  const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
+  });
+
+  function savePinnedGoals(ids) {
+    setPinnedGoalIds(ids);
+    localStorage.setItem('blakeos-pinned-goals', JSON.stringify(ids));
+  }
 
   // ── Load all data from Supabase on mount ──
   useEffect(() => {
@@ -302,6 +310,14 @@ function App() {
   const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
   const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
+
+  const pinnedMissions = useMemo(() => {
+    if (pinnedGoalIds.length > 0) {
+      const pinned = pinnedGoalIds.map((id) => missions.find((m) => m.id === id)).filter(Boolean);
+      if (pinned.length > 0) return pinned.slice(0, 3);
+    }
+    return missions.slice(0, 3);
+  }, [missions, pinnedGoalIds]);
 
   const filteredThoughts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -470,7 +486,7 @@ function App() {
       <main className="main-content">
         {activeTab === 'today' && today && (
           <TodayView
-            today={today} updateToday={updateToday} missions={missions}
+            today={today} updateToday={updateToday} missions={pinnedMissions} allMissions={missions}
             openTasks={openTasks} openLoops={openLoops} noiseItems={noiseItems}
             energyFilter={energyFilter} setEnergyFilter={setEnergyFilter}
             energyFilteredTasks={energyFilteredTasks}
@@ -478,6 +494,7 @@ function App() {
             setModal={setModal} updateThought={updateThought}
             promoteToToday={promoteToToday}
             goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('goals'); }}
+            onManageGoals={() => setModal({ type: 'manage-goals' })}
           />
         )}
         {activeTab === 'capture' && <CaptureView addThought={addThought} missions={missions} setActiveTab={setActiveTab} />}
@@ -546,12 +563,22 @@ function App() {
           />
         </Modal>
       )}
+      {modal?.type === 'manage-goals' && (
+        <Modal title="Pin Goals to Today" onClose={() => setModal(null)}>
+          <ManageGoalsModal
+            missions={missions}
+            pinnedGoalIds={pinnedGoalIds}
+            onSave={(ids) => { savePinnedGoals(ids); setModal(null); }}
+            onClose={() => setModal(null)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal, onManageGoals }) {
   const defaultSlots = {
     mainMissionText: 'Pick one thing that moves life forward today.',
     bodyWin: 'Do one action that keeps your body/life stable.',
@@ -646,7 +673,7 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
       </div>
       <div className="section-header">
         <div><p className="eyebrow">Active Goals</p><h2>Where Momentum Lives</h2></div>
-        <button className="text-button" onClick={() => setActiveTab('goals')}>Manage</button>
+        <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
       </div>
       <div className="mission-list">
         {missions.slice(0, 3).map((m) => {
@@ -655,7 +682,7 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
           return (
             <button
               key={m.id}
-              className={`mission-card mission-card-btn mission-card-area-${areaMeta.color}`}
+              className={`mission-card mission-card-btn mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
               onClick={() => goToGoal(m.id)}
             >
               <div>
@@ -845,6 +872,55 @@ function PromoteModal({ activeMissions, tasks, loops, onSelect }) {
           {loops.slice(0, 5).map((l) => { const cat = getCategory(l.category); return <button key={l.id} className="promote-item" onClick={() => onSelect(l.id, l.text)}><cat.icon size={15} /><span>{l.text}</span></button>; })}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Manage Goals Modal ────────────────────────────────────────────────────
+function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
+  const [selected, setSelected] = useState(pinnedGoalIds.length > 0 ? pinnedGoalIds : missions.slice(0, 3).map((m) => m.id));
+
+  function toggle(id) {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, id];
+    });
+  }
+
+  return (
+    <div className="manage-goals-modal">
+      <p className="muted small">Choose up to 3 goals to pin to your Today view. Tap to toggle.</p>
+      <div className="manage-goals-list">
+        {missions.map((m) => {
+          const areaMeta = getAreaMeta(m.area);
+          const AreaIcon = areaMeta.icon;
+          const isSelected = selected.includes(m.id);
+          const isDisabled = !isSelected && selected.length >= 3;
+          return (
+            <button
+              key={m.id}
+              className={`manage-goal-item ${isSelected ? 'manage-goal-selected' : ''} ${isDisabled ? 'manage-goal-disabled' : ''} mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
+              onClick={() => !isDisabled && toggle(m.id)}
+            >
+              <div className="manage-goal-check">{isSelected ? <CheckCircle2 size={16} /> : <CircleDashed size={16} />}</div>
+              <div className="manage-goal-body">
+                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
+                  <AreaIcon size={12} /><span>{m.area}</span>
+                </div>
+                <span className="manage-goal-title">{m.title}</span>
+              </div>
+              {isSelected && <span className="manage-goal-badge">{selected.indexOf(m.id) + 1}</span>}
+            </button>
+          );
+        })}
+      </div>
+      <div className="manage-goals-footer">
+        <span className="muted small">{selected.length}/3 selected</span>
+        <button className="primary-button compact" onClick={() => onSave(selected)} disabled={selected.length === 0}>
+          <Check size={15} /> Save to Today
+        </button>
+      </div>
     </div>
   );
 }
