@@ -440,13 +440,30 @@ function App() {
 
   if (loading) return <LoadingScreen />;
 
+  const slotsSet = today ? [today.mainMissionText, today.bodyWin, today.lifeWinText, today.avoiding].filter((v) => v && v.trim() && v.trim().length > 20).length : 0;
+  const commandScore = Math.max(5, Math.min(100,
+    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
+  ));
+  const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
+
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div><p className="eyebrow">BlakeOS</p><h1>Command Center</h1></div>
-        <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
-          <Plus size={17} /><span>Capture</span>
-        </button>
+      <header className="topbar topbar-with-strip">
+        <div className="topbar-title-row">
+          <div><p className="eyebrow">BlakeOS</p><h1>Command Center</h1></div>
+          <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
+            <Plus size={17} /><span>Capture</span>
+          </button>
+        </div>
+        <DailyCommandStrip
+          state={commandState}
+          missions={missions.length}
+          actions={openTasks.length}
+          loops={openLoops.length}
+          noise={noiseItems.length}
+          setActiveTab={setActiveTab}
+          setSelectedCategory={setSelectedCategory}
+        />
       </header>
 
       <main className="main-content">
@@ -598,14 +615,6 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
         />
       </div>
 
-      <DailyCommandStrip
-        state={commandState}
-        missions={missions.length}
-        actions={openTasks.length}
-        loops={openLoops.length}
-        noise={noiseItems.length}
-      />
-
       <DailyQuote />
 
       <div className="card todays-command-card">
@@ -633,15 +642,22 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
         </div>
       </div>
       <div className="section-header">
-        <div><p className="eyebrow">Active Missions</p><h2>Where Momentum Lives</h2></div>
+        <div><p className="eyebrow">Active Goals</p><h2>Where Momentum Lives</h2></div>
         <button className="text-button" onClick={() => setActiveTab('goals')}>Manage</button>
       </div>
       <div className="mission-list">
         {missions.slice(0, 3).map((m) => {
-          const areaClass = `mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`;
+          const areaMeta = getAreaMeta(m.area);
+          const AreaIcon = areaMeta.icon;
           return (
-            <article className={`mission-card ${areaClass}`} key={m.id}>
-              <div><p className="eyebrow">{m.area}</p><h3>{m.title}</h3><p>{m.why || 'No why added yet.'}</p></div>
+            <article className={`mission-card mission-card-area-${areaMeta.color}`} key={m.id}>
+              <div>
+                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
+                  <AreaIcon size={13} /><span>{m.area}</span>
+                </div>
+                <h3>{m.title}</h3>
+                <p>{m.why || 'No why added yet.'}</p>
+              </div>
               <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
             </article>
           );
@@ -653,7 +669,7 @@ function TodayView({ today, updateToday, missions, openTasks, openLoops, noiseIt
           <div><p className="eyebrow">Do Right Now</p><h2>Next Actions</h2></div>
           <div className="energy-toggle">
             {['', 'Low', 'Medium', 'High'].map((level) => (
-              <button key={level} className={`energy-btn ${energyFilter === level ? 'active' : ''}`} onClick={() => setEnergyFilter(level)}>
+              <button key={level} data-level={level} className={`energy-btn ${energyFilter === level ? 'active' : ''}`} onClick={() => setEnergyFilter(level)}>
                 {level === '' ? 'All' : <><EnergyIcon level={level} /> {level}</>}
               </button>
             ))}
@@ -749,18 +765,25 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount 
   );
 }
 
-function DailyCommandStrip({ state, missions, actions, loops, noise }) {
+function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTab, setSelectedCategory }) {
   const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
+  const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
+
+  function goTo(tab, cat) {
+    if (setActiveTab) setActiveTab(tab);
+    if (cat && setSelectedCategory) setSelectedCategory(cat);
+  }
+
   return (
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
-      <div className="command-strip-item"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <div className="command-strip-item"><Target size={15} /><span>{missions} mission{missions === 1 ? '' : 's'}</span></div>
-      <div className="command-strip-item"><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></div>
-      <div className="command-strip-item"><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></div>
-      <div className="command-strip-item"><Brain size={15} /><span>{noise} noise</span></div>
-      <div className="command-strip-item command-strip-load"><Zap size={15} /><span>{load} load</span></div>
+      <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('goals')}><Target size={15} /><span>{missions} goal{missions === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
+      <div className={`command-strip-item command-strip-load ${loadColor}`}><Zap size={15} /><span>{load} load</span></div>
     </div>
   );
 }
@@ -1229,8 +1252,8 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
 
   return (
     <section className="screen stack">
-      <div className="section-header">
-        <div><p className="eyebrow">Big Picture</p><h2>Goals</h2><p className="muted">Your major life objectives. Active tasks in Sort serve these.</p></div>
+      <div className="section-header goals-page-header">
+        <div className="goals-header-copy"><p className="eyebrow">Big Picture</p><h2>Goals</h2><p className="muted">Your major life objectives. Active tasks in Command serve these.</p></div>
         <button className="primary-button compact" onClick={() => setShowForm((v) => !v)}><Plus size={16} /> Add Goal</button>
       </div>
 
