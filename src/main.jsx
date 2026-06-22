@@ -11,6 +11,7 @@ import {
   ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
   MoonStar, RotateCcw, Copy, Check, Mountain, Flame, Lightbulb, PauseCircle,
   Briefcase, GraduationCap, Heart, User, Code, Telescope,
+  Crosshair, Activity,
 } from 'lucide-react';
 import './styles.css';
 
@@ -436,33 +437,24 @@ function App() {
   }
 
   function promoteToToday(slot, id, text) {
-    const defaults = {
-      main: 'Pick one thing that moves life forward today.',
-      body: 'Do one action that keeps your body/life stable.',
-      life: 'Clear one small real-life open loop.',
-      avoiding: 'Name the thing you do not want to deal with.',
-    };
     const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
     const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
     const valueKey = keyMap[slot];
     if (!valueKey) return;
 
-    const current = today?.[valueKey] || '';
-    const isDefault = current.trim() === defaults[slot];
-    const lines = current.split('\n').map((line) => line.replace(/^•\s*/, '').trim()).filter(Boolean);
-    const cleanText = text.trim();
-    let nextValue = cleanText;
-
-    if (current.trim() && !isDefault) {
-      if (lines.some((line) => line.toLowerCase() === cleanText.toLowerCase())) nextValue = current;
-      else {
-        const nextLines = [...lines.slice(0, 1), cleanText];
-        nextValue = nextLines.map((line) => `• ${line}`).join('\n');
-      }
-    }
-
     if (idKeyMap[slot]) updateToday(idKeyMap[slot], id);
-    updateToday(valueKey, nextValue);
+    updateToday(valueKey, text.trim());
+  }
+
+  function completeSlot(slot, linkedId) {
+    const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
+    const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
+    const valueKey = keyMap[slot];
+    if (!valueKey) return;
+
+    if (linkedId) updateThought(linkedId, { status: 'Done' });
+    if (idKeyMap[slot]) updateToday(idKeyMap[slot], '');
+    updateToday(valueKey, '');
   }
 
   function goToCategory(catId) {
@@ -471,7 +463,7 @@ function App() {
   }
 
   const navItems = [
-    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-red'    },
+    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
     { id: 'sort',     label: 'Command',  icon: Layers,     color: 'nav-purple' },
     { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
@@ -517,6 +509,7 @@ function App() {
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             setModal={setModal} updateThought={updateThought}
             promoteToToday={promoteToToday}
+            completeSlot={completeSlot}
             goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('goals'); }}
             onManageGoals={() => setModal({ type: 'manage-goals' })}
           />
@@ -609,7 +602,7 @@ function App() {
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, goToGoal, onManageGoals }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals }) {
   const defaultSlots = {
     mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
     bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
@@ -620,17 +613,19 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
   const slotConfigs = [
     {
       id: 'main', number: '01', label: 'Focus', subtitle: 'Deep work, decisions, and mental clarity',
-      tone: 'red', icon: Target, value: today.mainMissionText,
+      tone: 'red', icon: Crosshair, value: today.mainMissionText,
       fallback: defaultSlots.mainMissionText, linkedId: today.mainMissionId,
       onChange: (v) => updateToday('mainMissionText', v),
       onPromote: () => setModal({ type: 'promote', slot: 'main', modeLabel: 'Focus' }),
+      onComplete: () => completeSlot('main', today.mainMissionId),
     },
     {
       id: 'body', number: '02', label: 'Energy', subtitle: 'Body, recovery, stability, and fuel',
-      tone: 'orange', icon: Heart, value: today.bodyWin,
+      tone: 'orange', icon: Activity, value: today.bodyWin,
       fallback: defaultSlots.bodyWin, linkedId: '',
       onChange: (v) => updateToday('bodyWin', v),
       onPromote: () => setModal({ type: 'promote', slot: 'body', modeLabel: 'Energy' }),
+      onComplete: () => completeSlot('body', ''),
     },
     {
       id: 'life', number: '03', label: 'Growth', subtitle: 'Learning, reflection, and future progress',
@@ -638,6 +633,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       fallback: defaultSlots.lifeWinText, linkedId: today.lifeWinId,
       onChange: (v) => updateToday('lifeWinText', v),
       onPromote: () => setModal({ type: 'promote', slot: 'life', modeLabel: 'Growth' }),
+      onComplete: () => completeSlot('life', today.lifeWinId),
     },
     {
       id: 'avoiding', number: '04', label: 'Execution', subtitle: 'Ship, close, respond, and move forward',
@@ -645,6 +641,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       fallback: defaultSlots.avoiding, linkedId: '',
       onChange: (v) => updateToday('avoiding', v),
       onPromote: () => setModal({ type: 'promote', slot: 'avoiding', modeLabel: 'Execution' }),
+      onComplete: () => completeSlot('avoiding', ''),
     },
   ];
 
@@ -692,6 +689,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
               icon={slot.icon}
               onChange={slot.onChange}
               onPromote={slot.onPromote}
+              onComplete={slot.onComplete}
               linkedId={slot.linkedId}
               isSet={isMeaningful(slot.value, slot.fallback)}
             />
@@ -779,7 +777,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
               const stale = stalenessLabel(getDaysOld(loop.createdAt), loop.category);
               return (
                 <button key={loop.id} className="compact-item" onClick={() => { setSelectedCategory(loop.category); setActiveTab('sort'); }}>
-                  <cat.icon size={17} />
+                  <cat.icon size={17} className={`task-cat-icon-${cat.color}`} />
                   <div className="compact-item-body">
                     <span>{loop.text}</span>
                     {stale && <span className={`stale-tag ${stale.urgent ? 'stale-urgent' : ''}`}><Clock size={11} /> {stale.label}</span>}
@@ -852,7 +850,7 @@ function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTa
   );
 }
 
-function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, linkedId, isSet }) {
+function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, onComplete, linkedId, isSet }) {
   return (
     <div className={`today-slot today-command-card-slot today-command-${tone} ${linkedId ? 'linked-slot-card' : ''} ${isSet ? 'is-set' : 'needs-set'}`}>
       <div className="today-command-card-top">
@@ -872,7 +870,12 @@ function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon,
         onChange={(e) => onChange(e.target.value)}
         className={linkedId ? 'linked-slot' : ''}
       />
-      <button className="promote-btn today-command-pull" onClick={onPromote}><ArrowUpCircle size={14} /> Pull from list</button>
+      <div className="today-command-card-actions">
+        <button className="promote-btn today-command-pull" onClick={onPromote}><ArrowUpCircle size={14} /> Pull from list</button>
+        {isSet && (
+          <button className="promote-btn today-command-done" onClick={onComplete}><CheckCircle2 size={14} /> Done</button>
+        )}
+      </div>
     </div>
   );
 }
@@ -887,8 +890,8 @@ function getBehaviorMode(thought) {
 }
 
 const behaviorModeMeta = {
-  main: { label: 'Focus', tone: 'red', icon: Target, description: 'Decisions, problems, deep work, and the thing stealing mental bandwidth.' },
-  body: { label: 'Energy', tone: 'orange', icon: Heart, description: 'Body, recovery, stability, maintenance, and anything that keeps the machine running.' },
+  main: { label: 'Focus', tone: 'red', icon: Crosshair, description: 'Decisions, problems, deep work, and the thing stealing mental bandwidth.' },
+  body: { label: 'Energy', tone: 'orange', icon: Activity, description: 'Body, recovery, stability, maintenance, and anything that keeps the machine running.' },
   life: { label: 'Growth', tone: 'amber', icon: Layers, description: 'Learning, reflection, future-building, skills, and long-term progress.' },
   avoiding: { label: 'Execution', tone: 'blue', icon: Zap, description: 'Ship it, respond, close the loop, move the real world forward.' },
 };
@@ -1680,7 +1683,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
       <div className="accomplishment-hero-card">
         <div className="accomplishment-hero-copy">
           <p className="eyebrow">Identity Evidence</p>
-          <h2>Proof I'm Becoming Him</h2>
+          <h2>Proof Im Becoming the man I want</h2>
           <p>Every checkmark is a receipt. This page is not a task archive — it is proof that you kept promises to yourself.</p>
         </div>
         <div className="proof-score-card">
@@ -1692,8 +1695,8 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
 
       <div className="accomplish-summary identity-summary">
         <div className="accomplish-stat identity-stat"><strong>{doneThoughts.length}</strong><span>Total promises kept</span></div>
-        <div className="accomplish-stat identity-stat"><strong>{thisWeekCount}</strong><span>Proof this week</span></div>
-        <div className="accomplish-stat identity-stat"><strong>{previousDayCount}</strong><span>Previous proof day</span></div>
+        <div className="accomplish-stat identity-stat"><strong>{thisWeekCount}</strong><span>Promises kept this week</span></div>
+        <div className="accomplish-stat identity-stat"><strong>{previousDayCount}</strong><span>Yesterdays prmoises</span></div>
         <div className="accomplish-stat identity-stat"><strong>{proofDays}</strong><span>Days with evidence</span></div>
       </div>
 
@@ -1728,7 +1731,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
                   const CatIcon = cat.icon;
                   return (
                     <div key={catId} className="accomplish-cat-group identity-cat-group">
-                      <div className="accomplish-cat-header identity-cat-header"><CatIcon size={14} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
+                      <div className="accomplish-cat-header identity-cat-header"><CatIcon size={14} className={`task-cat-icon-${cat.color}`} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
                       <div className="accomplish-items identity-proof-items">
                         {catItems.map((t) => (
                           <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
