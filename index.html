@@ -4,29 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>BlakeOS Command Center</title>
-
+ 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-
+ 
     <!-- Theme color (status bar on Android + Chrome) -->
     <meta name="theme-color" content="#080c14" />
-
+ 
     <!-- ── Apple PWA meta tags ─────────────────────────────────────────── -->
-
+ 
     <!-- Makes it launch as standalone app (no Safari UI) -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-
+ 
     <!-- Status bar style: black gives it its own space, no overlap -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-
+ 
     <!-- App name shown under icon on Home Screen -->
     <meta name="apple-mobile-web-app-title" content="Command" />
-
+ 
     <!-- App icons for Home Screen (Apple ignores manifest icons, needs these) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/Commandicon/icon-180.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/Commandicon/icon-152.png" />
     <link rel="apple-touch-icon" sizes="120x120" href="/Commandicon/icon-120.png" />
-
+ 
     <!-- Splash screens (optional but makes launch feel native) -->
     <!-- iPhone 14 Pro Max -->
     <link rel="apple-touch-startup-image"
@@ -40,14 +40,14 @@
     <link rel="apple-touch-startup-image"
       href="/Commandicon/splash-750x1334.png"
       media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
-
+ 
     <!-- Prevents phone number detection styling -->
     <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-
+ 
     <!-- Register Service Worker -->
     <script>
       if ('serviceWorker' in navigator) {
