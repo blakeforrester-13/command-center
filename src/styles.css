@@ -1935,7 +1935,7 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid rgba(245,158,11,0.2);
   background:
     linear-gradient(to right, rgba(10,13,18,0.95) 26%, rgba(10,13,18,0.55) 50%, rgba(10,13,18,0.0) 100%),
-    url('/mountain-hero.png') center right/cover no-repeat;
+    url('/mountain-hero.png') top right/cover no-repeat;
   min-height: 250px;
   box-shadow: var(--shadow);
   position: relative;
@@ -2192,7 +2192,6 @@ body {
 
 .proof-score-card,
 .accomplish-stat strong,
-.identity-stat strong,
 .command-state-label,
 .eyebrow {
   color: var(--accent);
