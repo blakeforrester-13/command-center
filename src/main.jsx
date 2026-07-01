@@ -1694,146 +1694,108 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [doneThoughts]);
 
+  // All days expanded by default; user can collapse
   const [collapsedDays, setCollapsedDays] = useState({});
   function toggleDay(key) { setCollapsedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
-
-  const todayKey = getLocalTodayKey();
-  const yesterdayKey = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const offset = d.getTimezoneOffset() * 60000;
-    return new Date(d.getTime() - offset).toISOString().slice(0, 10);
-  })();
 
   const thisWeekCount = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= cutoff).length;
   }, [doneThoughts]);
 
-  const yesterdayCount = byDay.find(([key]) => key === yesterdayKey)?.[1]?.length || 0;
-  const daysStrong = byDay.length;
-  const heroCount = thisWeekCount || doneThoughts.length;
-
-  const statCards = [
-    { label: 'Yesterday', value: yesterdayCount, icon: Flame, tone: 'orange' },
-    { label: 'This Week', value: thisWeekCount, icon: CalendarDays, tone: 'purple' },
-    { label: 'Total', value: doneThoughts.length, icon: Target, tone: 'orange' },
-    { label: 'Days Strong', value: daysStrong, icon: Star, tone: 'purple' },
-  ];
+  const previousDayCount = byDay[1] ? byDay[1][1].length : 0;
+  const proofDays = byDay.length;
+  const latestProof = byDay[0] ? byDay[0][1].length : 0;
 
   if (doneThoughts.length === 0) {
     return (
-      <div className="stack accomplishments-page evidence-page">
-        <div className="evidence-mountain-hero evidence-empty-hero">
-          <div className="evidence-hero-shade" />
-          <div className="evidence-hero-content">
-            <p className="eyebrow">Identity Evidence</p>
-            <h2>Proof You<br /><span>Kept Your Word.</span></h2>
-            <p>Every completed action becomes evidence. Start with one promise kept.</p>
-          </div>
-        </div>
-        <div className="card accomplishment-empty-card">
-          <EmptyState icon={Trophy} title="No evidence yet" text="Mark one thing Done and this page starts becoming proof of who you're building." />
-        </div>
+      <div className="card accomplishment-empty-card">
+        <EmptyState icon={Trophy} title="No proof yet" text="When you mark something Done, it becomes evidence that you are becoming the person you said you wanted to be." />
       </div>
     );
   }
-
   return (
-    <div className="stack accomplishments-page evidence-page">
-      <div className="evidence-mountain-hero">
-        <div className="evidence-hero-shade" />
-        <div className="evidence-hero-orb evidence-hero-orb-one" />
-        <div className="evidence-hero-orb evidence-hero-orb-two" />
-
-        <div className="evidence-hero-content">
+    <div className="stack accomplishments-page">
+      <div className="accomplishment-hero-card">
+        <div className="accomplishment-hero-copy">
           <p className="eyebrow">Identity Evidence</p>
-          <h2>Proof You<br /><span>Kept Your Word.</span></h2>
+          <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
           <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
         </div>
-
-        <div className="evidence-proof-card">
-          <Trophy size={28} />
-          <strong>{heroCount}</strong>
-          <span>Words Honored<br />This Week</span>
+        <div className="proof-score-card">
+          <Trophy size={22} />
+          <strong>{thisWeekCount}</strong>
+          <span>WORDS HONORED<br />THIS WEEK</span>
         </div>
       </div>
 
-      <div className="evidence-stat-grid">
-        {statCards.map((stat) => {
-          const StatIcon = stat.icon;
-          return (
-            <div key={stat.label} className={`evidence-stat-card evidence-stat-${stat.tone}`}>
-              <div className="evidence-stat-icon"><StatIcon size={20} /></div>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </div>
-          );
-        })}
+      <div className="accomplish-summary identity-summary">
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={18} /></div>
+          <strong>{previousDayCount}</strong>
+          <span>Yesterday</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={18} /></div>
+          <strong>{thisWeekCount}</strong>
+          <span>This Week</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon identity-stat-icon--target"><Target size={18} /></div>
+          <strong>{doneThoughts.length}</strong>
+          <span>Total</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon identity-stat-icon--star"><Star size={18} /></div>
+          <strong>{proofDays}</strong>
+          <span>Days Strong</span>
+        </div>
       </div>
 
       <div className="evidence-section-header">
-        <div>
-          <p className="eyebrow">Evidence Timeline</p>
-          <h2>Days You Kept Your Word</h2>
-          <p className="muted">Every checkmark is a receipt. Keep stacking them.</p>
-        </div>
+        <div><p className="eyebrow">Evidence Timeline</p><h2>Days You Kept Your Word</h2><p className="muted">Grouped by day — the record of who you're becoming.</p></div>
       </div>
 
-      <div className="evidence-timeline">
-        {byDay.map(([dayKey, items], index) => {
-          const byCat = {};
-          const isCollapsed = collapsedDays[dayKey];
-          const dayLabel = dayKey === todayKey ? 'Today' : dayKey === yesterdayKey ? 'Yesterday' : formatDateFull(dayKey);
-          items.forEach((t) => {
-            const cid = t.category || 'unsorted';
-            if (!byCat[cid]) byCat[cid] = [];
-            byCat[cid].push(t);
-          });
-          return (
-            <div key={dayKey} className="evidence-day-row">
-              <div className="evidence-timeline-rail">
-                <div className="evidence-checkpoint">{index + 1}</div>
+      {byDay.map(([dayKey, items]) => {
+        const byCat = {};
+        const isCollapsed = collapsedDays[dayKey];
+        items.forEach((t) => { const cid = t.category || 'unsorted'; if (!byCat[cid]) byCat[cid] = []; byCat[cid].push(t); });
+        return (
+          <div key={dayKey} className="card accomplish-day identity-day-card">
+            <button className="accomplish-day-header accomplish-day-toggle identity-day-toggle" onClick={() => toggleDay(dayKey)}>
+              <div className="identity-day-medal"><CheckCircle2 size={15} /></div>
+              <div style={{ flex: 1 }}>
+                <p className="accomplish-day-date">{formatDateFull(dayKey)}</p>
+                <p className="accomplish-day-count">{items.length} proof point{items.length === 1 ? '' : 's'} logged</p>
               </div>
-              <div className="card accomplish-day identity-day-card evidence-day-card">
-                <button className="accomplish-day-header accomplish-day-toggle identity-day-toggle evidence-day-toggle" onClick={() => toggleDay(dayKey)}>
-                  <div>
-                    <p className="accomplish-day-date evidence-day-date">{dayLabel}</p>
-                    <p className="accomplish-day-count">{items.length} promise{items.length === 1 ? '' : 's'} kept</p>
-                  </div>
-                  <span className="identity-day-badge evidence-day-badge">Evidence</span>
-                  {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
-                </button>
-                {!isCollapsed && (
-                  <div className="accomplish-cat-list identity-evidence-list evidence-list">
-                    {Object.entries(byCat).map(([catId, catItems]) => {
-                      const cat = catId === 'unsorted' ? { label: 'Unsorted', short: 'Unsorted', icon: CircleDashed, color: 'slate' } : getCategory(catId);
-                      const CatIcon = cat.icon;
-                      return (
-                        <div key={catId} className="accomplish-cat-group identity-cat-group evidence-cat-group">
-                          <div className="accomplish-cat-header identity-cat-header evidence-cat-header">
-                            <CatIcon size={14} className={`task-cat-icon-${cat.color}`} />
-                            <span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span>
-                            <span className="accomplish-cat-count">{catItems.length}</span>
-                          </div>
-                          <div className="accomplish-items identity-proof-items evidence-proof-items">
-                            {catItems.map((t) => (
-                              <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+              <span className="identity-day-badge">Evidence</span>
+              {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+            </button>
+            {!isCollapsed && (
+              <div className="accomplish-cat-list identity-evidence-list">
+                {Object.entries(byCat).map(([catId, catItems]) => {
+                  const cat = catId === 'unsorted' ? { label: 'Unsorted', short: 'Unsorted', icon: CircleDashed, color: 'slate' } : getCategory(catId);
+                  const CatIcon = cat.icon;
+                  return (
+                    <div key={catId} className="accomplish-cat-group identity-cat-group">
+                      <div className="accomplish-cat-header identity-cat-header"><CatIcon size={14} className={`task-cat-icon-${cat.color}`} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
+                      <div className="accomplish-items identity-proof-items">
+                        {catItems.map((t) => (
+                          <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
+
 function AccomplishItem({ t, updateThought, setModal }) {
   const [showMove, setShowMove] = useState(false);
   const currentDay = getDayKey(t.completedAt || t.createdAt);
