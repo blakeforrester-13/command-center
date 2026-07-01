@@ -1936,9 +1936,9 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius);
   border: 1px solid rgba(245,158,11,0.2);
   background:
-    linear-gradient(to right, rgba(12,15,20,0.92) 40%, rgba(12,15,20,0.55) 70%, rgba(12,15,20,0.2) 100%),
-    url('/mountain-hero.png') center/cover no-repeat;
-  min-height: 200px;
+    linear-gradient(to right, rgba(10,13,18,0.96) 30%, rgba(10,13,18,0.7) 55%, rgba(10,13,18,0.15) 100%),
+    url('/mountain-hero.png') center right/cover no-repeat;
+  min-height: 210px;
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
@@ -1990,9 +1990,22 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 14px 8px;
+  padding: 16px 8px 14px;
 }
-.identity-stat-icon { font-size: 1.2rem; line-height: 1; margin-bottom: 2px; }
+.identity-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+.identity-stat-icon--fire   { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.25); color: #f87171; }
+.identity-stat-icon--calendar { background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.25); color: #60a5fa; }
+.identity-stat-icon--target { background: rgba(245,158,11,0.15);  border: 1px solid rgba(245,158,11,0.25);  color: #f59e0b; }
+.identity-stat-icon--star   { background: rgba(251,191,36,0.15);  border: 1px solid rgba(251,191,36,0.25);  color: #fbbf24; }
 .identity-stat strong { color: var(--accent); font-size: 1.5rem; font-weight: 900; letter-spacing: -0.03em; }
 .identity-stat span { font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; }
 .momentum-signal-card {
