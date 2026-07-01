@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
@@ -15,27 +14,27 @@ import {
   Crosshair, Activity,
 } from 'lucide-react';
 import './styles.css';
- 
+
 // ─── Supabase client ───────────────────────────────────────────────────────
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
- 
+
 // ─── Category tiers ────────────────────────────────────────────────────────
 const categoryTiers = [
   { id: 'act-now', label: 'Act Now', description: 'Momentum — things with clear forward motion', color: 'tier-act', icon: Flame },
   { id: 'needs-thinking', label: 'Needs Thinking', description: 'Open loops — draining attention until closed', color: 'tier-think', icon: Lightbulb },
   { id: 'hold', label: 'Hold / Background', description: 'Stable or parked — not this week', color: 'tier-hold', icon: PauseCircle },
 ];
- 
+
 const categoryItemLabel = {
   'active-missions': 'Mission', 'next-actions': 'Action', 'problems': 'Problem',
   'decisions': 'Decision', 'waiting-on': 'Waiting On', 'maintenance': 'Maintenance Task',
   'relationships': 'Relationship Item', 'money-adult-life': 'Adult Life Item',
   'someday': 'Someday Idea', 'anxiety-noise': 'Noise / Worry',
 };
- 
+
 const categories = [
   { id: 'active-missions', label: 'Active Missions', short: 'Missions', icon: Target, color: 'amber', tier: 'act-now', description: 'The major priorities you are actively focused on right now. Keep this capped at 3.', prompt: 'What bigger priority does this connect to?' },
   { id: 'next-actions', label: 'Next Actions', short: 'Actions', icon: CheckCircle2, color: 'green', tier: 'act-now', description: 'Small specific tasks you can actually do right now.', prompt: 'What is the next physical action?' },
@@ -48,7 +47,7 @@ const categories = [
   { id: 'someday', label: 'Someday / Parking Lot', short: 'Someday', icon: Archive, color: 'slate', tier: 'hold', description: 'Good ideas that matter, but not right now.', prompt: 'Why is this not for this week?' },
   { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
 ];
- 
+
 const lifeAreaMeta = {
   'Work':         { color: 'amber',   icon: Briefcase },
   'School':       { color: 'purple',  icon: GraduationCap },
@@ -63,11 +62,11 @@ const lifeAreaMeta = {
 function getAreaMeta(area) {
   return lifeAreaMeta[area] || { color: 'slate', icon: CircleDashed };
 }
- 
+
 const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
- 
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function getDaysOld(isoString) {
   if (!isoString) return 0;
@@ -113,7 +112,7 @@ function getLocalTodayKey() {
   return local.toISOString().slice(0, 10);
 }
 function getCategory(id) { return categories.find((c) => c.id === id) || categories[0]; }
- 
+
 // ─── DB helpers — convert snake_case DB rows ↔ camelCase app objects ───────
 function dbToThought(row) {
   return {
@@ -173,7 +172,7 @@ function dbToReview(row) {
     nextWeek: row.next_week || '', createdAt: row.created_at,
   };
 }
- 
+
 // ─── UI Primitives ─────────────────────────────────────────────────────────
 function Pill({ children, tone = 'default', className = '' }) {
   return <span className={`pill pill-${tone} ${className}`}>{children}</span>;
@@ -213,7 +212,7 @@ function LoadingScreen() {
     </div>
   );
 }
- 
+
 // ─── Daily Quote ───────────────────────────────────────────────────────────
 const QUOTES = [
   { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
@@ -261,7 +260,7 @@ function DailyQuote() {
     </div>
   );
 }
- 
+
 // ─── App ───────────────────────────────────────────────────────────────────
 function App() {
   const [thoughts, setThoughts] = useState([]);
@@ -279,12 +278,12 @@ function App() {
   const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
   });
- 
+
   function savePinnedGoals(ids) {
     setPinnedGoalIds(ids);
     localStorage.setItem('blakeos-pinned-goals', JSON.stringify(ids));
   }
- 
+
   // ── Load all data from Supabase on mount ──
   useEffect(() => {
     async function loadAll() {
@@ -303,7 +302,7 @@ function App() {
     }
     loadAll();
   }, []);
- 
+
   // ── Derived lists ──
   const activeThoughts = thoughts.filter((t) => t.status !== 'Done');
   const doneThoughts = thoughts.filter((t) => t.status === 'Done');
@@ -312,7 +311,7 @@ function App() {
   const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
   const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
- 
+
   const pinnedMissions = useMemo(() => {
     if (pinnedGoalIds.length > 0) {
       const pinned = pinnedGoalIds.map((id) => missions.find((m) => m.id === id)).filter(Boolean);
@@ -320,7 +319,7 @@ function App() {
     }
     return missions.slice(0, 3);
   }, [missions, pinnedGoalIds]);
- 
+
   const filteredThoughts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return activeThoughts
@@ -331,11 +330,11 @@ function App() {
       })
       .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.createdAt) - new Date(a.createdAt));
   }, [activeThoughts, selectedCategory, query]);
- 
+
   const energyFilteredTasks = useMemo(() => {
     return openTasks.filter((t) => !energyFilter || t.energy === energyFilter);
   }, [openTasks, energyFilter]);
- 
+
   // ── Today ──
   async function updateToday(key, value) {
     const updated = { ...today, [key]: value, updatedAt: new Date().toISOString() };
@@ -351,7 +350,7 @@ function App() {
       updated_at: updated.updatedAt,
     });
   }
- 
+
   // ── Thoughts ──
   async function addThought(input) {
     const thought = {
@@ -368,7 +367,7 @@ function App() {
     setThoughts((prev) => [thought, ...prev]);
     await supabase.from('thoughts').insert(thoughtToDb(thought));
   }
- 
+
   async function updateThought(id, patch) {
     const extra = patch.status === 'Done' ? { completedAt: new Date().toISOString() } : {};
     setThoughts((prev) => prev.map((t) => t.id === id ? { ...t, ...patch, ...extra } : t));
@@ -377,12 +376,12 @@ function App() {
     const merged = { ...updated, ...patch, ...extra };
     await supabase.from('thoughts').update(thoughtToDb(merged)).eq('id', id);
   }
- 
+
   async function deleteThought(id) {
     setThoughts((prev) => prev.filter((t) => t.id !== id));
     await supabase.from('thoughts').delete().eq('id', id);
   }
- 
+
   // ── Missions ──
   async function addMission(input) {
     const mission = {
@@ -396,7 +395,7 @@ function App() {
     setMissions((prev) => [mission, ...prev]);
     await supabase.from('missions').insert(missionToDb(mission));
   }
- 
+
   async function updateMission(id, patch) {
     setMissions((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
     const updated = missions.find((m) => m.id === id);
@@ -404,12 +403,12 @@ function App() {
     const merged = { ...updated, ...patch };
     await supabase.from('missions').update(missionToDb(merged)).eq('id', id);
   }
- 
+
   async function deleteMission(id) {
     setMissions((prev) => prev.filter((m) => m.id !== id));
     await supabase.from('missions').delete().eq('id', id);
   }
- 
+
   // ── Reviews ──
   async function saveReview(review) {
     const saved = { ...review, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
@@ -420,7 +419,7 @@ function App() {
       next_week: saved.nextWeek, created_at: saved.createdAt,
     });
   }
- 
+
   function convertThought(thought, conversion) {
     const patches = {
       task: { category: 'next-actions', status: 'Open' },
@@ -436,33 +435,33 @@ function App() {
     };
     updateThought(thought.id, patches[conversion] || {});
   }
- 
+
   function promoteToToday(slot, id, text) {
     const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
     const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
     const valueKey = keyMap[slot];
     if (!valueKey) return;
- 
+
     if (idKeyMap[slot]) updateToday(idKeyMap[slot], id);
     updateToday(valueKey, text.trim());
   }
- 
+
   function completeSlot(slot, linkedId) {
     const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
     const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
     const valueKey = keyMap[slot];
     if (!valueKey) return;
- 
+
     if (linkedId) updateThought(linkedId, { status: 'Done' });
     if (idKeyMap[slot]) updateToday(idKeyMap[slot], '');
     updateToday(valueKey, '');
   }
- 
+
   function goToCategory(catId) {
     setSelectedCategory(catId);
     setActiveTab('sort');
   }
- 
+
   const navItems = [
     { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
@@ -470,15 +469,15 @@ function App() {
     { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
     { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
   ];
- 
+
   if (loading) return <LoadingScreen />;
- 
+
   const slotsSet = today ? [today.mainMissionText, today.bodyWin, today.lifeWinText, today.avoiding].filter((v) => v && v.trim() && v.trim().length > 20).length : 0;
   const commandScore = Math.max(5, Math.min(100,
     Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
- 
+
   return (
     <div className="app-shell">
       <header className="topbar topbar-with-strip">
@@ -498,13 +497,13 @@ function App() {
           setSelectedCategory={setSelectedCategory}
         />
       </header>
- 
+
       <main className="main-content">
         {activeTab === 'today' && today && (
           <TodayView
             today={today} updateToday={updateToday} missions={pinnedMissions} allMissions={missions}
             openTasks={openTasks} openLoops={openLoops} noiseItems={noiseItems}
-            activeThoughts={activeThoughts}
+            activeThoughts={activeThoughts} doneThoughts={doneThoughts}
             energyFilter={energyFilter} setEnergyFilter={setEnergyFilter}
             energyFilteredTasks={energyFilteredTasks}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
@@ -544,7 +543,7 @@ function App() {
           />
         )}
       </main>
- 
+
       <nav className="bottom-nav">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -556,7 +555,7 @@ function App() {
           );
         })}
       </nav>
- 
+
       {modal?.type === 'quick-capture' && (
         <Modal title="Quick Capture" onClose={() => setModal(null)}>
           <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} missions={missions} compact />
@@ -601,9 +600,9 @@ function App() {
     </div>
   );
 }
- 
+
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals }) {
   const defaultSlots = {
     mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
     bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
@@ -645,13 +644,14 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       onComplete: () => completeSlot('avoiding', ''),
     },
   ];
- 
+
   const slotsSet = slotConfigs.filter((slot) => isMeaningful(slot.value, slot.fallback)).length;
+  const clearedToday = (doneThoughts || []).filter((t) => getDayKey(t.completedAt || t.createdAt) === getLocalTodayKey()).length;
   const commandScore = Math.max(5, Math.min(100,
     Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
- 
+
   return (
     <section className="screen stack">
       <div className="hero-card hero-command-layout">
@@ -667,11 +667,12 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
           openTasks={openTasks.length}
           openLoops={openLoops.length}
           noiseCount={noiseItems.length}
+          clearedToday={clearedToday}
         />
       </div>
- 
+
       <DailyQuote />
- 
+
       <div className="card todays-command-card">
         <div className="section-header">
           <div><p className="eyebrow">Behavioral Modes</p><h2>Today's Command Cards</h2><p className="muted">Focus, Energy, Growth, and Execution — 1-2 priorities each.</p></div>
@@ -805,39 +806,73 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
     </section>
   );
 }
- 
-function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount }) {
+
+function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount, clearedToday }) {
+  const stateConfig = {
+    'Locked In':        { color: '#60a5fa', glow: 'rgba(96,165,250,0.25)',  icon: '🔒', tagline: 'Elite discipline. Momentum is yours.' },
+    'In Command':       { color: '#f59e0b', glow: 'rgba(245,158,11,0.25)', icon: '✦',  tagline: "You're executing. Keep the focus sharp." },
+    'Building Command': { color: '#fbbf24', glow: 'rgba(251,191,36,0.2)',  icon: '↗',  tagline: 'Building momentum. Stay consistent.' },
+    'Scattered':        { color: '#f87171', glow: 'rgba(248,113,113,0.2)', icon: '!',  tagline: 'Reset now. One action changes everything.' },
+  };
+  const cfg = stateConfig[state] || stateConfig['In Command'];
+  const circumference = 2 * Math.PI * 42;
+  const dashOffset = circumference * (1 - score / 100);
+
+  const metrics = [
+    { label: 'cards set', value: `${slotsSet}/4` },
+    { label: 'action',    value: openTasks },
+    { label: 'cleared',   value: clearedToday },
+    { label: 'contained', value: noiseCount },
+  ];
+
   return (
     <div className="command-ring-panel">
-      <div className="command-ring" style={{ '--command-score': `${score * 3.6}deg` }}>
-        <div className="command-ring-inner">
+      <div className="command-ring-svg-wrap">
+        <svg width="110" height="110" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
+          <circle
+            cx="55" cy="55" r="42" fill="none"
+            stroke={cfg.color} strokeWidth="9"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            style={{ transform: 'rotate(-90deg)', transformOrigin: '55px 55px', filter: `drop-shadow(0 0 8px ${cfg.color})` }}
+          />
+        </svg>
+        <div className="command-ring-center">
           <strong>{score}%</strong>
-          <span>Command State</span>
+          <span>COMMAND<br />STATE</span>
         </div>
       </div>
       <div className="command-ring-copy">
-        <p className="command-state-label">{state}</p>
+        <div className="command-state-header">
+          <span className="command-state-icon" style={{ color: cfg.color }}>{cfg.icon}</span>
+          <span className="command-state-label" style={{ color: cfg.color }}>{state}</span>
+        </div>
+        <p className="command-state-tagline">{cfg.tagline}</p>
         <div className="command-ring-metrics">
-          <span>{slotsSet}/4 cards set</span>
-          <span>{openTasks} actions</span>
-          <span>{openLoops} loops</span>
-          <span>{noiseCount} noise</span>
+          {metrics.map((m) => (
+            <div key={m.label} className="command-metric-tile">
+              <strong>{m.value}</strong>
+              <span>{m.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
- 
+
 function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTab, setSelectedCategory }) {
   const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
   const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
- 
+
   function goTo(tab, cat) {
     if (setActiveTab) setActiveTab(tab);
     if (cat && setSelectedCategory) setSelectedCategory(cat);
   }
- 
+
   return (
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
@@ -850,7 +885,7 @@ function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTa
     </div>
   );
 }
- 
+
 function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, onComplete, linkedId, isSet }) {
   return (
     <div className={`today-slot today-command-card-slot today-command-${tone} ${linkedId ? 'linked-slot-card' : ''} ${isSet ? 'is-set' : 'needs-set'}`}>
@@ -880,7 +915,7 @@ function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon,
     </div>
   );
 }
- 
+
 function getBehaviorMode(thought) {
   const text = `${thought.text || ''} ${thought.nextAction || ''} ${thought.notes || ''}`.toLowerCase();
   if (['problems', 'decisions', 'anxiety-noise'].includes(thought.category)) return 'main';
@@ -889,14 +924,14 @@ function getBehaviorMode(thought) {
   if (['active-missions', 'next-actions', 'relationships', 'money-adult-life', 'waiting-on'].includes(thought.category)) return 'avoiding';
   return 'avoiding';
 }
- 
+
 const behaviorModeMeta = {
   main: { label: 'Focus', tone: 'red', icon: Crosshair, description: 'Decisions, problems, deep work, and the thing stealing mental bandwidth.' },
   body: { label: 'Energy', tone: 'orange', icon: Activity, description: 'Body, recovery, stability, maintenance, and anything that keeps the machine running.' },
   life: { label: 'Growth', tone: 'amber', icon: Layers, description: 'Learning, reflection, future-building, skills, and long-term progress.' },
   avoiding: { label: 'Execution', tone: 'blue', icon: Zap, description: 'Ship it, respond, close the loop, move the real world forward.' },
 };
- 
+
 function scoreBehaviorCandidate(thought, mode) {
   const daysOld = getDaysOld(thought.createdAt);
   let score = 0;
@@ -913,7 +948,7 @@ function scoreBehaviorCandidate(thought, mode) {
   score += Math.min(daysOld, 10);
   return score;
 }
- 
+
 function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks, loops, onSelect }) {
   const meta = behaviorModeMeta[mode] || behaviorModeMeta.avoiding;
   const ModeIcon = meta.icon;
@@ -922,7 +957,7 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks,
     .sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
   const recommended = candidates.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
   const fallback = candidates.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
- 
+
   function renderItem(t) {
     const cat = getCategory(t.category);
     const CatIcon = cat.icon;
@@ -934,7 +969,7 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks,
       </button>
     );
   }
- 
+
   return (
     <div className="promote-modal">
       <div className={`behavior-mode-explainer behavior-mode-${meta.tone}`}>
@@ -961,11 +996,11 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks,
     </div>
   );
 }
- 
+
 // ─── Manage Goals Modal ────────────────────────────────────────────────────
 function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
   const [selected, setSelected] = useState(pinnedGoalIds.length > 0 ? pinnedGoalIds : missions.slice(0, 3).map((m) => m.id));
- 
+
   function toggle(id) {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
@@ -973,7 +1008,7 @@ function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
       return [...prev, id];
     });
   }
- 
+
   return (
     <div className="manage-goals-modal">
       <p className="muted small">Choose up to 3 goals to pin to your Today view. Tap to toggle.</p>
@@ -1010,7 +1045,7 @@ function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
     </div>
   );
 }
- 
+
 // ─── Close Day Modal ───────────────────────────────────────────────────────
 const CLOSE_DAY_QUESTIONS = [
   { id: 'mission',    label: 'Mission',          question: 'Did I move a mission forward today?' },
@@ -1019,29 +1054,29 @@ const CLOSE_DAY_QUESTIONS = [
   { id: 'mind',       label: 'Mind',              question: 'Did I quiet the noise and not let worry loops run me?' },
   { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
 ];
- 
+
 function CloseDayModal({ thoughts, missions, onClose }) {
   const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary'
   const [gutCall, setGutCall] = useState('');
   const [answers, setAnswers] = useState({});
   const [copied, setCopied] = useState(false);
- 
+
   const today = new Date();
   const todayKey = getLocalTodayKey();
- 
+
   const todayDone = thoughts.filter((t) => t.status === 'Done' && getDayKey(t.completedAt || t.createdAt) === todayKey);
   const todayActive = thoughts.filter((t) => t.status !== 'Done' && getDayKey(t.createdAt) === todayKey);
   const missionsTouched = missions.filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
- 
+
   const score = Object.values(answers).filter(Boolean).length;
- 
+
   function answerQuestion(id, val) {
     const updated = { ...answers, [id]: val };
     setAnswers(updated);
     const allAnswered = CLOSE_DAY_QUESTIONS.every((q) => updated[q.id] !== undefined);
     if (allAnswered) setTimeout(() => setStep('summary'), 300);
   }
- 
+
   function buildSummary() {
     const dateStr = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const lines = [];
@@ -1066,17 +1101,17 @@ function CloseDayModal({ thoughts, missions, onClose }) {
     lines.push('— paste into Apple Journal and write your personal review below —');
     return lines.join('\n');
   }
- 
+
   function copyToClipboard() {
     navigator.clipboard.writeText(buildSummary()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
- 
+
   const currentQIndex = CLOSE_DAY_QUESTIONS.findIndex((q) => answers[q.id] === undefined);
   const currentQ = currentQIndex >= 0 ? CLOSE_DAY_QUESTIONS[currentQIndex] : null;
- 
+
   return (
     <div className="closeday-modal">
       {step === 'gut' && (
@@ -1095,7 +1130,7 @@ function CloseDayModal({ thoughts, missions, onClose }) {
           </div>
         </div>
       )}
- 
+
       {step === 'questions' && currentQ && (
         <div className="closeday-step">
           <div className="closeday-progress">
@@ -1112,7 +1147,7 @@ function CloseDayModal({ thoughts, missions, onClose }) {
           <p className="closeday-progress-label">{currentQIndex + 1} of {CLOSE_DAY_QUESTIONS.length}</p>
         </div>
       )}
- 
+
       {step === 'summary' && (
         <div className="closeday-step">
           <div className="closeday-score-block">
@@ -1138,7 +1173,7 @@ function CloseDayModal({ thoughts, missions, onClose }) {
     </div>
   );
 }
- 
+
 // ─── Capture ───────────────────────────────────────────────────────────────
 function CaptureView({ addThought, missions, setActiveTab }) {
   return (
@@ -1148,7 +1183,7 @@ function CaptureView({ addThought, missions, setActiveTab }) {
     </section>
   );
 }
- 
+
 function CaptureForm({ addThought, missions, compact = false }) {
   const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
   const selected = form.category ? getCategory(form.category) : null;
@@ -1200,7 +1235,7 @@ function CaptureForm({ addThought, missions, compact = false }) {
     </form>
   );
 }
- 
+
 // ─── Sort View ─────────────────────────────────────────────────────────────
 function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
   const [collapsedTiers, setCollapsedTiers] = useState({});
@@ -1256,7 +1291,7 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
     </section>
   );
 }
- 
+
 function CategoryDetail({ category, thoughts, updateThought, deleteThought, convertThought, setModal }) {
   const CIcon = category.icon;
   return (
@@ -1272,7 +1307,7 @@ function CategoryDetail({ category, thoughts, updateThought, deleteThought, conv
     </div>
   );
 }
- 
+
 function TriageCard({ thought, updateThought, deleteThought, convertThought, setModal }) {
   return (
     <article className="thought-card triage">
@@ -1285,7 +1320,7 @@ function TriageCard({ thought, updateThought, deleteThought, convertThought, set
     </article>
   );
 }
- 
+
 function ThoughtCard({ thought, updateThought, deleteThought, convertThought, setModal, compact = false, index }) {
   const category = getCategory(thought.category);
   const CIcon = category.icon;
@@ -1334,7 +1369,7 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
     </article>
   );
 }
- 
+
 function ConversionButtons({ thought, convertThought }) {
   const buttons = [
     { id: 'task', label: 'Task', icon: CheckCircle2 }, { id: 'problem', label: 'Problem', icon: HelpCircle },
@@ -1347,7 +1382,7 @@ function ConversionButtons({ thought, convertThought }) {
     </div>
   );
 }
- 
+
 function ThoughtEditForm({ thought, missions, updateThought }) {
   const [form, setForm] = useState({ ...thought });
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
@@ -1389,7 +1424,7 @@ function ThoughtEditForm({ thought, missions, updateThought }) {
     </form>
   );
 }
- 
+
 // ─── Goals View ────────────────────────────────────────────────────────────
 const goalAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future', 'Other'];
 const goalStatuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
@@ -1398,7 +1433,7 @@ const goalAreaColors = {
   'Relationships': 'pink', 'Family': 'orange', 'Personal': 'teal',
   'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
 };
- 
+
 function GoalsView({ missions, thoughts, addMission, updateMission, deleteMission, setActiveTab, setSelectedCategory, highlightGoalId, setHighlightGoalId }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work', targetDate: '' });
@@ -1412,7 +1447,7 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
     setCustomArea('');
     setShowForm(false);
   }
- 
+
   const byArea = useMemo(() => {
     const map = {};
     missions.forEach((m) => {
@@ -1421,14 +1456,14 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
     });
     return Object.entries(map);
   }, [missions]);
- 
+
   return (
     <section className="screen stack">
       <div className="section-header goals-page-header">
         <div className="goals-header-copy"><p className="eyebrow">Big Picture</p><h2>Goals</h2><p className="muted">Your major life objectives. Active tasks in Command serve these.</p></div>
         <button className="primary-button compact" onClick={() => setShowForm((v) => !v)}><Plus size={16} /> Add Goal</button>
       </div>
- 
+
       {showForm && (
         <form className="card capture-form" onSubmit={submit}>
           <div className="mini-header"><Mountain size={18} /><h3>New Goal</h3></div>
@@ -1451,11 +1486,11 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
           <button className="primary-button" type="submit"><Target size={17} /> Save Goal</button>
         </form>
       )}
- 
+
       {missions.length === 0 && !showForm && (
         <div className="card"><EmptyState icon={Mountain} title="No goals yet" text="Add your first big-picture goal to start connecting your daily actions to your life direction." /></div>
       )}
- 
+
       {byArea.map(([area, areaGoals]) => {
         const areaMeta = getAreaMeta(area);
         return (
@@ -1487,12 +1522,12 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
     </section>
   );
 }
- 
+
 function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory, isHighlighted, onHighlightClear }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const cardRef = React.useRef(null);
- 
+
   useEffect(() => {
     if (isHighlighted) {
       setExpanded(true);
@@ -1502,12 +1537,12 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
       }, 80);
     }
   }, [isHighlighted]);
- 
+
   const statusTone = goal.status === 'On Track' ? 'green' : goal.status === 'Slipping' ? 'amber' : goal.status === 'Blocked' ? 'red' : goal.status === 'Done' ? 'slate' : 'default';
   const progress = linkedDone.length + linkedActive.length > 0
     ? Math.round((linkedDone.length / (linkedDone.length + linkedActive.length)) * 100)
     : 0;
- 
+
   return (
     <article className={`goal-card ${isHighlighted ? 'goal-card-highlighted' : ''}`} ref={cardRef}>
       <div className="goal-card-top">
@@ -1530,13 +1565,13 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
           </button>
         </div>
       </div>
- 
+
       {/* Status always visible */}
       <select value={goal.status} onChange={(e) => updateMission(goal.id, { status: e.target.value })}
         style={{ width: '100%', borderRadius: 999, fontSize: '0.8rem', padding: '7px 12px' }}>
         {goalStatuses.map((s) => <option key={s}>{s}</option>)}
       </select>
- 
+
       {/* Progress bar */}
       {(linkedActive.length + linkedDone.length) > 0 && (
         <div className="goal-progress-row">
@@ -1546,7 +1581,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
           <span className="goal-progress-label">{linkedDone.length}/{linkedDone.length + linkedActive.length} tasks done</span>
         </div>
       )}
- 
+
       {expanded && (
         <div className="goal-expanded">
           {!editing && goal.weeklyGoal && (
@@ -1561,7 +1596,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
               <p className="goal-section-text"><ArrowRight size={13} /> {goal.nextAction}</p>
             </div>
           )}
- 
+
           {editing && (
             <div className="goal-card-actions">
               <div className="form-grid" style={{ gap: 8 }}>
@@ -1584,7 +1619,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
               </div>
             </div>
           )}
- 
+
           {/* Linked active items */}
           {linkedActive.length > 0 && (
             <div className="goal-section">
@@ -1603,7 +1638,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
               </div>
             </div>
           )}
- 
+
           {linkedDone.length > 0 && (
             <div className="goal-section">
               <span className="goal-section-label">Completed ({linkedDone.length})</span>
@@ -1617,11 +1652,11 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
               </div>
             </div>
           )}
- 
+
           {linkedActive.length === 0 && linkedDone.length === 0 && (
             <p className="muted small">No active items linked yet. Set "Related Goal" when capturing a thought.</p>
           )}
- 
+
           {!editing && (
             <button className="secondary-button compact" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
               <Layers size={14} /> Go to Sort
@@ -1632,7 +1667,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
     </article>
   );
 }
- 
+
 // ─── Progress ──────────────────────────────────────────────────────────────
 function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
   return (
@@ -1647,7 +1682,7 @@ function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTa
     </section>
   );
 }
- 
+
 function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
   const byDay = useMemo(() => {
     const map = {};
@@ -1658,20 +1693,20 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     });
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [doneThoughts]);
- 
+
   // All days expanded by default; user can collapse
   const [collapsedDays, setCollapsedDays] = useState({});
   function toggleDay(key) { setCollapsedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
- 
+
   const thisWeekCount = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= cutoff).length;
   }, [doneThoughts]);
- 
+
   const previousDayCount = byDay[1] ? byDay[1][1].length : 0;
   const proofDays = byDay.length;
   const latestProof = byDay[0] ? byDay[0][1].length : 0;
- 
+
   if (doneThoughts.length === 0) {
     return (
       <div className="card accomplishment-empty-card">
@@ -1684,32 +1719,43 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
       <div className="accomplishment-hero-card">
         <div className="accomplishment-hero-copy">
           <p className="eyebrow">Identity Evidence</p>
-          <h2>Proof Im Becoming the man I want</h2>
-          <p>Every checkmark is a receipt. This page is not a task archive — it is proof that you kept promises to yourself.</p>
+          <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
+          <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
         </div>
         <div className="proof-score-card">
           <Trophy size={22} />
           <strong>{thisWeekCount}</strong>
-          <span>proof points this week</span>
+          <span>WORDS HONORED<br />THIS WEEK</span>
         </div>
       </div>
- 
+
       <div className="accomplish-summary identity-summary">
-        <div className="accomplish-stat identity-stat"><strong>{doneThoughts.length}</strong><span>Total promises kept</span></div>
-        <div className="accomplish-stat identity-stat"><strong>{thisWeekCount}</strong><span>Promises kept this week</span></div>
-        <div className="accomplish-stat identity-stat"><strong>{previousDayCount}</strong><span>Yesterdays prmoises</span></div>
-        <div className="accomplish-stat identity-stat"><strong>{proofDays}</strong><span>Days with evidence</span></div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon">🔥</div>
+          <strong>{previousDayCount}</strong>
+          <span>Yesterday</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon">📅</div>
+          <strong>{thisWeekCount}</strong>
+          <span>This Week</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon">🎯</div>
+          <strong>{doneThoughts.length}</strong>
+          <span>Total</span>
+        </div>
+        <div className="accomplish-stat identity-stat">
+          <div className="identity-stat-icon">⭐</div>
+          <strong>{proofDays}</strong>
+          <span>Days Strong</span>
+        </div>
       </div>
- 
-      <div className="card momentum-signal-card">
-        <div className="mini-header"><Zap size={18} /><h3>Momentum Signal</h3></div>
-        <p><strong>{latestProof}</strong> item{latestProof === 1 ? '' : 's'} in your latest proof day. Keep stacking small wins; this is how confidence becomes believable.</p>
-      </div>
- 
+
       <div className="evidence-section-header">
-        <div><p className="eyebrow">Evidence Timeline</p><h2>Days You Kept Promises</h2><p className="muted">Grouped by day and category so you can see what kind of person you are becoming.</p></div>
+        <div><p className="eyebrow">Evidence Timeline</p><h2>Days You Kept Your Word</h2><p className="muted">Grouped by day — the record of who you're becoming.</p></div>
       </div>
- 
+
       {byDay.map(([dayKey, items]) => {
         const byCat = {};
         const isCollapsed = collapsedDays[dayKey];
@@ -1749,11 +1795,11 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     </div>
   );
 }
- 
+
 function AccomplishItem({ t, updateThought, setModal }) {
   const [showMove, setShowMove] = useState(false);
   const currentDay = getDayKey(t.completedAt || t.createdAt);
- 
+
   function moveToDay(newDate) {
     // Build a completedAt timestamp at noon local time on the chosen date
     const [year, month, day] = newDate.split('-').map(Number);
@@ -1761,7 +1807,7 @@ function AccomplishItem({ t, updateThought, setModal }) {
     updateThought(t.id, { completedAt: d.toISOString() });
     setShowMove(false);
   }
- 
+
   return (
     <div className="accomplish-item accomplish-item-editable">
       <CheckCircle2 size={14} className="accomplish-check" />
@@ -1793,7 +1839,7 @@ function AccomplishItem({ t, updateThought, setModal }) {
     </div>
   );
 }
- 
+
 function ReviewTab({ activeThoughts, reviews, saveReview, goToCategory }) {
   const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
   function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
@@ -1851,5 +1897,5 @@ function ReviewTab({ activeThoughts, reviews, saveReview, goToCategory }) {
     </div>
   );
 }
- 
+
 createRoot(document.getElementById('root')).render(<App />);
