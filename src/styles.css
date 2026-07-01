@@ -74,7 +74,7 @@ p { line-height: 1.55; }
   width: min(1120px, 100%);
   margin: 0 auto;
   min-height: 100vh;
-  padding: 18px 16px 108px;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 108px);
 }
 
 .topbar {
@@ -778,7 +778,7 @@ input:focus, textarea:focus, select:focus {
   position: fixed;
   z-index: 20;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
   transform: translateX(-50%);
   width: min(680px, calc(100% - 24px));
   display: grid;
@@ -1958,6 +1958,10 @@ input:focus, textarea:focus, select:focus {
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-top: 16px;
+}
+@media (max-width: 520px) {
+  .hero-stat-row { grid-template-columns: repeat(2, 1fr); }
+  .accomplishment-hero-card { min-height: 420px; }
 }
 .identity-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
