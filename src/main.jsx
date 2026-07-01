@@ -1729,35 +1729,34 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="accomplish-summary identity-summary">
-        <div className="accomplish-stat identity-stat identity-stat--fire">
-          <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={22} /></div>
-          <div className="identity-stat-body">
-            <strong>{previousDayCount}</strong>
-            <span>Yesterday</span>
+        <div className="hero-stat-row">
+          <div className="accomplish-stat identity-stat identity-stat--fire">
+            <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={22} /></div>
+            <div className="identity-stat-body">
+              <strong>{previousDayCount}</strong>
+              <span>Yesterday</span>
+            </div>
           </div>
-        </div>
-        <div className="accomplish-stat identity-stat identity-stat--calendar">
-          <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={22} /></div>
-          <div className="identity-stat-body">
-            <strong>{thisWeekCount}</strong>
-            <span>This Week</span>
+          <div className="accomplish-stat identity-stat identity-stat--calendar">
+            <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={22} /></div>
+            <div className="identity-stat-body">
+              <strong>{thisWeekCount}</strong>
+              <span>This Week</span>
+            </div>
           </div>
-        </div>
-        <div className="accomplish-stat identity-stat identity-stat--target">
-          <div className="identity-stat-icon identity-stat-icon--target"><Target size={22} /></div>
-          <div className="identity-stat-body">
-            <strong>{doneThoughts.length}</strong>
-            <span>Total</span>
+          <div className="accomplish-stat identity-stat identity-stat--target">
+            <div className="identity-stat-icon identity-stat-icon--target"><Target size={22} /></div>
+            <div className="identity-stat-body">
+              <strong>{doneThoughts.length}</strong>
+              <span>Total</span>
+            </div>
           </div>
-        </div>
-        <div className="accomplish-stat identity-stat identity-stat--green">
-          <div className="identity-stat-icon identity-stat-icon--green"><Star size={22} /></div>
-          <div className="identity-stat-body">
-            <strong className="stat-green">{proofDays}</strong>
-            <span>Days Strong</span>
+          <div className="accomplish-stat identity-stat identity-stat--green">
+            <div className="identity-stat-icon identity-stat-icon--green"><Star size={22} /></div>
+            <div className="identity-stat-body">
+              <strong>{proofDays}</strong>
+              <span>Days Strong</span>
+            </div>
           </div>
         </div>
       </div>
