@@ -1694,9 +1694,9 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [doneThoughts]);
 
-  // All days expanded by default; user can collapse
-  const [collapsedDays, setCollapsedDays] = useState({});
-  function toggleDay(key) { setCollapsedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
+  // Days collapsed by default; user can expand
+  const [expandedDays, setExpandedDays] = useState({});
+  function toggleDay(key) { setExpandedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
 
   const thisWeekCount = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -1721,11 +1721,13 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
           <p className="eyebrow">Identity Evidence</p>
           <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
           <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
-        </div>
-        <div className="proof-score-card">
-          <Trophy size={28} className="proof-trophy-icon" />
-          <strong>{thisWeekCount}</strong>
-          <span>PROMISES HONORED<br />THIS WEEK</span>
+          <div className="proof-score-card">
+            <Trophy size={24} className="proof-trophy-icon" />
+            <div className="proof-score-body">
+              <strong>{thisWeekCount}</strong>
+              <span>PROMISES HONORED THIS WEEK</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1766,7 +1768,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
 
       {byDay.map(([dayKey, items]) => {
         const byCat = {};
-        const isCollapsed = collapsedDays[dayKey];
+        const isExpanded = expandedDays[dayKey];
         items.forEach((t) => { const cid = t.category || 'unsorted'; if (!byCat[cid]) byCat[cid] = []; byCat[cid].push(t); });
         return (
           <div key={dayKey} className="card accomplish-day identity-day-card">
@@ -1777,9 +1779,9 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
                 <p className="accomplish-day-count">{items.length} proof point{items.length === 1 ? '' : 's'} logged</p>
               </div>
               <span className="identity-day-badge">Evidence</span>
-              {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+              {isExpanded ? <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
             </button>
-            {!isCollapsed && (
+            {isExpanded && (
               <div className="accomplish-cat-list identity-evidence-list">
                 {Object.entries(byCat).map(([catId, catItems]) => {
                   const cat = catId === 'unsorted' ? { label: 'Unsorted', short: 'Unsorted', icon: CircleDashed, color: 'slate' } : getCategory(catId);
