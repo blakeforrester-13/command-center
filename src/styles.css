@@ -2171,12 +2171,14 @@ body {
 }
 
 .hero-card,
-.todays-command-card,
-.accomplishment-hero-card {
+.todays-command-card {
   border-color: rgba(255,90,61,0.18);
   background:
     radial-gradient(circle at 84% 16%, rgba(255,90,61,0.075), transparent 34%),
     linear-gradient(135deg, rgba(255,90,61,0.045), rgba(20,26,36,0.96) 58%);
+}
+.accomplishment-hero-card {
+  border-color: rgba(255,90,61,0.18);
 }
 
 .proof-score-card,
