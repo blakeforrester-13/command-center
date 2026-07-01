@@ -1929,14 +1929,16 @@ input:focus, textarea:focus, select:focus {
 .accomplishments-page { gap: 14px; }
 .accomplishment-hero-card {
   display: flex;
-  align-items: flex-start;
-  padding: 24px 22px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 22px 16px;
   border-radius: var(--radius);
   border: 1px solid rgba(245,158,11,0.2);
   background:
-    linear-gradient(to right, rgba(10,13,18,0.95) 26%, rgba(10,13,18,0.55) 50%, rgba(10,13,18,0.0) 100%),
-    url('/mountain-hero.png') top right/cover no-repeat;
-  min-height: 250px;
+    linear-gradient(to bottom, rgba(10,13,18,0.0) 0%, rgba(10,13,18,0.0) 40%, rgba(10,13,18,0.82) 78%, rgba(10,13,18,0.97) 100%),
+    linear-gradient(to right, rgba(10,13,18,0.92) 28%, rgba(10,13,18,0.4) 55%, rgba(10,13,18,0.0) 100%),
+    url('/mountain-hero.png') top center/cover no-repeat;
+  min-height: 380px;
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
@@ -1951,6 +1953,12 @@ input:focus, textarea:focus, select:focus {
 }
 .hero-accent { color: var(--accent); }
 .accomplishment-hero-copy p { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4; }
+.hero-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
 .identity-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -1982,10 +1990,10 @@ input:focus, textarea:focus, select:focus {
 .identity-stat-icon--green    { background: rgba(52,211,153,0.15);  border: 1px solid rgba(52,211,153,0.3);  color: #34d399; }
 .identity-stat-body { display: flex; flex-direction: column; gap: 2px; }
 .identity-stat strong            { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
-.identity-stat--fire strong      { color: #f87171; }
-.identity-stat--calendar strong  { color: #60a5fa; }
-.identity-stat--target strong    { color: #f59e0b; }
-.identity-stat--green strong     { color: #34d399; }
+.identity-stat--fire strong      { color: #f87171 !important; }
+.identity-stat--calendar strong  { color: #60a5fa !important; }
+.identity-stat--target strong    { color: #f59e0b !important; }
+.identity-stat--green strong     { color: #34d399 !important; }
 .identity-stat span { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
 .stat-green { color: #34d399 !important; }
 .proof-score-card {
