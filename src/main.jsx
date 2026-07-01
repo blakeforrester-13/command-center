@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
   MoonStar, RotateCcw, Copy, Check, Mountain, Flame, Lightbulb, PauseCircle,
   Briefcase, GraduationCap, Heart, User, Code, Telescope,
-  Crosshair, Activity,
+  Crosshair, Activity, Star,
 } from 'lucide-react';
 import './styles.css';
 
@@ -1731,22 +1731,22 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
 
       <div className="accomplish-summary identity-summary">
         <div className="accomplish-stat identity-stat">
-          <div className="identity-stat-icon">🔥</div>
+          <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={18} /></div>
           <strong>{previousDayCount}</strong>
           <span>Yesterday</span>
         </div>
         <div className="accomplish-stat identity-stat">
-          <div className="identity-stat-icon">📅</div>
+          <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={18} /></div>
           <strong>{thisWeekCount}</strong>
           <span>This Week</span>
         </div>
         <div className="accomplish-stat identity-stat">
-          <div className="identity-stat-icon">🎯</div>
+          <div className="identity-stat-icon identity-stat-icon--target"><Target size={18} /></div>
           <strong>{doneThoughts.length}</strong>
           <span>Total</span>
         </div>
         <div className="accomplish-stat identity-stat">
-          <div className="identity-stat-icon">⭐</div>
+          <div className="identity-stat-icon identity-stat-icon--star"><Star size={18} /></div>
           <strong>{proofDays}</strong>
           <span>Days Strong</span>
         </div>
