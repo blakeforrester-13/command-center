@@ -255,8 +255,11 @@ function DailyQuote() {
   const quote = getDailyQuote();
   return (
     <div className="daily-quote-card">
-      <p className="daily-quote-text">"{quote.text}"</p>
-      <p className="daily-quote-author">— {quote.author}</p>
+      <span className="daily-quote-mark">"</span>
+      <div className="daily-quote-body">
+        <p className="daily-quote-text">{quote.text}</p>
+        <p className="daily-quote-author">— {quote.author}</p>
+      </div>
     </div>
   );
 }
@@ -819,10 +822,10 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount,
   const dashOffset = circumference * (1 - score / 100);
 
   const metrics = [
-    { label: 'cards set', value: `${slotsSet}/4` },
-    { label: 'action',    value: openTasks },
-    { label: 'cleared',   value: clearedToday },
-    { label: 'contained', value: noiseCount },
+    { label: 'Set',     value: `${slotsSet}/4`, tone: 'amber' },
+    { label: 'Actions', value: openTasks,       tone: 'green' },
+    { label: 'Cleared', value: clearedToday,    tone: 'blue' },
+    { label: 'Noise',   value: noiseCount,      tone: 'red' },
   ];
 
   return (
@@ -852,7 +855,7 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount,
         <p className="command-state-tagline">{cfg.tagline}</p>
         <div className="command-ring-metrics">
           {metrics.map((m) => (
-            <div key={m.label} className="command-metric-tile">
+            <div key={m.label} className={`command-metric-tile command-metric-${m.tone}`}>
               <strong>{m.value}</strong>
               <span>{m.label}</span>
             </div>
@@ -1512,6 +1515,7 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
                     setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
                     isHighlighted={highlightGoalId === m.id}
                     onHighlightClear={() => setHighlightGoalId('')}
+                    areaColor={areaMeta.color}
                   />
                 );
               })}
@@ -1523,7 +1527,7 @@ function GoalsView({ missions, thoughts, addMission, updateMission, deleteMissio
   );
 }
 
-function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory, isHighlighted, onHighlightClear }) {
+function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory, isHighlighted, onHighlightClear, areaColor }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const cardRef = React.useRef(null);
@@ -1544,7 +1548,7 @@ function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission
     : 0;
 
   return (
-    <article className={`goal-card ${isHighlighted ? 'goal-card-highlighted' : ''}`} ref={cardRef}>
+    <article className={`goal-card goal-card-tint-${areaColor || 'slate'} ${isHighlighted ? 'goal-card-highlighted' : ''}`} ref={cardRef}>
       <div className="goal-card-top">
         <div className="goal-card-main">
           <div className="goal-card-title-row">
@@ -1678,7 +1682,7 @@ function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTa
         <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
       </div>
       {subTab === 'accomplishments' && <AccomplishmentsTab doneThoughts={doneThoughts} updateThought={updateThought} setModal={setModal} />}
-      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
+      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
     </section>
   );
 }
@@ -1721,13 +1725,6 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
           <p className="eyebrow">Identity Evidence</p>
           <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
           <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
-          <div className="proof-score-card">
-            <Trophy size={24} className="proof-trophy-icon" />
-            <div className="proof-score-body">
-              <strong>{thisWeekCount}</strong>
-              <span>PROMISES HONORED THIS WEEK</span>
-            </div>
-          </div>
         </div>
         <div className="hero-stat-row">
           <div className="accomplish-stat identity-stat identity-stat--fire">
@@ -1762,7 +1759,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
       </div>
 
       <div className="evidence-section-header">
-        <div><p className="eyebrow">Evidence Timeline</p><h2>Days You Kept Your Word</h2><p className="muted">Grouped by day — the record of who you're becoming.</p></div>
+        <div><p className="eyebrow">Your Track Record</p><h2>Day by Day</h2><p className="muted">Every completed item, organized by the day you closed it.</p></div>
       </div>
 
       {byDay.map(([dayKey, items]) => {
@@ -1849,14 +1846,16 @@ function AccomplishItem({ t, updateThought, setModal }) {
   );
 }
 
-function ReviewTab({ activeThoughts, reviews, saveReview, goToCategory }) {
+function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCategory }) {
   const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
   function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
   function submit(e) { e.preventDefault(); saveReview(review); setReview({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' }); }
+  const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const counts = categories.map((c) => ({
     ...c,
     count: activeThoughts.filter((t) => t.category === c.id).length,
     staleCount: activeThoughts.filter((t) => t.category === c.id && stalenessLabel(getDaysOld(t.createdAt), c.id)?.urgent).length,
+    closedCount: doneThoughts.filter((t) => t.category === c.id && new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length,
   }));
   return (
     <div className="stack">
@@ -1869,11 +1868,12 @@ function ReviewTab({ activeThoughts, reviews, saveReview, goToCategory }) {
               <button key={item.id} className={`stat-card stat-card-btn stat-card-${item.color}`} onClick={() => goToCategory(item.id)}>
                 <SIcon size={16} className={`stat-icon-${item.color}`} /><strong>{item.count}</strong><span>{item.short}</span>
                 {item.staleCount > 0 && <span className="stat-stale">{item.staleCount} stale</span>}
+                <div className="stat-closed-row"><CheckCircle2 size={11} /><span>{item.closedCount} closed this wk</span></div>
               </button>
             );
           })}
         </div>
-        <p className="muted small" style={{ marginTop: 10 }}>Tap any category to jump to it in Sort.</p>
+        <p className="muted small" style={{ marginTop: 10 }}>Tap any category to jump to it in Sort. Closed counts items completed in the last 7 days.</p>
       </div>
       <form className="card capture-form" onSubmit={submit}>
         <div className="mini-header"><RefreshCw size={18} /><h3>Sunday Life Reset</h3></div>
