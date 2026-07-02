@@ -724,6 +724,18 @@ input:focus, textarea:focus, select:focus {
 }
 .stat-card strong { font-size: 1.25rem; color: var(--text); }
 .stat-card span { font-size: 0.74rem; }
+.stat-closed-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: var(--status-track);
+  opacity: 0.85;
+}
+.stat-closed-row svg { flex-shrink: 0; }
+.stat-closed-row span { font-size: 0.66rem; font-weight: 700; }
 
 /* â”€â”€ Review card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .review-card { padding: 14px; display: grid; gap: 8px; }
@@ -1292,26 +1304,50 @@ input:focus, textarea:focus, select:focus {
 
 /* â”€â”€ Fix 5: Daily Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .daily-quote-card {
-  padding: 16px 20px;
+  position: relative;
+  padding: 20px 22px 20px 54px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, rgba(167,139,250,0.07), rgba(245,158,11,0.05));
-  border: 1px solid rgba(167,139,250,0.15);
-  display: grid;
-  gap: 6px;
+  background: linear-gradient(135deg, rgba(167,139,250,0.14), rgba(245,158,11,0.09));
+  border: 1px solid rgba(167,139,250,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 24px rgba(167,139,250,0.08);
+  display: flex;
+  overflow: hidden;
 }
+.daily-quote-mark {
+  position: absolute;
+  top: -14px;
+  left: 8px;
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  font-family: Georgia, serif;
+  background: linear-gradient(135deg, #a78bfa, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.daily-quote-body { display: grid; gap: 8px; }
 .daily-quote-text {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  line-height: 1.55;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.45;
   font-style: italic;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 .daily-quote-author {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #c4b5fd, #fbbf24);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin: 0;
-  text-align: right;
 }
 
 /* â”€â”€ Fix 3: Accomplishments collapsible day header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1340,8 +1376,14 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid rgba(96, 165, 250, 0.22);
   border-radius: var(--radius);
   box-shadow: 0 0 0 1px rgba(96,165,250,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
+  flex-direction: column;
+  align-items: stretch;
 }
 .goals-header-copy { flex: 1; }
+.goals-page-header .primary-button.compact {
+  align-self: flex-end;
+  margin-top: 14px;
+}
 /* Mission area tag in Today view */
 .mission-area-tag {
   display: inline-flex;
@@ -1383,6 +1425,18 @@ input:focus, textarea:focus, select:focus {
   display: grid;
   gap: 12px;
 }
+.goal-card-tint-amber   { background: rgba(245,158,11,0.055); border-color: rgba(245,158,11,0.18); }
+.goal-card-tint-green   { background: rgba(52,211,153,0.055); border-color: rgba(52,211,153,0.18); }
+.goal-card-tint-orange  { background: rgba(251,146,60,0.055); border-color: rgba(251,146,60,0.18); }
+.goal-card-tint-purple  { background: rgba(167,139,250,0.055); border-color: rgba(167,139,250,0.18); }
+.goal-card-tint-yellow  { background: rgba(251,191,36,0.055); border-color: rgba(251,191,36,0.18); }
+.goal-card-tint-teal    { background: rgba(45,212,191,0.055); border-color: rgba(45,212,191,0.18); }
+.goal-card-tint-pink    { background: rgba(244,114,182,0.055); border-color: rgba(244,114,182,0.18); }
+.goal-card-tint-emerald { background: rgba(16,185,129,0.055); border-color: rgba(16,185,129,0.18); }
+.goal-card-tint-slate   { background: rgba(148,163,184,0.04); border-color: rgba(148,163,184,0.14); }
+.goal-card-tint-red     { background: rgba(248,113,113,0.055); border-color: rgba(248,113,113,0.18); }
+.goal-card-tint-blue    { background: rgba(96,165,250,0.055); border-color: rgba(96,165,250,0.18); }
+.goal-card-tint-rose    { background: rgba(251,113,133,0.055); border-color: rgba(251,113,133,0.18); }
 .goal-card-top {
   display: flex;
   align-items: flex-start;
@@ -1605,17 +1659,26 @@ input:focus, textarea:focus, select:focus {
   width: 110px;
   height: 110px;
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
+}
+.command-ring-svg-wrap svg {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 .command-ring-center {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 0 16px;
 }
 .command-ring-center strong {
   font-size: 1.5rem;
@@ -1690,6 +1753,14 @@ input:focus, textarea:focus, select:focus {
   text-align: center;
   line-height: 1.2;
 }
+.command-metric-amber  { background: rgba(245,158,11,0.09)  !important; border-color: rgba(245,158,11,0.22)  !important; }
+.command-metric-green  { background: rgba(52,211,153,0.09)  !important; border-color: rgba(52,211,153,0.22)  !important; }
+.command-metric-blue   { background: rgba(96,165,250,0.09)  !important; border-color: rgba(96,165,250,0.22)  !important; }
+.command-metric-red    { background: rgba(248,113,113,0.09) !important; border-color: rgba(248,113,113,0.22) !important; }
+.command-metric-amber strong { color: var(--cat-amber); }
+.command-metric-green strong { color: var(--cat-green); }
+.command-metric-blue strong  { color: var(--cat-blue); }
+.command-metric-red strong   { color: var(--cat-red); }
 .daily-command-strip {
   display: flex;
   align-items: center;
