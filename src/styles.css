@@ -1304,49 +1304,49 @@ input:focus, textarea:focus, select:focus {
 
 /* â”€â”€ Fix 5: Daily Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .daily-quote-card {
-  position: relative;
-  padding: 20px 22px 20px 54px;
+  padding: 16px 18px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, rgba(167,139,250,0.14), rgba(245,158,11,0.09));
-  border: 1px solid rgba(167,139,250,0.28);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 24px rgba(167,139,250,0.08);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+}
+.daily-quote-top {
   display: flex;
-  overflow: hidden;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
-.daily-quote-mark {
-  position: absolute;
-  top: -14px;
-  left: 8px;
-  font-size: 4.5rem;
-  font-weight: 900;
-  line-height: 1;
-  font-family: Georgia, serif;
-  background: linear-gradient(135deg, #a78bfa, #f59e0b);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  opacity: 0.55;
-  pointer-events: none;
+.daily-quote-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
-.daily-quote-body { display: grid; gap: 8px; }
+.daily-quote-actions { display: flex; gap: 6px; }
+.quote-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.quote-icon-btn:hover { background: rgba(255,255,255,0.07); border-color: var(--line-strong); }
 .daily-quote-text {
-  font-size: 1.08rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   color: var(--text);
   line-height: 1.45;
   font-style: italic;
-  margin: 0;
-  letter-spacing: -0.01em;
+  margin: 0 0 8px;
 }
 .daily-quote-author {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: linear-gradient(135deg, #c4b5fd, #fbbf24);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  letter-spacing: 0.04em;
   margin: 0;
 }
 
@@ -1370,20 +1370,18 @@ input:focus, textarea:focus, select:focus {
 
 /* â”€â”€ Fix 6: Goals View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* ── Goals page header with border box */
-.goals-page-header {
-  padding: 18px 20px;
-  background: rgba(20, 26, 36, 0.7);
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  border-radius: var(--radius);
-  box-shadow: 0 0 0 1px rgba(96,165,250,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
-  flex-direction: column;
-  align-items: stretch;
-}
+.goals-flat-header { display: grid; gap: 12px; }
 .goals-header-copy { flex: 1; }
-.goals-page-header .primary-button.compact {
-  align-self: flex-end;
-  margin-top: 14px;
+.goals-stat-strip {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
+.goals-stat-strip span { font-size: 0.8rem; color: var(--text-muted); }
+.goals-stat-strip strong { font-size: 0.95rem; font-weight: 800; color: var(--text); margin-right: 3px; }
+.goals-stat-ontrack strong { color: var(--cat-green); }
+.goals-stat-open strong { color: var(--cat-blue); }
 /* Mission area tag in Today view */
 .mission-area-tag {
   display: inline-flex;
