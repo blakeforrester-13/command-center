@@ -69,6 +69,13 @@ const PRIORITY_SIGNALS = [
   { id: 'coast',       label: 'Coast',       icon: '⛵', tone: 'slate' },
 ];
 
+const SLOT_META = {
+  main:     { label: 'Focus',     tone: 'red',    icon: Crosshair, textKey: 'mainMissionText', doneKey: 'mainDone', idKey: 'mainMissionId' },
+  body:     { label: 'Energy',    tone: 'orange', icon: Activity,  textKey: 'bodyWin',         doneKey: 'bodyDone', idKey: null },
+  life:     { label: 'Growth',    tone: 'amber',  icon: Layers,    textKey: 'lifeWinText',     doneKey: 'lifeDone', idKey: 'lifeWinId' },
+  avoiding: { label: 'Execution', tone: 'blue',   icon: Zap,       textKey: 'avoiding',        doneKey: 'avoidingDone', idKey: null },
+};
+
 const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
@@ -197,15 +204,52 @@ function missionToDb(m) {
     created_at: m.createdAt, target_date: m.targetDate || null,
   };
 }
-function dbToToday(row) {
+const DEFAULT_SLOT_TEXT = {
+  mainMissionText: 'Pick one thing that moves life forward today.',
+  bodyWin: 'Do one action that keeps your body/life stable.',
+  lifeWinText: 'Clear one small real-life open loop.',
+  avoiding: 'Name the thing you do not want to deal with.',
+};
+function defaultDailyFocus(dayKey) {
   return {
+    dayKey,
+    mainMissionId: '', mainMissionText: DEFAULT_SLOT_TEXT.mainMissionText, mainDone: false,
+    bodyWin: DEFAULT_SLOT_TEXT.bodyWin, bodyDone: false,
+    lifeWinId: '', lifeWinText: DEFAULT_SLOT_TEXT.lifeWinText, lifeDone: false,
+    avoiding: DEFAULT_SLOT_TEXT.avoiding, avoidingDone: false,
+    updatedAt: new Date().toISOString(),
+  };
+}
+function dbToDailyFocus(row) {
+  return {
+    dayKey: row.day_key,
     mainMissionId: row.main_mission_id || '',
-    mainMissionText: row.main_mission_text || 'Pick one thing that moves life forward today.',
-    bodyWin: row.body_win || 'Do one action that keeps your body/life stable.',
+    mainMissionText: row.main_mission_text || DEFAULT_SLOT_TEXT.mainMissionText,
+    mainDone: row.main_done || false,
+    bodyWin: row.body_win || DEFAULT_SLOT_TEXT.bodyWin,
+    bodyDone: row.body_done || false,
     lifeWinId: row.life_win_id || '',
-    lifeWinText: row.life_win_text || 'Clear one small real-life open loop.',
-    avoiding: row.avoiding || 'Name the thing you do not want to deal with.',
+    lifeWinText: row.life_win_text || DEFAULT_SLOT_TEXT.lifeWinText,
+    lifeDone: row.life_done || false,
+    avoiding: row.avoiding || DEFAULT_SLOT_TEXT.avoiding,
+    avoidingDone: row.avoiding_done || false,
     updatedAt: row.updated_at,
+  };
+}
+function dailyFocusToDb(dayKey, t) {
+  return {
+    day_key: dayKey,
+    main_mission_id: t.mainMissionId || '',
+    main_mission_text: t.mainMissionText || '',
+    main_done: t.mainDone || false,
+    body_win: t.bodyWin || '',
+    body_done: t.bodyDone || false,
+    life_win_id: t.lifeWinId || '',
+    life_win_text: t.lifeWinText || '',
+    life_done: t.lifeDone || false,
+    avoiding: t.avoiding || '',
+    avoiding_done: t.avoidingDone || false,
+    updated_at: t.updatedAt || new Date().toISOString(),
   };
 }
 function dbToMilestone(row) {
@@ -324,6 +368,8 @@ function App() {
   const [thoughts, setThoughts] = useState([]);
   const [missions, setMissions] = useState([]);
   const [today, setToday] = useState(null);
+  const [yesterdayFocus, setYesterdayFocus] = useState(null);
+  const [todayKey] = useState(() => getLocalTodayKey());
   const [reviews, setReviews] = useState([]);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -337,6 +383,20 @@ function App() {
   const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
   });
+  const [pendingExecuteSlot, setPendingExecuteSlot] = useState(null);
+  const [nextTaskPrompt, setNextTaskPrompt] = useState(null);
+  const [executeSession, setExecuteSession] = useState(() => {
+    try {
+      const raw = localStorage.getItem('blakeos-execute-session');
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    if (executeSession) localStorage.setItem('blakeos-execute-session', JSON.stringify(executeSession));
+    else localStorage.removeItem('blakeos-execute-session');
+  }, [executeSession]);
 
   function savePinnedGoals(ids) {
     setPinnedGoalIds(ids);
@@ -346,17 +406,21 @@ function App() {
   // ── Load all data from Supabase on mount ──
   useEffect(() => {
     async function loadAll() {
-      const [thoughtsRes, missionsRes, todayRes, reviewsRes, milestonesRes] = await Promise.all([
+      const yesterdayKey = addDaysToKey(todayKey, -1);
+      const [thoughtsRes, missionsRes, focusRes, reviewsRes, milestonesRes] = await Promise.all([
         supabase.from('thoughts').select('*').order('created_at', { ascending: false }),
         supabase.from('missions').select('*').order('created_at', { ascending: false }),
-        supabase.from('today_focus').select('*').eq('id', 1).single(),
+        supabase.from('daily_focus').select('*').in('day_key', [todayKey, yesterdayKey]),
         supabase.from('reviews').select('*').order('created_at', { ascending: false }),
         supabase.from('milestones').select('*').order('week_start', { ascending: true }),
       ]);
       if (thoughtsRes.data) setThoughts(thoughtsRes.data.map(dbToThought));
       if (missionsRes.data) setMissions(missionsRes.data.map(dbToMission));
-      if (todayRes.data) setToday(dbToToday(todayRes.data));
-      else setToday({ mainMissionId: '', mainMissionText: 'Pick one thing that moves life forward today.', bodyWin: 'Do one action that keeps your body/life stable.', lifeWinId: '', lifeWinText: 'Clear one small real-life open loop.', avoiding: 'Name the thing you do not want to deal with.', updatedAt: new Date().toISOString() });
+      const focusRows = focusRes.data || [];
+      const todayRow = focusRows.find((r) => r.day_key === todayKey);
+      const yesterdayRow = focusRows.find((r) => r.day_key === yesterdayKey);
+      setToday(todayRow ? dbToDailyFocus(todayRow) : defaultDailyFocus(todayKey));
+      setYesterdayFocus(yesterdayRow ? dbToDailyFocus(yesterdayRow) : null);
       if (reviewsRes.data) setReviews(reviewsRes.data.map(dbToReview));
       if (milestonesRes.data) setMilestones(milestonesRes.data.map(dbToMilestone));
       setLoading(false);
@@ -396,20 +460,23 @@ function App() {
     return openTasks.filter((t) => !energyFilter || t.energy === energyFilter);
   }, [openTasks, energyFilter]);
 
-  // ── Today ──
-  async function updateToday(key, value) {
-    const updated = { ...today, [key]: value, updatedAt: new Date().toISOString() };
-    setToday(updated);
-    await supabase.from('today_focus').upsert({
-      id: 1,
-      main_mission_id: updated.mainMissionId,
-      main_mission_text: updated.mainMissionText,
-      body_win: updated.bodyWin,
-      life_win_id: updated.lifeWinId,
-      life_win_text: updated.lifeWinText,
-      avoiding: updated.avoiding,
-      updated_at: updated.updatedAt,
+  // ── Today (day-keyed) ──
+  const TEXT_TO_DONE_KEY = { mainMissionText: 'mainDone', bodyWin: 'bodyDone', lifeWinText: 'lifeDone', avoiding: 'avoidingDone' };
+
+  async function patchToday(patch) {
+    const merged = { ...today, ...patch, updatedAt: new Date().toISOString() };
+    // Fresh non-empty text on a slot implies a new commitment — reset its done flag,
+    // unless the caller explicitly included that done flag in this same patch.
+    Object.entries(patch).forEach(([key, value]) => {
+      const doneKey = TEXT_TO_DONE_KEY[key];
+      if (doneKey && value && value.trim() && !(doneKey in patch)) merged[doneKey] = false;
     });
+    setToday(merged);
+    await supabase.from('daily_focus').upsert(dailyFocusToDb(todayKey, merged), { onConflict: 'day_key' });
+  }
+
+  async function updateToday(key, value) {
+    await patchToday({ [key]: value });
   }
 
   // ── Thoughts ──
@@ -528,20 +595,117 @@ function App() {
     const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
     const valueKey = keyMap[slot];
     if (!valueKey) return;
-
-    if (idKeyMap[slot]) updateToday(idKeyMap[slot], id);
-    updateToday(valueKey, text.trim());
+    const patch = { [valueKey]: text.trim() };
+    if (idKeyMap[slot]) patch[idKeyMap[slot]] = id;
+    patchToday(patch);
   }
 
   function completeSlot(slot, linkedId) {
     const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
     const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
+    const doneKeyMap = { main: 'mainDone', body: 'bodyDone', life: 'lifeDone', avoiding: 'avoidingDone' };
     const valueKey = keyMap[slot];
     if (!valueKey) return;
-
     if (linkedId) updateThought(linkedId, { status: 'Done' });
-    if (idKeyMap[slot]) updateToday(idKeyMap[slot], '');
-    updateToday(valueKey, '');
+    const patch = { [valueKey]: '', [doneKeyMap[slot]]: true };
+    if (idKeyMap[slot]) patch[idKeyMap[slot]] = '';
+    patchToday(patch);
+  }
+
+  // ── Commitment Pressure — clear a carried-over item from yesterday ──
+  async function clearYesterdayCommitment(slot, linkedId) {
+    if (!yesterdayFocus) return;
+    const doneKeyMap = { main: 'mainDone', body: 'bodyDone', life: 'lifeDone', avoiding: 'avoidingDone' };
+    const doneKey = doneKeyMap[slot];
+    if (!doneKey) return;
+    if (linkedId) updateThought(linkedId, { status: 'Done' });
+    const merged = { ...yesterdayFocus, [doneKey]: true };
+    setYesterdayFocus(merged);
+    await supabase.from('daily_focus').update({ [doneKey === 'mainDone' ? 'main_done' : doneKey === 'bodyDone' ? 'body_done' : doneKey === 'lifeDone' ? 'life_done' : 'avoiding_done']: true }).eq('day_key', yesterdayFocus.dayKey);
+  }
+
+  // ── Tomorrow Preload ──
+  async function saveTomorrowPreload(fields) {
+    const tomorrowKey = addDaysToKey(todayKey, 1);
+    const row = {
+      dayKey: tomorrowKey,
+      mainMissionId: '', mainMissionText: fields.mainMissionText || DEFAULT_SLOT_TEXT.mainMissionText, mainDone: false,
+      bodyWin: fields.bodyWin || DEFAULT_SLOT_TEXT.bodyWin, bodyDone: false,
+      lifeWinId: '', lifeWinText: fields.lifeWinText || DEFAULT_SLOT_TEXT.lifeWinText, lifeDone: false,
+      avoiding: fields.avoiding || DEFAULT_SLOT_TEXT.avoiding, avoidingDone: false,
+      updatedAt: new Date().toISOString(),
+    };
+    await supabase.from('daily_focus').upsert(dailyFocusToDb(tomorrowKey, row), { onConflict: 'day_key' });
+  }
+
+  // ── Execute Mode ──
+  function getExecuteContext(linkedId) {
+    if (!linkedId) return { supports: null, energy: null, why: null };
+    const t = thoughts.find((x) => x.id === linkedId);
+    if (!t) return { supports: null, energy: null, why: null };
+    const mission = t.relatedMissionId ? missions.find((m) => m.id === t.relatedMissionId) : null;
+    return { supports: mission ? mission.title : t.area, energy: t.energy || null, why: t.notes || t.nextAction || null };
+  }
+
+  function startExecuteSession(slotId, durationSec) {
+    const linkedIdMap = { main: today.mainMissionId, life: today.lifeWinId };
+    const textMap = { main: today.mainMissionText, body: today.bodyWin, life: today.lifeWinText, avoiding: today.avoiding };
+    setExecuteSession({
+      slotId, taskText: textMap[slotId], linkedId: linkedIdMap[slotId] || '',
+      durationSec, status: 'running',
+      endAt: new Date(Date.now() + durationSec * 1000).toISOString(),
+      pausedRemainingSec: null,
+    });
+    setPendingExecuteSlot(null);
+    setNextTaskPrompt(null);
+  }
+
+  function pauseExecuteSession() {
+    setExecuteSession((s) => {
+      if (!s || s.status !== 'running') return s;
+      const remaining = Math.max(0, Math.round((new Date(s.endAt).getTime() - Date.now()) / 1000));
+      return { ...s, status: 'paused', pausedRemainingSec: remaining, endAt: null };
+    });
+  }
+
+  function resumeExecuteSession() {
+    setExecuteSession((s) => {
+      if (!s || s.status !== 'paused') return s;
+      return { ...s, status: 'running', endAt: new Date(Date.now() + (s.pausedRemainingSec || 0) * 1000).toISOString(), pausedRemainingSec: null };
+    });
+  }
+
+  function adjustExecuteSession(deltaSec) {
+    setExecuteSession((s) => {
+      if (!s) return s;
+      if (s.status === 'running') {
+        const newEnd = new Date(Math.max(Date.now(), new Date(s.endAt).getTime() + deltaSec * 1000));
+        return { ...s, endAt: newEnd.toISOString() };
+      }
+      if (s.status === 'paused') {
+        return { ...s, pausedRemainingSec: Math.max(0, (s.pausedRemainingSec || 0) + deltaSec) };
+      }
+      return s;
+    });
+  }
+
+  function markExecuteExpired() {
+    setExecuteSession((s) => (s && s.status === 'running' ? { ...s, status: 'awaiting-outcome', endAt: null } : s));
+  }
+
+  function exitExecuteSession() {
+    setExecuteSession(null);
+    setPendingExecuteSlot(null);
+    setNextTaskPrompt(null);
+  }
+
+  function finishExecuteOutcome(outcome) {
+    if (!executeSession) return;
+    if (outcome === 'finished') {
+      completeSlot(executeSession.slotId, executeSession.linkedId);
+      setNextTaskPrompt({ finishedSlotId: executeSession.slotId });
+    }
+    setExecuteSession(null);
   }
 
   function goToCategory(catId) {
@@ -599,6 +763,9 @@ function App() {
             completeSlot={completeSlot}
             goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('plan'); }}
             onManageGoals={() => setModal({ type: 'manage-goals' })}
+            yesterdayFocus={yesterdayFocus}
+            clearYesterdayCommitment={clearYesterdayCommitment}
+            onExecute={(slotId) => setPendingExecuteSlot(slotId)}
           />
         )}
         {activeTab === 'capture' && <CaptureView addThought={addThought} missions={missions} setActiveTab={setActiveTab} />}
@@ -674,6 +841,7 @@ function App() {
             thoughts={thoughts}
             missions={missions}
             onClose={() => setModal(null)}
+            saveTomorrowPreload={saveTomorrowPreload}
           />
         </Modal>
       )}
@@ -696,12 +864,41 @@ function App() {
           />
         </Modal>
       )}
+
+      {pendingExecuteSlot && !executeSession && today && (
+        <ExecuteTimeSelect
+          slotId={pendingExecuteSlot}
+          taskText={{ main: today.mainMissionText, body: today.bodyWin, life: today.lifeWinText, avoiding: today.avoiding }[pendingExecuteSlot]}
+          onCancel={() => setPendingExecuteSlot(null)}
+          onStart={(durationSec) => startExecuteSession(pendingExecuteSlot, durationSec)}
+        />
+      )}
+      {executeSession && (
+        <ExecuteRunning
+          session={executeSession}
+          context={getExecuteContext(executeSession.linkedId)}
+          onPause={pauseExecuteSession}
+          onResume={resumeExecuteSession}
+          onAdjust={adjustExecuteSession}
+          onExpire={markExecuteExpired}
+          onExit={exitExecuteSession}
+          onOutcome={finishExecuteOutcome}
+        />
+      )}
+      {nextTaskPrompt && !executeSession && !pendingExecuteSlot && today && (
+        <ExecuteNextTask
+          finishedSlotId={nextTaskPrompt.finishedSlotId}
+          today={today}
+          onPick={(slotId) => setPendingExecuteSlot(slotId)}
+          onExit={() => setNextTaskPrompt(null)}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals, yesterdayFocus, clearYesterdayCommitment, onExecute }) {
   const defaultSlots = {
     mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
     bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
@@ -717,6 +914,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       onChange: (v) => updateToday('mainMissionText', v),
       onPromote: () => setModal({ type: 'promote', slot: 'main', modeLabel: 'Focus' }),
       onComplete: () => completeSlot('main', today.mainMissionId),
+      onExecute: () => onExecute('main'),
     },
     {
       id: 'body', number: '02', label: 'Energy', subtitle: 'Body, recovery, stability, and fuel',
@@ -725,6 +923,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       onChange: (v) => updateToday('bodyWin', v),
       onPromote: () => setModal({ type: 'promote', slot: 'body', modeLabel: 'Energy' }),
       onComplete: () => completeSlot('body', ''),
+      onExecute: () => onExecute('body'),
     },
     {
       id: 'life', number: '03', label: 'Growth', subtitle: 'Learning, reflection, and future progress',
@@ -733,6 +932,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       onChange: (v) => updateToday('lifeWinText', v),
       onPromote: () => setModal({ type: 'promote', slot: 'life', modeLabel: 'Growth' }),
       onComplete: () => completeSlot('life', today.lifeWinId),
+      onExecute: () => onExecute('life'),
     },
     {
       id: 'avoiding', number: '04', label: 'Execution', subtitle: 'Ship, close, respond, and move forward',
@@ -741,6 +941,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
       onChange: (v) => updateToday('avoiding', v),
       onPromote: () => setModal({ type: 'promote', slot: 'avoiding', modeLabel: 'Execution' }),
       onComplete: () => completeSlot('avoiding', ''),
+      onExecute: () => onExecute('avoiding'),
     },
   ];
 
@@ -772,6 +973,8 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
 
       <DailyQuote />
 
+      <CommitmentPressure yesterdayFocus={yesterdayFocus} clearYesterdayCommitment={clearYesterdayCommitment} />
+
       <div className="card todays-command-card">
         <div className="section-header">
           <div><p className="eyebrow">Behavioral Modes</p><h2>Today's Command Cards</h2><p className="muted">Focus, Energy, Growth, and Execution — 1-2 priorities each.</p></div>
@@ -791,6 +994,7 @@ function TodayView({ today, updateToday, missions, allMissions, openTasks, openL
               onChange={slot.onChange}
               onPromote={slot.onPromote}
               onComplete={slot.onComplete}
+              onExecute={slot.onExecute}
               linkedId={slot.linkedId}
               isSet={isMeaningful(slot.value, slot.fallback)}
             />
@@ -985,7 +1189,7 @@ function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTa
   );
 }
 
-function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, onComplete, linkedId, isSet }) {
+function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, onComplete, onExecute, linkedId, isSet }) {
   return (
     <div className={`today-slot today-command-card-slot today-command-${tone} ${linkedId ? 'linked-slot-card' : ''} ${isSet ? 'is-set' : 'needs-set'}`}>
       <div className="today-command-card-top">
@@ -1010,6 +1214,188 @@ function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon,
         {isSet && (
           <button className="promote-btn today-command-done" onClick={onComplete}><CheckCircle2 size={14} /> Done</button>
         )}
+        <button className="promote-btn today-command-execute" onClick={onExecute} disabled={!isSet} title={isSet ? 'Start a focused session' : 'Set this card first'}>
+          <Flame size={14} /> Execute
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Commitment Pressure — unfinished commitments from yesterday ──────────
+function CommitmentPressure({ yesterdayFocus, clearYesterdayCommitment }) {
+  if (!yesterdayFocus) return null;
+  const isMeaningful = (value, fallback) => Boolean(value && value.trim() && value.trim() !== fallback);
+  const carryover = Object.entries(SLOT_META)
+    .map(([slotId, meta]) => ({
+      slotId, meta,
+      text: yesterdayFocus[meta.textKey],
+      done: yesterdayFocus[meta.doneKey],
+      linkedId: meta.idKey ? yesterdayFocus[meta.idKey] : '',
+    }))
+    .filter((row) => isMeaningful(row.text, DEFAULT_SLOT_TEXT[row.meta.textKey]) && !row.done);
+
+  if (carryover.length === 0) {
+    return (
+      <div className="commitment-pressure commitment-clean">
+        <CheckCircle2 size={16} />
+        <div>
+          <strong>No carryover commitments.</strong>
+          <p>Today's slate is clean.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="commitment-pressure commitment-open">
+      <div className="commitment-header">
+        <AlertCircle size={16} />
+        <strong>Carryover Commitments</strong>
+      </div>
+      <p className="commitment-sub">Yesterday you committed to:</p>
+      <div className="commitment-list">
+        {carryover.map((row) => (
+          <div key={row.slotId} className="commitment-item">
+            <Pill tone={row.meta.tone}>{row.meta.label}</Pill>
+            <span className="commitment-text">{row.text}</span>
+            <button className="commitment-clear-btn" onClick={() => clearYesterdayCommitment(row.slotId, row.linkedId)} title="Mark done">
+              <Check size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Execute Mode ───────────────────────────────────────────────────────────
+const EXECUTE_DURATIONS = [15, 25, 45, 60];
+
+function ExecuteTimeSelect({ slotId, taskText, onCancel, onStart }) {
+  const [custom, setCustom] = useState('');
+  const meta = SLOT_META[slotId];
+  return (
+    <div className="execute-overlay">
+      <button className="execute-close" onClick={onCancel}><X size={22} /></button>
+      <div className="execute-select-body">
+        <Pill tone={meta.tone}><meta.icon size={13} /> {meta.label}</Pill>
+        <h2 className="execute-select-title">{taskText}</h2>
+        <p className="execute-select-sub">Choose Session Length</p>
+        <div className="execute-duration-grid">
+          {EXECUTE_DURATIONS.map((min) => (
+            <button key={min} className="execute-duration-btn" onClick={() => onStart(min * 60)}>{min}</button>
+          ))}
+        </div>
+        <div className="execute-custom-row">
+          <input
+            type="number" min="1" placeholder="Custom minutes"
+            value={custom} onChange={(e) => setCustom(e.target.value)}
+          />
+          <button
+            className="primary-button compact"
+            disabled={!custom || Number(custom) <= 0}
+            onClick={() => onStart(Number(custom) * 60)}
+          >
+            Start
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExecuteRunning({ session, context, onPause, onResume, onAdjust, onExpire, onExit, onOutcome }) {
+  const [remaining, setRemaining] = useState(0);
+  const meta = SLOT_META[session.slotId];
+
+  useEffect(() => {
+    function tick() {
+      if (session.status === 'paused') { setRemaining(session.pausedRemainingSec || 0); return; }
+      if (session.status === 'awaiting-outcome') { setRemaining(0); return; }
+      const secs = Math.max(0, Math.round((new Date(session.endAt).getTime() - Date.now()) / 1000));
+      setRemaining(secs);
+      if (secs <= 0) onExpire();
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session.status, session.endAt, session.pausedRemainingSec]);
+
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const ss = String(remaining % 60).padStart(2, '0');
+
+  return (
+    <div className="execute-overlay">
+      <button className="execute-close" onClick={onExit}><X size={22} /></button>
+
+      {session.status !== 'awaiting-outcome' ? (
+        <div className="execute-running-body">
+          <div className="execute-timer">{mm}:{ss}</div>
+          <Pill tone={meta.tone}><meta.icon size={13} /> {meta.label}</Pill>
+          <h2 className="execute-task-title">{session.taskText}</h2>
+
+          {(context.supports || context.energy || context.why) && (
+            <div className="execute-context">
+              {context.supports && (
+                <div className="execute-context-row"><span className="execute-context-label">Supports</span><span>{context.supports}</span></div>
+              )}
+              {context.energy && (
+                <div className="execute-context-row"><span className="execute-context-label">Energy</span><span>{context.energy}</span></div>
+              )}
+              {context.why && (
+                <div className="execute-context-row"><span className="execute-context-label">Why</span><span>{context.why}</span></div>
+              )}
+            </div>
+          )}
+
+          <div className="execute-adjust-row">
+            <button className="execute-adjust-btn" onClick={() => onAdjust(-300)}>-5</button>
+            <button className="execute-pause-btn" onClick={session.status === 'running' ? onPause : onResume}>
+              {session.status === 'running' ? 'Pause' : 'Resume'}
+            </button>
+            <button className="execute-adjust-btn" onClick={() => onAdjust(300)}>+5</button>
+          </div>
+        </div>
+      ) : (
+        <div className="execute-complete-body">
+          <h2 className="execute-complete-title">Session Complete</h2>
+          <p className="execute-complete-sub">How'd it go?</p>
+          <div className="execute-outcome-list">
+            <button className="execute-outcome-btn outcome-finished" onClick={() => onOutcome('finished')}>Finished</button>
+            <button className="execute-outcome-btn outcome-progress" onClick={() => onOutcome('progress')}>Made Progress</button>
+            <button className="execute-outcome-btn outcome-notfinished" onClick={() => onOutcome('not-finished')}>Didn't Finish</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExecuteNextTask({ finishedSlotId, today, onPick, onExit }) {
+  const isMeaningful = (value, fallback) => Boolean(value && value.trim() && value.trim() !== fallback);
+  const candidates = Object.entries(SLOT_META)
+    .filter(([slotId, meta]) => slotId !== finishedSlotId && isMeaningful(today[meta.textKey], DEFAULT_SLOT_TEXT[meta.textKey]) && !today[meta.doneKey])
+    .map(([slotId, meta]) => ({ slotId, meta, text: today[meta.textKey] }));
+
+  return (
+    <div className="execute-overlay">
+      <button className="execute-close" onClick={onExit}><X size={22} /></button>
+      <div className="execute-next-body">
+        <h2 className="execute-complete-title">What next?</h2>
+        {candidates.length > 0 ? (
+          <div className="execute-next-list">
+            {candidates.map((row) => (
+              <button key={row.slotId} className="execute-next-item" onClick={() => onPick(row.slotId)}>
+                <Pill tone={row.meta.tone}><row.meta.icon size={13} /> {row.meta.label}</Pill>
+                <span>{row.text}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="execute-next-empty">Nothing else set for today. Clean slate.</p>
+        )}
+        <button className="secondary-button full-width" onClick={onExit}>Exit</button>
       </div>
     </div>
   );
@@ -1154,11 +1540,13 @@ const CLOSE_DAY_QUESTIONS = [
   { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
 ];
 
-function CloseDayModal({ thoughts, missions, onClose }) {
-  const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary'
+function CloseDayModal({ thoughts, missions, onClose, saveTomorrowPreload }) {
+  const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary' | 'preload'
   const [gutCall, setGutCall] = useState('');
   const [answers, setAnswers] = useState({});
   const [copied, setCopied] = useState(false);
+  const [preload, setPreload] = useState({ mainMissionText: '', bodyWin: '', lifeWinText: '', avoiding: '' });
+  const [preloadSaved, setPreloadSaved] = useState(false);
 
   const today = new Date();
   const todayKey = getLocalTodayKey();
@@ -1206,6 +1594,15 @@ function CloseDayModal({ thoughts, missions, onClose }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  }
+
+  function setPreloadField(key, value) {
+    setPreload((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleSaveTomorrow() {
+    saveTomorrowPreload(preload);
+    setPreloadSaved(true);
   }
 
   const currentQIndex = CLOSE_DAY_QUESTIONS.findIndex((q) => answers[q.id] === undefined);
@@ -1267,6 +1664,33 @@ function CloseDayModal({ thoughts, missions, onClose }) {
           <button className="primary-button" onClick={copyToClipboard}>
             {copied ? <><Check size={17} /> Copied!</> : <><Copy size={17} /> Copy for Apple Journal</>}
           </button>
+          <button className="secondary-button full-width" onClick={() => setStep('preload')}>
+            <ArrowRight size={16} /> Plan Tomorrow
+          </button>
+        </div>
+      )}
+
+      {step === 'preload' && (
+        <div className="closeday-step">
+          <p className="closeday-subtitle">Fill tomorrow's 4 cards now. No auto-fill — pick with intention.</p>
+          <div className="preload-grid">
+            {Object.entries(SLOT_META).map(([slotId, meta]) => (
+              <div key={slotId} className={`preload-field preload-field-${meta.tone}`}>
+                <div className="preload-field-label"><meta.icon size={14} /> {meta.label}</div>
+                <textarea
+                  value={preload[meta.textKey]}
+                  placeholder={`Tomorrow's ${meta.label.toLowerCase()}...`}
+                  onChange={(e) => setPreloadField(meta.textKey, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+          <button className="primary-button" onClick={handleSaveTomorrow} disabled={preloadSaved}>
+            {preloadSaved ? <><Check size={17} /> Tomorrow Saved</> : <><Save size={17} /> Save Tomorrow</>}
+          </button>
+          {preloadSaved && (
+            <button className="secondary-button full-width" onClick={onClose}>Done</button>
+          )}
         </div>
       )}
     </div>
