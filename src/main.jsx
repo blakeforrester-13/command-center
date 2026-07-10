@@ -1,2421 +1,2624 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { createRoot } from 'react-dom/client';
-import { createClient } from '@supabase/supabase-js';
-import {
-  Brain, CheckCircle2, ClipboardList, Compass, DollarSign,
-  Home, Inbox, Layers, Plus, RefreshCw, Search, Sparkles,
-  Target, TimerReset, Trash2, Users, X, AlertCircle,
-  CalendarDays, Clock3, Flag, HelpCircle, ShieldCheck,
-  Archive, ArrowRight, Save, Edit3, CircleDashed, Zap,
-  Clock, BatteryLow, BatteryMedium, BatteryFull,
-  ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
-  MoonStar, RotateCcw, Copy, Check, Mountain, Flame, Lightbulb, PauseCircle,
-  Briefcase, GraduationCap, Heart, User, Code, Telescope,
-  Crosshair, Activity, Star,
-} from 'lucide-react';
-import './styles.css';
+/* â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+:root {
+  /* Base palette â€” dark charcoal, not pure black */
+  --bg:           #0c0f14;
+  --bg-soft:      #141820;
+  --bg-card:      rgba(20, 26, 36, 0.92);
+  --bg-card-strong: #1a2132;
+  --bg-input:     rgba(10, 14, 22, 0.8);
 
-// ─── Supabase client ───────────────────────────────────────────────────────
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+  /* Text */
+  --text:         #eef0f4;
+  --text-secondary: #a8b0c0;
+  --text-muted:   #606880;
 
-// ─── Category tiers ────────────────────────────────────────────────────────
-const categoryTiers = [
-  { id: 'act-now', label: 'Act Now', description: 'Momentum — things with clear forward motion', color: 'tier-act', icon: Flame },
-  { id: 'needs-thinking', label: 'Needs Thinking', description: 'Open loops — draining attention until closed', color: 'tier-think', icon: Lightbulb },
-  { id: 'hold', label: 'Hold / Background', description: 'Stable or parked — not this week', color: 'tier-hold', icon: PauseCircle },
-];
+  /* Structure */
+  --line:         rgba(255, 255, 255, 0.07);
+  --line-strong:  rgba(255, 255, 255, 0.12);
 
-const categoryItemLabel = {
-  'active-missions': 'Mission', 'next-actions': 'Action', 'problems': 'Problem',
-  'decisions': 'Decision', 'waiting-on': 'Waiting On', 'maintenance': 'Maintenance Task',
-  'relationships': 'Relationship Item', 'money-adult-life': 'Adult Life Item',
-  'someday': 'Someday Idea', 'anxiety-noise': 'Noise / Worry',
-};
+  /* Accent â€” single amber accent for momentum/action */
+  --accent:       #f59e0b;
+  --accent-dim:   rgba(245, 158, 11, 0.14);
+  --accent-border: rgba(245, 158, 11, 0.28);
 
-const categories = [
-  { id: 'active-missions', label: 'Active Missions', short: 'Missions', icon: Target, color: 'amber', tier: 'act-now', description: 'The major priorities you are actively focused on right now. Keep this capped at 3.', prompt: 'What bigger priority does this connect to?' },
-  { id: 'next-actions', label: 'Next Actions', short: 'Actions', icon: CheckCircle2, color: 'green', tier: 'act-now', description: 'Small specific tasks you can actually do right now.', prompt: 'What is the next physical action?' },
-  { id: 'problems', label: 'Problems to Solve', short: 'Problems', icon: HelpCircle, color: 'orange', tier: 'needs-thinking', description: 'Things that need thinking, planning, or breaking down before action.', prompt: 'What question needs to be solved?' },
-  { id: 'decisions', label: 'Decisions', short: 'Decisions', icon: Compass, color: 'purple', tier: 'needs-thinking', description: 'Open choices that are draining attention until you close them.', prompt: 'What options are you choosing between?' },
-  { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: TimerReset, color: 'yellow', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
-  { id: 'maintenance', label: 'Maintenance', short: 'Maintenance', icon: ShieldCheck, color: 'teal', tier: 'hold', description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.', prompt: 'What keeps this from becoming chaos?' },
-  { id: 'relationships', label: 'Relationships', short: 'People', icon: Users, color: 'pink', tier: 'hold', description: 'Gabi, family, siblings, friends, work relationships, networking, and conversations.', prompt: 'Who does this involve and what would showing up well look like?' },
-  { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: DollarSign, color: 'blue', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
-  { id: 'someday', label: 'Someday / Parking Lot', short: 'Someday', icon: Archive, color: 'slate', tier: 'hold', description: 'Good ideas that matter, but not right now.', prompt: 'Why is this not for this week?' },
-  { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
-];
+  /* Status colors â€” color carries meaning, not decoration */
+  --status-open:    #a8b0c0;
+  --status-track:   #34d399;   /* green */
+  --status-slip:    #f59e0b;   /* amber */
+  --status-blocked: #f87171;   /* red */
+  --status-done:    #4b5668;
 
-const lifeAreaMeta = {
-  'Work':         { color: 'amber',   icon: Briefcase },
-  'School':       { color: 'purple',  icon: GraduationCap },
-  'Money':        { color: 'blue',    icon: DollarSign },
-  'Health':       { color: 'rose',    icon: Heart },
-  'Relationships':{ color: 'pink',    icon: Users },
-  'Family':       { color: 'orange',  icon: Mountain },
-  'Personal':     { color: 'teal',    icon: User },
-  'App/Projects': { color: 'yellow',  icon: Code },
-  'Future':       { color: 'slate',   icon: Telescope },
-};
-function getAreaMeta(area) {
-  return lifeAreaMeta[area] || { color: 'slate', icon: CircleDashed };
+  /* Category accent palette â€” muted, not rainbow */
+  --cat-amber:   #f59e0b;
+  --cat-green:   #34d399;
+  --cat-orange:  #fb923c;
+  --cat-purple:  #a78bfa;
+  --cat-yellow:  #fbbf24;
+  --cat-teal:    #2dd4bf;
+  --cat-pink:    #f472b6;
+  --cat-emerald: #10b981;
+  --cat-slate:   #94a3b8;
+  --cat-red:     #f87171;
+  --cat-blue:    #60a5fa;
+
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
+  --shadow:     0 8px 32px rgba(0,0,0,0.4);
+  --shadow-lg:  0 24px 64px rgba(0,0,0,0.5);
+  --radius:     20px;
+  --radius-sm:  12px;
+  --radius-lg:  26px;
+
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
 }
 
-const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
-const energyLevels = ['Low', 'Medium', 'High'];
-const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
+/* â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(245,158,11,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(52,211,153,0.04) 0%, transparent 40%),
+    var(--bg);
+}
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+textarea { resize: vertical; min-height: 76px; }
+h1, h2, h3, p { margin: 0; }
+p { line-height: 1.55; }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-function getDaysOld(isoString) {
-  if (!isoString) return 0;
-  return Math.floor((Date.now() - new Date(isoString).getTime()) / (1000 * 60 * 60 * 24));
-}
-function stalenessLabel(days, category) {
-  if (category === 'waiting-on' && days >= 14) return { label: `${days}d — follow up?`, urgent: true };
-  if (category === 'decisions' && days >= 7) return { label: `${days}d open`, urgent: true };
-  if (category === 'problems' && days >= 10) return { label: `${days}d — needs attention`, urgent: days >= 14 };
-  if (days >= 21) return { label: `${days}d — stale`, urgent: false };
-  return null;
-}
-function formatDate(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-function formatDateFull(value) {
-  if (!value) return '';
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  // Parse the YYYY-MM-DD parts directly — never let JS shift the date
-  const str = value.length > 10 ? value : value;
-  const year = parseInt(str.slice(0, 4), 10);
-  const month = parseInt(str.slice(5, 7), 10) - 1;
-  const day = parseInt(str.slice(8, 10), 10);
-  // Build a local date from parts to get the correct weekday
-  const d = new Date(year, month, day);
-  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-}
-function getDayKey(isoString) {
-  if (!isoString) return '';
-  const d = new Date(isoString);
-  const offset = d.getTimezoneOffset() * 60000;
-  const local = new Date(d.getTime() - offset);
-  return local.toISOString().slice(0, 10);
-}
-function getLocalTodayKey() {
-  const d = new Date();
-  const offset = d.getTimezoneOffset() * 60000;
-  const local = new Date(d.getTime() - offset);
-  return local.toISOString().slice(0, 10);
-}
-function getCategory(id) { return categories.find((c) => c.id === id) || categories[0]; }
-function tierRank(categoryId) {
-  const idx = categories.findIndex((c) => c.id === categoryId);
-  return idx === -1 ? categories.length : idx;
-}
-function sortByTier(a, b) { return tierRank(a.category) - tierRank(b.category); }
-
-// ── Date-key math — always parse YYYY-MM-DD parts directly, never new Date(string) ──
-function parseKey(key) {
-  return new Date(parseInt(key.slice(0, 4), 10), parseInt(key.slice(5, 7), 10) - 1, parseInt(key.slice(8, 10), 10));
-}
-function addDaysToKey(key, n) {
-  const d = parseKey(key);
-  d.setDate(d.getDate() + n);
-  const pad = (x) => String(x).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-function daysBetweenKeys(fromKey, toKey) {
-  return Math.round((parseKey(toKey) - parseKey(fromKey)) / 86400000);
-}
-function dayShortLabel(key, todayKey) {
-  if (key === todayKey) return 'Today';
-  if (key === addDaysToKey(todayKey, 1)) return 'Tomorrow';
-  const d = parseKey(key);
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
-}
-function weekStartKey(key) {
-  // Monday-start weeks
-  const d = parseKey(key);
-  const day = d.getDay();
-  return addDaysToKey(key, day === 0 ? -6 : 1 - day);
-}
-function weekRangeLabel(weekKey) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const s = parseKey(weekKey);
-  const e = parseKey(addDaysToKey(weekKey, 6));
-  if (s.getMonth() === e.getMonth()) return `${months[s.getMonth()]} ${s.getDate()}\u2013${e.getDate()}`;
-  return `${months[s.getMonth()]} ${s.getDate()} \u2013 ${months[e.getMonth()]} ${e.getDate()}`;
+/* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.app-shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 108px);
 }
 
-// ─── DB helpers — convert snake_case DB rows ↔ camelCase app objects ───────
-function dbToThought(row) {
-  return {
-    id: row.id, text: row.text, category: row.category || '',
-    area: row.area || 'Personal', status: row.status || 'Open',
-    createdAt: row.created_at, completedAt: row.completed_at || '',
-    nextAction: row.next_action || '', notes: row.notes || '',
-    dueDate: row.due_date || '', energy: row.energy || 'Medium',
-    pinned: row.pinned || false, relatedMissionId: row.related_mission_id || '',
-    decisionOptions: row.decision_options || '', waitingOn: row.waiting_on || '',
-    truth: row.truth || '', exaggeration: row.exaggeration || '',
-  };
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0 16px;
+  backdrop-filter: blur(20px);
 }
-function thoughtToDb(t) {
-  return {
-    id: t.id, text: t.text, category: t.category || '',
-    area: t.area || 'Personal', status: t.status || 'Open',
-    created_at: t.createdAt, completed_at: t.completedAt || null,
-    next_action: t.nextAction || '', notes: t.notes || '',
-    due_date: t.dueDate || '', energy: t.energy || 'Medium',
-    pinned: t.pinned || false, related_mission_id: t.relatedMissionId || '',
-    decision_options: t.decisionOptions || '', waiting_on: t.waitingOn || '',
-    truth: t.truth || '', exaggeration: t.exaggeration || '',
-  };
-}
-function dbToMission(row) {
-  return {
-    id: row.id, title: row.title, why: row.why || '',
-    weeklyGoal: row.weekly_goal || '', nextAction: row.next_action || '',
-    status: row.status || 'Open', area: row.area || 'Personal',
-    createdAt: row.created_at, targetDate: row.target_date || '',
-  };
-}
-function missionToDb(m) {
-  return {
-    id: m.id, title: m.title, why: m.why || '',
-    weekly_goal: m.weeklyGoal || '', next_action: m.nextAction || '',
-    status: m.status || 'Open', area: m.area || 'Personal',
-    created_at: m.createdAt, target_date: m.targetDate || null,
-  };
-}
-function dbToToday(row) {
-  return {
-    mainMissionId: row.main_mission_id || '',
-    mainMissionText: row.main_mission_text || 'Pick one thing that moves life forward today.',
-    bodyWin: row.body_win || 'Do one action that keeps your body/life stable.',
-    lifeWinId: row.life_win_id || '',
-    lifeWinText: row.life_win_text || 'Clear one small real-life open loop.',
-    avoiding: row.avoiding || 'Name the thing you do not want to deal with.',
-    updatedAt: row.updated_at,
-  };
-}
-function dbToMilestone(row) {
-  return {
-    id: row.id, missionId: row.mission_id, weekStart: row.week_start,
-    title: row.title, done: row.done || false, createdAt: row.created_at,
-  };
-}
-function milestoneToDb(m) {
-  return {
-    id: m.id, mission_id: m.missionId, week_start: m.weekStart,
-    title: m.title, done: m.done || false, created_at: m.createdAt,
-  };
-}
-function dbToReview(row) {
-  return {
-    id: row.id, improved: row.improved || '', avoided: row.avoided || '',
-    mattered: row.mattered || '', stress: row.stress || '',
-    nextWeek: row.next_week || '', createdAt: row.created_at,
-  };
+.topbar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-// ─── UI Primitives ─────────────────────────────────────────────────────────
-function Pill({ children, tone = 'default', className = '' }) {
-  return <span className={`pill pill-${tone} ${className}`}>{children}</span>;
+h1 {
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  letter-spacing: -0.055em;
+  font-weight: 800;
+  color: var(--text);
 }
-function IconBadge({ icon: Icon, tone = 'amber' }) {
-  return <div className={`icon-badge icon-${tone}`}><Icon size={18} /></div>;
+h2 {
+  font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+  letter-spacing: -0.04em;
+  font-weight: 700;
 }
-function EmptyState({ icon: Icon = CircleDashed, title, text }) {
-  return <div className="empty-state"><Icon size={28} /><h3>{title}</h3><p>{text}</p></div>;
-}
-function Modal({ title, children, onClose }) {
-  return (
-    <div className="modal-backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{title}</h2>
-          <button className="icon-button" onClick={onClose}><X size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-function Field({ label, children }) {
-  return <label className="field"><span>{label}</span>{children}</label>;
-}
-function EnergyIcon({ level }) {
-  if (level === 'Low') return <BatteryLow size={14} />;
-  if (level === 'High') return <BatteryFull size={14} />;
-  return <BatteryMedium size={14} />;
-}
-function LoadingScreen() {
-  return (
-    <div className="loading-screen">
-      <Sparkles size={32} className="loading-icon" />
-      <p>Loading your Command Center...</p>
-    </div>
-  );
+h3 {
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
-// ─── Daily Quote ───────────────────────────────────────────────────────────
-const QUOTES = [
-  { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
-  { text: "The purpose of life is not to be happy. It is to be useful, to be honorable, to be compassionate, to have it make some difference that you have lived.", author: "Ralph Waldo Emerson" },
-  { text: "Do not wait to strike till the iron is hot; but make it hot by striking.", author: "William Butler Yeats" },
-  { text: "It is not the mountain we conquer, but ourselves.", author: "Edmund Hillary" },
-  { text: "The man who moves a mountain begins by carrying away small stones.", author: "Confucius" },
-  { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle" },
-  { text: "Hard choices, easy life. Easy choices, hard life.", author: "Jerzy Gregorek" },
-  { text: "Don't count the days, make the days count.", author: "Muhammad Ali" },
-  { text: "The two most important days in your life are the day you are born and the day you find out why.", author: "Mark Twain" },
-  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
-  { text: "Someone is sitting in the shade today because someone planted a tree a long time ago.", author: "Warren Buffett" },
-  { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
-  { text: "What you do today can improve all your tomorrows.", author: "Ralph Marston" },
-  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-  { text: "Energy and persistence conquer all things.", author: "Benjamin Franklin" },
-  { text: "Don't wish it were easier. Wish you were better.", author: "Jim Rohn" },
-  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
-  { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
-  { text: "Act as if what you do makes a difference. It does.", author: "William James" },
-  { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
-  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
-  { text: "Your life does not get better by chance, it gets better by change.", author: "Jim Rohn" },
-  { text: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
-  { text: "The quality of your life is the quality of your relationships.", author: "Tony Robbins" },
-  { text: "One day or day one. You decide.", author: "Paulo Coelho" },
-  { text: "Be who you needed when you were younger.", author: "AI-generated" },
-  { text: "Comfort is the enemy of growth. Show up anyway.", author: "AI-generated" },
-  { text: "The version of you that future-you is proud of started on a regular Tuesday.", author: "AI-generated" },
-  { text: "Your only competition is who you were yesterday.", author: "AI-generated" },
-];
-function getDailyQuote() {
-  const d = new Date();
-  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-  return QUOTES[seed % QUOTES.length];
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
 }
-function DailyQuote() {
-  const quote = getDailyQuote();
-  return (
-    <div className="daily-quote-card">
-      <span className="daily-quote-mark">"</span>
-      <div className="daily-quote-body">
-        <p className="daily-quote-text">{quote.text}</p>
-        <p className="daily-quote-author">— {quote.author}</p>
-      </div>
-    </div>
-  );
+.muted { color: var(--text-muted); }
+.small { font-size: 0.875rem; }
+.ml-auto { margin-left: auto; }
+
+.main-content { padding-top: 4px; }
+.screen.stack { display: grid; gap: 16px; }
+
+/* â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.card,
+.hero-card,
+.mission-card,
+.mission-detail-card,
+.thought-card,
+.stat-card,
+.review-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
+.card { padding: 18px; }
 
-// ─── App ───────────────────────────────────────────────────────────────────
-function App() {
-  const [thoughts, setThoughts] = useState([]);
-  const [missions, setMissions] = useState([]);
-  const [today, setToday] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [milestones, setMilestones] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('today');
-  const [progressSubTab, setProgressSubTab] = useState('accomplishments');
-  const [selectedCategory, setSelectedCategory] = useState('active-missions');
-  const [query, setQuery] = useState('');
-  const [modal, setModal] = useState(null);
-  const [energyFilter, setEnergyFilter] = useState('');
-  const [highlightGoalId, setHighlightGoalId] = useState('');
-  const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
-  });
+.hero-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(20,26,36,0.95) 60%);
+  border-color: var(--accent-border);
+}
+.hero-copy { max-width: 640px; }
+.hero-copy h2 {
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  letter-spacing: -0.05em;
+  font-weight: 800;
+}
+.hero-copy p:last-child { color: var(--text-secondary); margin-top: 8px; }
+.hero-icon { color: var(--accent); opacity: 0.7; }
 
-  function savePinnedGoals(ids) {
-    setPinnedGoalIds(ids);
-    localStorage.setItem('blakeos-pinned-goals', JSON.stringify(ids));
-  }
+/* â”€â”€ Section layout helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.section-header, .mission-detail-top, .thought-topline, .mission-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.section-header p { margin-top: 4px; }
+.mini-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+}
+.mini-header h3 { color: var(--text); }
 
-  // ── Load all data from Supabase on mount ──
-  useEffect(() => {
-    async function loadAll() {
-      const [thoughtsRes, missionsRes, todayRes, reviewsRes, milestonesRes] = await Promise.all([
-        supabase.from('thoughts').select('*').order('created_at', { ascending: false }),
-        supabase.from('missions').select('*').order('created_at', { ascending: false }),
-        supabase.from('today_focus').select('*').eq('id', 1).single(),
-        supabase.from('reviews').select('*').order('created_at', { ascending: false }),
-        supabase.from('milestones').select('*').order('week_start', { ascending: true }),
-      ]);
-      if (thoughtsRes.data) setThoughts(thoughtsRes.data.map(dbToThought));
-      if (missionsRes.data) setMissions(missionsRes.data.map(dbToMission));
-      if (todayRes.data) setToday(dbToToday(todayRes.data));
-      else setToday({ mainMissionId: '', mainMissionText: 'Pick one thing that moves life forward today.', bodyWin: 'Do one action that keeps your body/life stable.', lifeWinId: '', lifeWinText: 'Clear one small real-life open loop.', avoiding: 'Name the thing you do not want to deal with.', updatedAt: new Date().toISOString() });
-      if (reviewsRes.data) setReviews(reviewsRes.data.map(dbToReview));
-      if (milestonesRes.data) setMilestones(milestonesRes.data.map(dbToMilestone));
-      setLoading(false);
-    }
-    loadAll();
-  }, []);
+/* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.primary-button,
+.secondary-button,
+.text-button,
+.danger-button,
+.icon-button {
+  border: 0;
+  color: var(--text);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-weight: 700;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.primary-button:hover,
+.secondary-button:hover,
+.text-button:hover,
+.danger-button:hover,
+.icon-button:hover { opacity: 0.85; transform: translateY(-1px); }
 
-  // ── Derived lists ──
-  const activeThoughts = thoughts.filter((t) => t.status !== 'Done');
-  const doneThoughts = thoughts.filter((t) => t.status === 'Done');
-  const unsorted = activeThoughts.filter((t) => !t.category);
-  const openTasks = activeThoughts.filter((t) => t.category === 'next-actions');
-  const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
-  const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
-  const holdItems = activeThoughts.filter((t) => ['maintenance', 'relationships', 'money-adult-life', 'someday'].includes(t.category));
-  const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
+.primary-button {
+  width: 100%;
+  padding: 13px 18px;
+  background: linear-gradient(135deg, #d97706, var(--accent));
+  color: #0c0f14;
+  font-weight: 800;
+}
+.primary-button.compact,
+.secondary-button.compact { width: auto; padding: 9px 14px; }
 
-  const pinnedMissions = useMemo(() => {
-    if (pinnedGoalIds.length > 0) {
-      const pinned = pinnedGoalIds.map((id) => missions.find((m) => m.id === id)).filter(Boolean);
-      if (pinned.length > 0) return pinned.slice(0, 3);
-    }
-    return missions.slice(0, 3);
-  }, [missions, pinnedGoalIds]);
-
-  const filteredThoughts = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return activeThoughts
-      .filter((t) => selectedCategory ? t.category === selectedCategory : true)
-      .filter((t) => {
-        if (!normalized) return true;
-        return [t.text, t.area, t.notes, t.nextAction, t.status].join(' ').toLowerCase().includes(normalized);
-      })
-      .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.createdAt) - new Date(a.createdAt));
-  }, [activeThoughts, selectedCategory, query]);
-
-  const energyFilteredTasks = useMemo(() => {
-    return openTasks.filter((t) => !energyFilter || t.energy === energyFilter);
-  }, [openTasks, energyFilter]);
-
-  // ── Today ──
-  async function updateToday(key, value) {
-    const updated = { ...today, [key]: value, updatedAt: new Date().toISOString() };
-    setToday(updated);
-    await supabase.from('today_focus').upsert({
-      id: 1,
-      main_mission_id: updated.mainMissionId,
-      main_mission_text: updated.mainMissionText,
-      body_win: updated.bodyWin,
-      life_win_id: updated.lifeWinId,
-      life_win_text: updated.lifeWinText,
-      avoiding: updated.avoiding,
-      updated_at: updated.updatedAt,
-    });
-  }
-
-  // ── Thoughts ──
-  async function addThought(input) {
-    const thought = {
-      id: crypto.randomUUID(),
-      text: input.text.trim(), category: input.category || '',
-      area: input.area || 'Personal', status: input.status || 'Open',
-      createdAt: new Date().toISOString(), completedAt: '',
-      nextAction: input.nextAction || '', notes: input.notes || '',
-      dueDate: input.dueDate || '', energy: input.energy || 'Medium',
-      pinned: false, relatedMissionId: input.relatedMissionId || '',
-      decisionOptions: '', waitingOn: '', truth: '', exaggeration: '',
-    };
-    if (!thought.text) return;
-    setThoughts((prev) => [thought, ...prev]);
-    await supabase.from('thoughts').insert(thoughtToDb(thought));
-  }
-
-  async function updateThought(id, patch) {
-    const extra = patch.status === 'Done' ? { completedAt: new Date().toISOString() } : {};
-    setThoughts((prev) => prev.map((t) => t.id === id ? { ...t, ...patch, ...extra } : t));
-    const updated = thoughts.find((t) => t.id === id);
-    if (!updated) return;
-    const merged = { ...updated, ...patch, ...extra };
-    await supabase.from('thoughts').update(thoughtToDb(merged)).eq('id', id);
-  }
-
-  async function deleteThought(id) {
-    setThoughts((prev) => prev.filter((t) => t.id !== id));
-    await supabase.from('thoughts').delete().eq('id', id);
-  }
-
-  // ── Missions ──
-  async function addMission(input) {
-    const mission = {
-      id: crypto.randomUUID(), title: input.title.trim(),
-      why: input.why || '', weeklyGoal: input.weeklyGoal || '',
-      nextAction: input.nextAction || '', status: input.status || 'Open',
-      area: input.area || 'Personal', createdAt: new Date().toISOString(),
-      targetDate: input.targetDate || '',
-    };
-    if (!mission.title) return;
-    setMissions((prev) => [mission, ...prev]);
-    await supabase.from('missions').insert(missionToDb(mission));
-  }
-
-  async function updateMission(id, patch) {
-    setMissions((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
-    const updated = missions.find((m) => m.id === id);
-    if (!updated) return;
-    const merged = { ...updated, ...patch };
-    await supabase.from('missions').update(missionToDb(merged)).eq('id', id);
-  }
-
-  async function deleteMission(id) {
-    setMissions((prev) => prev.filter((m) => m.id !== id));
-    await supabase.from('missions').delete().eq('id', id);
-  }
-
-  // ── Reviews ──
-  async function saveReview(review) {
-    const saved = { ...review, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-    setReviews((prev) => [saved, ...prev]);
-    await supabase.from('reviews').insert({
-      id: saved.id, improved: saved.improved, avoided: saved.avoided,
-      mattered: saved.mattered, stress: saved.stress,
-      next_week: saved.nextWeek, created_at: saved.createdAt,
-    });
-  }
-
-  // \u2500\u2500 Milestones \u2500\u2500
-  async function setMilestone(missionId, weekStart, title) {
-    const existing = milestones.find((m) => m.missionId === missionId && m.weekStart === weekStart);
-    const trimmed = title.trim();
-    if (existing && !trimmed) {
-      setMilestones((prev) => prev.filter((m) => m.id !== existing.id));
-      await supabase.from('milestones').delete().eq('id', existing.id);
-      return;
-    }
-    if (!trimmed) return;
-    if (existing) {
-      setMilestones((prev) => prev.map((m) => m.id === existing.id ? { ...m, title: trimmed } : m));
-      await supabase.from('milestones').update({ title: trimmed }).eq('id', existing.id);
-    } else {
-      const row = { id: crypto.randomUUID(), missionId, weekStart, title: trimmed, done: false, createdAt: new Date().toISOString() };
-      setMilestones((prev) => [...prev, row]);
-      await supabase.from('milestones').insert(milestoneToDb(row));
-    }
-  }
-
-  async function toggleMilestone(id, done) {
-    setMilestones((prev) => prev.map((m) => m.id === id ? { ...m, done } : m));
-    await supabase.from('milestones').update({ done }).eq('id', id);
-  }
-
-  function convertThought(thought, conversion) {
-    const patches = {
-      task: { category: 'next-actions', status: 'Open' },
-      problem: { category: 'problems', status: 'Open' },
-      decision: { category: 'decisions', status: 'Open' },
-      waiting: { category: 'waiting-on', status: 'Open' },
-      relationship: { category: 'relationships', status: 'Open' },
-      money: { category: 'money-adult-life', status: 'Open' },
-      someday: { category: 'someday', status: 'Open' },
-      noise: { category: 'anxiety-noise', status: 'Open' },
-      maintenance: { category: 'maintenance', status: 'Open' },
-      done: { status: 'Done' },
-    };
-    updateThought(thought.id, patches[conversion] || {});
-  }
-
-  function promoteToToday(slot, id, text) {
-    const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
-    const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
-    const valueKey = keyMap[slot];
-    if (!valueKey) return;
-
-    if (idKeyMap[slot]) updateToday(idKeyMap[slot], id);
-    updateToday(valueKey, text.trim());
-  }
-
-  function completeSlot(slot, linkedId) {
-    const keyMap = { main: 'mainMissionText', body: 'bodyWin', life: 'lifeWinText', avoiding: 'avoiding' };
-    const idKeyMap = { main: 'mainMissionId', life: 'lifeWinId' };
-    const valueKey = keyMap[slot];
-    if (!valueKey) return;
-
-    if (linkedId) updateThought(linkedId, { status: 'Done' });
-    if (idKeyMap[slot]) updateToday(idKeyMap[slot], '');
-    updateToday(valueKey, '');
-  }
-
-  function goToCategory(catId) {
-    setSelectedCategory(catId);
-    setActiveTab('sort');
-  }
-
-  const navItems = [
-    { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
-    { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
-    { id: 'sort',     label: 'Command',  icon: Layers,     color: 'nav-purple' },
-    { id: 'plan',     label: 'Plan',     icon: CalendarDays, color: 'nav-orange' },
-    { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
-  ];
-
-  if (loading) return <LoadingScreen />;
-
-  const slotsSet = today ? [today.mainMissionText, today.bodyWin, today.lifeWinText, today.avoiding].filter((v) => v && v.trim() && v.trim().length > 20).length : 0;
-  const commandScore = Math.max(5, Math.min(100,
-    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
-  ));
-  const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
-
-  return (
-    <div className="app-shell">
-      <header className="topbar topbar-with-strip">
-        <div className="topbar-title-row">
-          <div><p className="eyebrow">BlakeOS</p><h1>Command Center</h1></div>
-          <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
-            <Plus size={17} /><span>Capture</span>
-          </button>
-        </div>
-        <DailyCommandStrip
-          state={commandState}
-          missions={missions.length}
-          actions={openTasks.length}
-          loops={openLoops.length}
-          noise={noiseItems.length}
-          setActiveTab={setActiveTab}
-          setSelectedCategory={setSelectedCategory}
-        />
-      </header>
-
-      <main className="main-content">
-        {activeTab === 'today' && today && (
-          <TodayView
-            today={today} updateToday={updateToday} missions={pinnedMissions} allMissions={missions}
-            openTasks={openTasks} openLoops={openLoops} noiseItems={noiseItems}
-            activeThoughts={activeThoughts} doneThoughts={doneThoughts}
-            energyFilter={energyFilter} setEnergyFilter={setEnergyFilter}
-            energyFilteredTasks={energyFilteredTasks}
-            setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-            setModal={setModal} updateThought={updateThought}
-            promoteToToday={promoteToToday}
-            completeSlot={completeSlot}
-            goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('plan'); }}
-            onManageGoals={() => setModal({ type: 'manage-goals' })}
-          />
-        )}
-        {activeTab === 'capture' && <CaptureView addThought={addThought} missions={missions} setActiveTab={setActiveTab} />}
-        {activeTab === 'sort' && (
-          <SortView
-            thoughts={activeThoughts} unsorted={unsorted}
-            selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
-            query={query} setQuery={setQuery} filteredThoughts={filteredThoughts}
-            updateThought={updateThought} deleteThought={deleteThought}
-            convertThought={convertThought} setModal={setModal}
-          />
-        )}
-        {activeTab === 'plan' && (
-          <PlanView
-            openTasks={openTasks} openLoops={openLoops} holdItems={holdItems}
-            missions={missions} milestones={milestones} today={today}
-            updateThought={updateThought} updateMission={updateMission}
-            setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-            setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-            promoteToToday={promoteToToday}
-            highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
-            setModal={setModal}
-          />
-        )}
-        {activeTab === 'progress' && (
-          <ProgressView
-            doneThoughts={doneThoughts} activeThoughts={activeThoughts}
-            reviews={reviews} saveReview={saveReview}
-            subTab={progressSubTab} setSubTab={setProgressSubTab}
-            goToCategory={goToCategory}
-            updateThought={updateThought} setModal={setModal}
-          />
-        )}
-      </main>
-
-      <nav className="bottom-nav">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button key={item.id} className={isActive ? `active ${item.color}` : ''} onClick={() => setActiveTab(item.id)}>
-              <Icon size={19} /><span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {modal?.type === 'quick-capture' && (
-        <Modal title="Quick Capture" onClose={() => setModal(null)}>
-          <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} missions={missions} compact />
-        </Modal>
-      )}
-      {modal?.type === 'edit-thought' && (
-        <Modal title="Edit Item" onClose={() => setModal(null)}>
-          <ThoughtEditForm thought={modal.thought} missions={missions} updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }} />
-        </Modal>
-      )}
-      {modal?.type === 'promote' && (
-        <Modal title={`Pull into: ${modal.modeLabel || 'Command Card'}`} onClose={() => setModal(null)}>
-          <PromoteModal
-            mode={modal.slot}
-            thoughts={activeThoughts}
-            activeMissions={activeMissionItems}
-            tasks={openTasks}
-            loops={openLoops}
-            onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }}
-          />
-        </Modal>
-      )}
-      {modal?.type === 'close-day' && (
-        <Modal title="Close the Day" onClose={() => setModal(null)}>
-          <CloseDayModal
-            thoughts={thoughts}
-            missions={missions}
-            onClose={() => setModal(null)}
-          />
-        </Modal>
-      )}
-      {modal?.type === 'goal-form' && (
-        <Modal title={modal.mission ? 'Edit Goal' : 'New Goal'} onClose={() => setModal(null)}>
-          <GoalFormModal
-            mission={modal.mission}
-            addMission={addMission} updateMission={updateMission} deleteMission={deleteMission}
-            onClose={() => setModal(null)}
-          />
-        </Modal>
-      )}
-      {modal?.type === 'manage-goals' && (
-        <Modal title="Pin Goals to Today" onClose={() => setModal(null)}>
-          <ManageGoalsModal
-            missions={missions}
-            pinnedGoalIds={pinnedGoalIds}
-            onSave={(ids) => { savePinnedGoals(ids); setModal(null); }}
-            onClose={() => setModal(null)}
-          />
-        </Modal>
-      )}
-    </div>
-  );
+.secondary-button {
+  padding: 9px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line-strong);
+  color: var(--text-secondary);
+}
+.text-button {
+  background: transparent;
+  padding: 7px 12px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+.text-button.full-width { width: 100%; justify-content: center; }
+.danger-button {
+  background: rgba(248,113,113,0.1);
+  color: #fca5a5;
+  padding: 7px 12px;
+  font-size: 0.875rem;
+}
+.icon-button {
+  width: 34px;
+  height: 34px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
-// ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals }) {
-  const defaultSlots = {
-    mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
-    bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
-    lifeWinText: 'Choose 1-2 things that create growth or long-term progress.',
-    avoiding: 'Choose 1-2 things that need to get shipped or closed.',
-  };
-  const isMeaningful = (value, fallback) => Boolean(value && value.trim() && value.trim() !== fallback);
-  const slotConfigs = [
-    {
-      id: 'main', number: '01', label: 'Focus', subtitle: 'Deep work, decisions, and mental clarity',
-      tone: 'red', icon: Crosshair, value: today.mainMissionText,
-      fallback: defaultSlots.mainMissionText, linkedId: today.mainMissionId,
-      onChange: (v) => updateToday('mainMissionText', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'main', modeLabel: 'Focus' }),
-      onComplete: () => completeSlot('main', today.mainMissionId),
-    },
-    {
-      id: 'body', number: '02', label: 'Energy', subtitle: 'Body, recovery, stability, and fuel',
-      tone: 'orange', icon: Activity, value: today.bodyWin,
-      fallback: defaultSlots.bodyWin, linkedId: '',
-      onChange: (v) => updateToday('bodyWin', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'body', modeLabel: 'Energy' }),
-      onComplete: () => completeSlot('body', ''),
-    },
-    {
-      id: 'life', number: '03', label: 'Growth', subtitle: 'Learning, reflection, and future progress',
-      tone: 'amber', icon: Layers, value: today.lifeWinText,
-      fallback: defaultSlots.lifeWinText, linkedId: today.lifeWinId,
-      onChange: (v) => updateToday('lifeWinText', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'life', modeLabel: 'Growth' }),
-      onComplete: () => completeSlot('life', today.lifeWinId),
-    },
-    {
-      id: 'avoiding', number: '04', label: 'Execution', subtitle: 'Ship, close, respond, and move forward',
-      tone: 'blue', icon: Zap, value: today.avoiding,
-      fallback: defaultSlots.avoiding, linkedId: '',
-      onChange: (v) => updateToday('avoiding', v),
-      onPromote: () => setModal({ type: 'promote', slot: 'avoiding', modeLabel: 'Execution' }),
-      onComplete: () => completeSlot('avoiding', ''),
-    },
-  ];
-
-  const slotsSet = slotConfigs.filter((slot) => isMeaningful(slot.value, slot.fallback)).length;
-  const clearedToday = (doneThoughts || []).filter((t) => getDayKey(t.completedAt || t.createdAt) === getLocalTodayKey()).length;
-  const commandScore = Math.max(5, Math.min(100,
-    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
-  ));
-  const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
-
-  return (
-    <section className="screen stack">
-      <div className="hero-card hero-command-layout">
-        <div className="hero-copy">
-          <p className="eyebrow">Daily Operating System</p>
-          <h2>What deserves your attention?</h2>
-          <p>Pick the few things that make today a win. Park everything else.</p>
-        </div>
-        <CommandRing
-          score={commandScore}
-          state={commandState}
-          slotsSet={slotsSet}
-          openTasks={openTasks.length}
-          openLoops={openLoops.length}
-          noiseCount={noiseItems.length}
-          clearedToday={clearedToday}
-        />
-      </div>
-
-      <DailyQuote />
-
-      <div className="card todays-command-card">
-        <div className="section-header">
-          <div><p className="eyebrow">Behavioral Modes</p><h2>Today's Command Cards</h2><p className="muted">Focus, Energy, Growth, and Execution — 1-2 priorities each.</p></div>
-          <Pill tone="slate">Updated {formatDate(today.updatedAt)}</Pill>
-        </div>
-        <div className="today-command-grid">
-          {slotConfigs.map((slot) => (
-            <TodaySlot
-              key={slot.id}
-              number={slot.number}
-              label={slot.label}
-              subtitle={slot.subtitle}
-              value={slot.value}
-              fallback={slot.fallback}
-              tone={slot.tone}
-              icon={slot.icon}
-              onChange={slot.onChange}
-              onPromote={slot.onPromote}
-              onComplete={slot.onComplete}
-              linkedId={slot.linkedId}
-              isSet={isMeaningful(slot.value, slot.fallback)}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="section-header">
-        <div><p className="eyebrow">Active Goals</p><h2>Where Momentum Lives</h2></div>
-        <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
-      </div>
-      <div className="mission-list">
-        {missions.slice(0, 3).map((m) => {
-          const areaMeta = getAreaMeta(m.area);
-          const AreaIcon = areaMeta.icon;
-          return (
-            <button
-              key={m.id}
-              className={`mission-card mission-card-btn mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
-              onClick={() => goToGoal(m.id)}
-            >
-              <div>
-                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
-                  <AreaIcon size={13} /><span>{m.area}</span>
-                </div>
-                <h3>{m.title}</h3>
-                <p>{m.why || 'No why added yet.'}</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
-                <ChevronRight size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-              </div>
-            </button>
-          );
-        })}
-        {missions.length === 0 && <EmptyState title="No goals yet" text="Go to Goals to set your top priorities." />}
-      </div>
-      <div className="card">
-        <div className="section-header">
-          <div><p className="eyebrow">Do Right Now</p><h2>Next Actions</h2></div>
-          <div className="energy-toggle">
-            {['', 'Low', 'Medium', 'High'].map((level) => (
-              <button key={level} data-level={level} className={`energy-btn ${energyFilter === level ? 'active' : ''}`} onClick={() => setEnergyFilter(level)}>
-                {level === '' ? 'All' : <><EnergyIcon level={level} /> {level}</>}
-              </button>
-            ))}
-          </div>
-        </div>
-        {energyFilteredTasks.length ? (
-          <div className="compact-list">
-            {energyFilteredTasks.slice(0, 6).map((task) => {
-              const cat = getCategory(task.category);
-              const CatIcon = cat.icon;
-              return (
-                <div key={task.id} className="compact-item task-action-row">
-                  <button className="task-text-btn" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
-                    <CatIcon size={16} className={`task-cat-icon-${cat.color}`} />
-                    <div className="compact-item-body">
-                      <span>{task.text}</span>
-                      <div className="compact-meta">
-                        <EnergyIcon level={task.energy} /><span className="meta-text">{task.energy}</span>
-                        {task.dueDate && <><CalendarDays size={11} /><span className="meta-text">{formatDate(task.dueDate)}</span></>}
-                      </div>
-                    </div>
-                  </button>
-                  <button className="task-done-btn" onClick={() => updateThought(task.id, { status: 'Done' })} title="Mark done">
-                    <CheckCircle2 size={20} />
-                  </button>
-                </div>
-              );
-            })}
-            {openTasks.length > 6 && (
-              <button className="text-button full-width" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>See all {openTasks.length} actions →</button>
-            )}
-          </div>
-        ) : (
-          <EmptyState title={energyFilter ? `No ${energyFilter.toLowerCase()} energy tasks` : 'No open actions'} text="Capture or convert a thought into a next action." />
-        )}
-      </div>
-      <div className="card">
-        <div className="mini-header"><AlertCircle size={18} /><h3>Open Loops</h3><Pill tone={openLoops.length > 0 ? 'orange' : 'green'} className="ml-auto">{openLoops.length}</Pill></div>
-        {openLoops.length ? (
-          <div className="compact-list">
-            {openLoops.slice(0, 5).map((loop) => {
-              const cat = getCategory(loop.category);
-              const stale = stalenessLabel(getDaysOld(loop.createdAt), loop.category);
-              return (
-                <button key={loop.id} className="compact-item" onClick={() => { setSelectedCategory(loop.category); setActiveTab('sort'); }}>
-                  <cat.icon size={17} className={`task-cat-icon-${cat.color}`} />
-                  <div className="compact-item-body">
-                    <span>{loop.text}</span>
-                    {stale && <span className={`stale-tag ${stale.urgent ? 'stale-urgent' : ''}`}><Clock size={11} /> {stale.label}</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : <p className="muted small">No open loops. Problems, decisions, and waiting items show here.</p>}
-      </div>
-      <div className="card noise-card">
-        <div className="section-header">
-          <div><p className="eyebrow">Mental Noise</p><h2>Worry Check</h2></div>
-          <button className="secondary-button compact" onClick={() => setModal({ type: 'quick-capture' })}><Plus size={16} /> Add</button>
-        </div>
-        {noiseItems.length ? (
-          <ThoughtCard thought={noiseItems[0]} updateThought={updateThought} compact />
-        ) : <p className="muted small">No noise entries yet. When a thought repeats with no clear action, put it here.</p>}
-      </div>
-      <button className="close-day-btn" onClick={() => setModal({ type: 'close-day' })}>
-        <MoonStar size={20} />
-        <span>Close the Day</span>
-      </button>
-    </section>
-  );
+/* â”€â”€ Form elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.field { display: grid; gap: 6px; }
+.field > span, .field-label {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount, clearedToday }) {
-  const stateConfig = {
-    'Locked In':        { color: '#60a5fa', glow: 'rgba(96,165,250,0.25)',  icon: '🔒', tagline: 'Elite discipline. Momentum is yours.' },
-    'In Command':       { color: '#f59e0b', glow: 'rgba(245,158,11,0.25)', icon: '✦',  tagline: "You're executing. Keep the focus sharp." },
-    'Building Command': { color: '#fbbf24', glow: 'rgba(251,191,36,0.2)',  icon: '↗',  tagline: 'Building momentum. Stay consistent.' },
-    'Scattered':        { color: '#f87171', glow: 'rgba(248,113,113,0.2)', icon: '!',  tagline: 'Reset now. One action changes everything.' },
-  };
-  const cfg = stateConfig[state] || stateConfig['In Command'];
-  const circumference = 2 * Math.PI * 42;
-  const dashOffset = circumference * (1 - score / 100);
+input, textarea, select {
+  width: 100%;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+input[type="date"] {
+  color: var(--text);
+  font-size: 0.95rem;
+  padding: 12px 13px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.big-input { min-height: 116px; font-size: 0.975rem; }
+.capture-form { display: grid; gap: 14px; }
+.form-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.today-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.two-column { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  const metrics = [
-    { label: 'Set',     value: `${slotsSet}/4`, tone: 'amber' },
-    { label: 'Actions', value: openTasks,       tone: 'green' },
-    { label: 'Cleared', value: clearedToday,    tone: 'blue' },
-    { label: 'Noise',   value: noiseCount,      tone: 'red' },
-  ];
+/* â”€â”€ Today Slot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.today-slot { display: grid; gap: 6px; }
+.today-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.promote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.promote-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+.linked-slot { border-color: var(--accent-border) !important; }
 
-  return (
-    <div className="command-ring-panel">
-      <div className="command-ring-svg-wrap">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-          <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
-          <circle
-            cx="55" cy="55" r="42" fill="none"
-            stroke={cfg.color} strokeWidth="9"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
-            style={{ transform: 'rotate(-90deg)', transformOrigin: '55px 55px', filter: `drop-shadow(0 0 8px ${cfg.color})` }}
-          />
-        </svg>
-        <div className="command-ring-center">
-          <strong>{score}%</strong>
-          <span>COMMAND<br />STATE</span>
-        </div>
-      </div>
-      <div className="command-ring-copy">
-        <div className="command-state-header">
-          <span className="command-state-icon" style={{ color: cfg.color }}>{cfg.icon}</span>
-          <span className="command-state-label" style={{ color: cfg.color }}>{state}</span>
-        </div>
-        <p className="command-state-tagline">{cfg.tagline}</p>
-        <div className="command-ring-metrics">
-          {metrics.map((m) => (
-            <div key={m.label} className={`command-metric-tile command-metric-${m.tone}`}>
-              <strong>{m.value}</strong>
-              <span>{m.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+/* â”€â”€ Promote Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.promote-modal { display: grid; gap: 16px; padding-top: 4px; }
+.promote-group { display: grid; gap: 6px; }
+.promote-group-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+.promote-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.promote-item:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+.promote-item span { font-size: 0.9rem; line-height: 1.4; }
+
+/* â”€â”€ Energy toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.energy-toggle {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.energy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.energy-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+/* Per-level active colors */
+.energy-btn.active[data-level="Low"] {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: var(--cat-slate);
+}
+.energy-btn.active[data-level="Medium"] {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--cat-amber);
+}
+.energy-btn.active[data-level="High"] {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: var(--cat-green);
+}
+.energy-btn:hover:not(.active) { border-color: var(--line-strong); color: var(--text); }
+
+/* â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.mission-list { display: grid; gap: 10px; }
+.mission-list.detailed { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.mission-card {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+.mission-card-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: inherit;
+  background: inherit;
+  border-radius: inherit;
+}
+.mission-card-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+.mission-card-btn h3 { color: var(--text); }
+.mission-card .eyebrow { margin-bottom: 2px; }
+.mission-card h3 { margin-bottom: 4px; }
+.mission-card p { color: var(--text-muted); font-size: 0.875rem; }
+/* Goal card highlighted state */
+.goal-card-highlighted {
+  border-color: var(--accent-border) !important;
+  box-shadow: 0 0 0 2px var(--accent-border), 0 8px 32px rgba(245,158,11,0.12) !important;
+  animation: highlightPulse 1.6s ease-out forwards;
+}
+@keyframes highlightPulse {
+  0%   { box-shadow: 0 0 0 3px rgba(245,158,11,0.5), 0 8px 32px rgba(245,158,11,0.2); }
+  100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.2), 0 4px 16px rgba(0,0,0,0.2); }
 }
 
-function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTab, setSelectedCategory }) {
-  const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
-  const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
+.mission-detail-card { padding: 16px; display: grid; gap: 12px; }
+.mission-detail-card textarea { min-height: 76px; }
+.mission-footer { margin-top: 4px; }
 
-  function goTo(tab, cat) {
-    if (setActiveTab) setActiveTab(tab);
-    if (cat && setSelectedCategory) setSelectedCategory(cat);
-  }
-
-  return (
-    <div className="daily-command-strip">
-      <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
-      <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{missions} goal{missions === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
-      <div className={`command-strip-item command-strip-load ${loadColor}`}><Zap size={15} /><span>{load} load</span></div>
-    </div>
-  );
+/* â”€â”€ Pills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.05);
 }
 
-function TodaySlot({ number, label, subtitle, value, fallback, tone, icon: Icon, onChange, onPromote, onComplete, linkedId, isSet }) {
-  return (
-    <div className={`today-slot today-command-card-slot today-command-${tone} ${linkedId ? 'linked-slot-card' : ''} ${isSet ? 'is-set' : 'needs-set'}`}>
-      <div className="today-command-card-top">
-        <div className="today-command-number">{number}</div>
-        <div className="today-command-title-wrap">
-          <div className="today-command-label-row">
-            <Icon size={16} />
-            <span>{label}</span>
-          </div>
-          <p>{subtitle}</p>
-        </div>
-        <Pill tone={isSet ? tone : 'slate'}>{isSet ? 'Set' : 'Open'}</Pill>
-      </div>
-      <textarea
-        value={value}
-        placeholder={fallback}
-        onChange={(e) => onChange(e.target.value)}
-        className={linkedId ? 'linked-slot' : ''}
-      />
-      <div className="today-command-card-actions">
-        <button className="promote-btn today-command-pull" onClick={onPromote}><ArrowUpCircle size={14} /> Pull from list</button>
-        {isSet && (
-          <button className="promote-btn today-command-done" onClick={onComplete}><CheckCircle2 size={14} /> Done</button>
-        )}
-      </div>
-    </div>
-  );
+/* Status-driven pill tones â€” color = meaning */
+.pill-green   { background: rgba(52,211,153,0.12); color: #6ee7b7; border-color: rgba(52,211,153,0.2); }
+.pill-amber,
+.pill-yellow  { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.22); }
+.pill-red     { background: rgba(248,113,113,0.12); color: #fca5a5; border-color: rgba(248,113,113,0.2); }
+.pill-orange  { background: rgba(251,146,60,0.12); color: #fdba74; border-color: rgba(251,146,60,0.2); }
+.pill-purple  { background: rgba(167,139,250,0.12); color: #c4b5fd; border-color: rgba(167,139,250,0.2); }
+.pill-teal    { background: rgba(45,212,191,0.12); color: #5eead4; border-color: rgba(45,212,191,0.2); }
+.pill-pink    { background: rgba(244,114,182,0.12); color: #f9a8d4; border-color: rgba(244,114,182,0.2); }
+.pill-emerald { background: rgba(16,185,129,0.12); color: #6ee7b7; border-color: rgba(16,185,129,0.2); }
+.pill-blue    { background: rgba(96,165,250,0.12); color: #93c5fd; border-color: rgba(96,165,250,0.2); }
+.pill-slate   { background: rgba(148,163,184,0.08); color: #94a3b8; border-color: rgba(148,163,184,0.15); }
+.pill-default { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
+
+/* â”€â”€ Compact list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.compact-list, .thought-list { display: grid; gap: 8px; }
+.compact-item {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.025);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  text-align: left;
+  transition: border-color 0.15s;
+}
+.compact-item:hover { border-color: var(--line-strong); }
+.compact-item-body { display: grid; gap: 4px; flex: 1; }
+.compact-item-body > span { line-height: 1.35; font-size: 0.9rem; }
+.compact-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+.meta-text { font-size: 0.72rem; }
+.done-item { opacity: 0.45; }
+.done-item span { text-decoration: line-through; }
+.check-done { color: var(--status-track); }
+
+/* â”€â”€ Staleness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.stale-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.stale-tag.stale-urgent { color: #f87171; }
+.stale-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(248,113,113,0.18);
+  color: #f87171;
+  font-size: 0.6rem;
+  font-weight: 900;
+}
+.stat-stale {
+  font-size: 0.65rem;
+  color: #f87171;
+  font-weight: 700;
 }
 
-function getBehaviorMode(thought) {
-  const text = `${thought.text || ''} ${thought.nextAction || ''} ${thought.notes || ''}`.toLowerCase();
-  if (['problems', 'decisions', 'anxiety-noise'].includes(thought.category)) return 'main';
-  if (thought.category === 'maintenance' || thought.area === 'Health' || ['workout', 'gym', 'legs', 'sleep', 'food', 'eat', 'clean', 'room', 'laundry', 'supplement', 'recovery'].some((w) => text.includes(w))) return 'body';
-  if (thought.category === 'someday' || ['learn', 'read', 'course', 'research', 'study', 'reflect', 'vision', 'future', 'skill'].some((w) => text.includes(w))) return 'life';
-  if (['active-missions', 'next-actions', 'relationships', 'money-adult-life', 'waiting-on'].includes(thought.category)) return 'avoiding';
-  return 'avoiding';
+/* â”€â”€ Noise bridge â€” Noise â†’ Action feature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.noise-bridge {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.18);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.noise-bridge-label { font-size: 0.82rem; color: var(--text-secondary); }
+.convert-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.convert-action-btn:hover { opacity: 0.8; }
+
+/* â”€â”€ Tier navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.tier-nav { display: grid; gap: 8px; }
+
+.tier-group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tier-group-tier-act { border-color: rgba(245,158,11,0.2); }
+.tier-group-tier-think { border-color: rgba(167,139,250,0.18); }
+.tier-group-tier-hold { border-color: var(--line); }
+
+.tier-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  background: rgba(255,255,255,0.025);
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tier-group-tier-act .tier-header { background: rgba(245,158,11,0.06); }
+.tier-group-tier-think .tier-header { background: rgba(167,139,250,0.06); }
+.tier-header:hover { background: rgba(255,255,255,0.04); }
+
+.tier-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.tier-group-tier-act .tier-label { color: var(--accent); }
+.tier-group-tier-think .tier-label { color: #a78bfa; }
+.tier-group-tier-hold .tier-label { color: var(--text-secondary); }
+
+.tier-desc {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
-const behaviorModeMeta = {
-  main: { label: 'Focus', tone: 'red', icon: Crosshair, description: 'Decisions, problems, deep work, and the thing stealing mental bandwidth.' },
-  body: { label: 'Energy', tone: 'orange', icon: Activity, description: 'Body, recovery, stability, maintenance, and anything that keeps the machine running.' },
-  life: { label: 'Growth', tone: 'amber', icon: Layers, description: 'Learning, reflection, future-building, skills, and long-term progress.' },
-  avoiding: { label: 'Execution', tone: 'blue', icon: Zap, description: 'Ship it, respond, close the loop, move the real world forward.' },
-};
-
-function scoreBehaviorCandidate(thought, mode) {
-  const daysOld = getDaysOld(thought.createdAt);
-  let score = 0;
-  if (getBehaviorMode(thought) === mode) score += 40;
-  if (thought.pinned) score += 24;
-  if (thought.relatedMissionId) score += 18;
-  if (thought.dueDate) score += 14;
-  if (thought.energy === 'High' && ['main', 'body', 'avoiding'].includes(mode)) score += 8;
-  if (thought.energy === 'Low' && mode === 'body') score += 8;
-  if (['decisions', 'problems'].includes(thought.category) && mode === 'main') score += 12;
-  if (['next-actions', 'active-missions'].includes(thought.category) && mode === 'avoiding') score += 12;
-  if (thought.category === 'maintenance' && mode === 'body') score += 12;
-  if (thought.category === 'someday' && mode === 'life') score += 12;
-  score += Math.min(daysOld, 10);
-  return score;
+.tier-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
 }
 
-function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks, loops, onSelect }) {
-  const meta = behaviorModeMeta[mode] || behaviorModeMeta.avoiding;
-  const ModeIcon = meta.icon;
-  const candidates = (thoughts.length ? thoughts : [...activeMissions, ...tasks, ...loops])
-    .filter((t) => t.status !== 'Done')
-    .sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
-  const recommended = candidates.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
-  const fallback = candidates.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.category-chip:hover { border-color: var(--line-strong); color: var(--text); }
+.category-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+/* Per-category active colors */
+.chip-active-amber   { background: rgba(245,158,11,0.14)  !important; border-color: rgba(245,158,11,0.3)  !important; color: var(--cat-amber)   !important; }
+.chip-active-green   { background: rgba(52,211,153,0.14)  !important; border-color: rgba(52,211,153,0.3)  !important; color: var(--cat-green)   !important; }
+.chip-active-orange  { background: rgba(251,146,60,0.14)  !important; border-color: rgba(251,146,60,0.3)  !important; color: var(--cat-orange)  !important; }
+.chip-active-purple  { background: rgba(167,139,250,0.14) !important; border-color: rgba(167,139,250,0.3) !important; color: var(--cat-purple)  !important; }
+.chip-active-yellow  { background: rgba(251,191,36,0.14)  !important; border-color: rgba(251,191,36,0.3)  !important; color: var(--cat-yellow)  !important; }
+.chip-active-teal    { background: rgba(45,212,191,0.14)  !important; border-color: rgba(45,212,191,0.3)  !important; color: var(--cat-teal)    !important; }
+.chip-active-pink    { background: rgba(244,114,182,0.14) !important; border-color: rgba(244,114,182,0.3) !important; color: var(--cat-pink)    !important; }
+.chip-active-emerald { background: rgba(16,185,129,0.14)  !important; border-color: rgba(16,185,129,0.3)  !important; color: var(--cat-emerald) !important; }
+.chip-active-slate   { background: rgba(148,163,184,0.1)  !important; border-color: rgba(148,163,184,0.25)!important; color: var(--cat-slate)   !important; }
+.chip-active-red     { background: rgba(248,113,113,0.14) !important; border-color: rgba(248,113,113,0.3) !important; color: var(--cat-red)     !important; }
+.chip-active-blue    { background: rgba(96,165,250,0.14)  !important; border-color: rgba(96,165,250,0.3)  !important; color: var(--cat-blue)    !important; }
+.category-chip small { opacity: 0.7; font-size: 0.72rem; }
 
-  function renderItem(t) {
-    const cat = getCategory(t.category);
-    const CatIcon = cat.icon;
-    return (
-      <button key={t.id} className="promote-item promote-behavior-item" onClick={() => onSelect(t.id, t.text)}>
-        <CatIcon size={15} className={`task-cat-icon-${cat.color}`} />
-        <span>{t.text}</span>
-        <Pill tone={cat.color}>{cat.short}</Pill>
-      </button>
-    );
-  }
+/* â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 13px;
+  color: var(--text-muted);
+}
+.search-bar input { border: 0; background: transparent; padding-left: 0; }
+.search-bar:focus-within { border-color: var(--accent-border); }
 
-  return (
-    <div className="promote-modal">
-      <div className={`behavior-mode-explainer behavior-mode-${meta.tone}`}>
-        <ModeIcon size={18} />
-        <div>
-          <strong>{meta.label}</strong>
-          <p>{meta.description}</p>
-        </div>
-      </div>
-      <p className="muted small">Pick up to 1-2 items for this mode. The app ranks by category fit, pinned items, related goals, due dates, energy, and stale open loops.</p>
-      {recommended.length > 0 && (
-        <div className="promote-group">
-          <p className="promote-group-label">Best fits for {meta.label}</p>
-          {recommended.map(renderItem)}
-        </div>
-      )}
-      {fallback.length > 0 && (
-        <div className="promote-group">
-          <p className="promote-group-label">Other command items</p>
-          {fallback.map(renderItem)}
-        </div>
-      )}
-      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing to pull yet" text="Capture or sort a few items first, then this mode will have smart candidates." />}
-    </div>
-  );
+/* â”€â”€ Category detail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.category-title { display: flex; gap: 12px; align-items: flex-start; }
+.icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: rgba(245,158,11,0.14);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.icon-amber  { background: rgba(245,158,11,0.14); color: var(--cat-amber); }
+.icon-green  { background: rgba(52,211,153,0.14); color: var(--cat-green); }
+.icon-orange { background: rgba(251,146,60,0.14); color: var(--cat-orange); }
+.icon-purple { background: rgba(167,139,250,0.14); color: var(--cat-purple); }
+.icon-yellow { background: rgba(251,191,36,0.14); color: var(--cat-yellow); }
+.icon-teal   { background: rgba(45,212,191,0.14); color: var(--cat-teal); }
+.icon-pink   { background: rgba(244,114,182,0.14); color: var(--cat-pink); }
+.icon-emerald{ background: rgba(16,185,129,0.14); color: var(--cat-emerald); }
+.icon-slate  { background: rgba(148,163,184,0.1); color: var(--cat-slate); }
+.icon-red    { background: rgba(248,113,113,0.14); color: var(--cat-red); }
+.icon-blue   { background: rgba(96,165,250,0.14); color: var(--cat-blue); }
+
+/* â”€â”€ Thought cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.thought-card { padding: 15px; display: grid; gap: 12px; }
+.thought-topline { align-items: flex-start; }
+.thought-labels { display: flex; gap: 6px; flex-wrap: wrap; }
+.thought-main h3 { margin-bottom: 6px; font-size: 0.96rem; }
+.thought-main p { color: var(--text-secondary); font-size: 0.875rem; margin-top: 4px; }
+.next-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--accent) !important;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+.filled-flag { fill: var(--accent); color: var(--accent); }
+
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.card-actions select { width: auto; padding: 7px 10px; border-radius: 999px; font-size: 0.8rem; }
+
+.convert-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.convert-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.convert-row button:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+  background: rgba(255,255,255,0.07);
 }
 
-// ─── Manage Goals Modal ────────────────────────────────────────────────────
-function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
-  const [selected, setSelected] = useState(pinnedGoalIds.length > 0 ? pinnedGoalIds : missions.slice(0, 3).map((m) => m.id));
+/* â”€â”€ Category hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.category-hint {
+  display: flex;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-strong);
+  align-items: flex-start;
+}
+.category-hint p { color: var(--text-secondary); margin-top: 2px; font-size: 0.875rem; }
+.hint-amber  { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
+.hint-green  { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.2); }
+.hint-orange { background: rgba(251,146,60,0.08); border-color: rgba(251,146,60,0.2); }
+.hint-purple { background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.2); }
+.hint-yellow { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
+.hint-teal   { background: rgba(45,212,191,0.08); border-color: rgba(45,212,191,0.2); }
+.hint-pink   { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.2); }
+.hint-emerald{ background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+.hint-red    { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
+.hint-slate  { background: rgba(148,163,184,0.06); border-color: rgba(148,163,184,0.15); }
 
-  function toggle(id) {
-    setSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 3) return prev; // max 3
-      return [...prev, id];
-    });
-  }
+/* â”€â”€ Stats grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+.stat-card {
+  padding: 13px 12px;
+  display: grid;
+  gap: 3px;
+  color: var(--text-muted);
+}
+.stat-card strong { font-size: 1.25rem; color: var(--text); }
+.stat-card span { font-size: 0.74rem; }
+.stat-closed-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: var(--status-track);
+  opacity: 0.85;
+}
+.stat-closed-row svg { flex-shrink: 0; }
+.stat-closed-row span { font-size: 0.66rem; font-weight: 700; }
 
-  return (
-    <div className="manage-goals-modal">
-      <p className="muted small">Choose up to 3 goals to pin to your Today view. Tap to toggle.</p>
-      <div className="manage-goals-list">
-        {missions.map((m) => {
-          const areaMeta = getAreaMeta(m.area);
-          const AreaIcon = areaMeta.icon;
-          const isSelected = selected.includes(m.id);
-          const isDisabled = !isSelected && selected.length >= 3;
-          return (
-            <button
-              key={m.id}
-              className={`manage-goal-item ${isSelected ? 'manage-goal-selected' : ''} ${isDisabled ? 'manage-goal-disabled' : ''} mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
-              onClick={() => !isDisabled && toggle(m.id)}
-            >
-              <div className="manage-goal-check">{isSelected ? <CheckCircle2 size={16} /> : <CircleDashed size={16} />}</div>
-              <div className="manage-goal-body">
-                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
-                  <AreaIcon size={12} /><span>{m.area}</span>
-                </div>
-                <span className="manage-goal-title">{m.title}</span>
-              </div>
-              {isSelected && <span className="manage-goal-badge">{selected.indexOf(m.id) + 1}</span>}
-            </button>
-          );
-        })}
-      </div>
-      <div className="manage-goals-footer">
-        <span className="muted small">{selected.length}/3 selected</span>
-        <button className="primary-button compact" onClick={() => onSave(selected)} disabled={selected.length === 0}>
-          <Check size={15} /> Save to Today
-        </button>
-      </div>
-    </div>
-  );
+/* â”€â”€ Review card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.review-card { padding: 14px; display: grid; gap: 8px; }
+.review-card details { color: var(--text-secondary); font-size: 0.875rem; }
+.review-card summary { cursor: pointer; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.review-card details p { margin: 6px 0; }
+
+/* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.empty-state {
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+.empty-state h3 { color: var(--text); font-size: 0.95rem; }
+.empty-state p { font-size: 0.82rem; }
+
+/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(6, 8, 14, 0.72);
+  backdrop-filter: blur(12px);
+  display: grid;
+  place-items: end center;
+  padding: 16px;
+}
+.modal {
+  width: min(740px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: #111827;
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-// ─── Close Day Modal ───────────────────────────────────────────────────────
-const CLOSE_DAY_QUESTIONS = [
-  { id: 'mission',    label: 'Mission',          question: 'Did I move a mission forward today?' },
-  { id: 'body',       label: 'Body & Discipline', question: 'Did I keep my body and discipline standards?' },
-  { id: 'courage',    label: 'Courage',           question: 'Did I face the thing I was avoiding?' },
-  { id: 'mind',       label: 'Mind',              question: 'Did I quiet the noise and not let worry loops run me?' },
-  { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
-];
+/* â”€â”€ Bottom nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.bottom-nav {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
+  transform: translateX(-50%);
+  width: min(680px, calc(100% - 24px));
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 7px;
+  border-radius: 22px;
+  background: rgba(14, 18, 28, 0.9);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(24px);
+}
+.bottom-nav button {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  border: 0;
+  background: transparent;
+  border-radius: 16px;
+  padding: 9px 4px;
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, background 0.15s;
+}
+.bottom-nav button.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+/* Per-tab active nav colors */
+.bottom-nav button.active.nav-amber  { color: var(--cat-amber);   background: rgba(245,158,11,0.14); }
+.bottom-nav button.active.nav-green  { color: var(--cat-green);   background: rgba(52,211,153,0.14); }
+.bottom-nav button.active.nav-purple { color: var(--cat-purple);  background: rgba(167,139,250,0.14); }
+.bottom-nav button.active.nav-teal   { color: var(--cat-teal);    background: rgba(45,212,191,0.14); }
+.bottom-nav button.active.nav-orange { color: var(--cat-orange);  background: rgba(251,146,60,0.14); }
+.bottom-nav button:hover:not(.active) { color: var(--text); }
 
-function CloseDayModal({ thoughts, missions, onClose }) {
-  const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary'
-  const [gutCall, setGutCall] = useState('');
-  const [answers, setAnswers] = useState({});
-  const [copied, setCopied] = useState(false);
+/* â”€â”€ Noise card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.noise-card { border-color: rgba(248,113,113,0.15); }
 
-  const today = new Date();
-  const todayKey = getLocalTodayKey();
+/* â”€â”€ Inbox triage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.inbox-triage { border-color: var(--accent-border); }
 
-  const todayDone = thoughts.filter((t) => t.status === 'Done' && getDayKey(t.completedAt || t.createdAt) === todayKey);
-  const todayActive = thoughts.filter((t) => t.status !== 'Done' && getDayKey(t.createdAt) === todayKey);
-  const missionsTouched = missions.filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
-
-  const score = Object.values(answers).filter(Boolean).length;
-
-  function answerQuestion(id, val) {
-    const updated = { ...answers, [id]: val };
-    setAnswers(updated);
-    const allAnswered = CLOSE_DAY_QUESTIONS.every((q) => updated[q.id] !== undefined);
-    if (allAnswered) setTimeout(() => setStep('summary'), 300);
-  }
-
-  function buildSummary() {
-    const dateStr = today.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    const lines = [];
-    lines.push(`📅 Day Close — ${dateStr}`);
-    lines.push(`Overall: ${gutCall}  |  Score: ${score}/5`);
-    lines.push('');
-    lines.push('✅ Completed Today:');
-    if (todayDone.length) todayDone.forEach((t) => lines.push(`  • ${t.text}`));
-    else lines.push('  • Nothing marked done today');
-    lines.push('');
-    lines.push('🎯 Missions Touched:');
-    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  • ${m.title}`));
-    else lines.push('  • None directly linked');
-    lines.push('');
-    lines.push('💭 New Thoughts Captured Today:');
-    if (todayActive.length) todayActive.forEach((t) => lines.push(`  • ${t.text}${t.category ? ` (${t.category})` : ''}`));
-    else lines.push('  • None');
-    lines.push('');
-    lines.push('📊 Score Breakdown:');
-    CLOSE_DAY_QUESTIONS.forEach((q) => lines.push(`  ${answers[q.id] ? '✓' : '✗'} ${q.label} — ${q.question}`));
-    lines.push('');
-    lines.push('— paste into Apple Journal and write your personal review below —');
-    return lines.join('\n');
-  }
-
-  function copyToClipboard() {
-    navigator.clipboard.writeText(buildSummary()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  const currentQIndex = CLOSE_DAY_QUESTIONS.findIndex((q) => answers[q.id] === undefined);
-  const currentQ = currentQIndex >= 0 ? CLOSE_DAY_QUESTIONS[currentQIndex] : null;
-
-  return (
-    <div className="closeday-modal">
-      {step === 'gut' && (
-        <div className="closeday-step">
-          <p className="closeday-subtitle">Start with your gut. How did today go overall?</p>
-          <div className="closeday-gut-row">
-            {['Yes', 'Neutral', 'No'].map((opt) => (
-              <button
-                key={opt}
-                className={`closeday-gut-btn ${gutCall === opt ? 'selected' : ''} gut-${opt.toLowerCase()}`}
-                onClick={() => { setGutCall(opt); setStep('questions'); }}
-              >
-                {opt === 'Yes' ? '✓' : opt === 'No' ? '✗' : '~'} {opt}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {step === 'questions' && currentQ && (
-        <div className="closeday-step">
-          <div className="closeday-progress">
-            {CLOSE_DAY_QUESTIONS.map((q, i) => (
-              <div key={q.id} className={`closeday-progress-dot ${answers[q.id] !== undefined ? 'done' : i === currentQIndex ? 'active' : ''}`} />
-            ))}
-          </div>
-          <p className="closeday-q-label">{currentQ.label}</p>
-          <p className="closeday-q-text">{currentQ.question}</p>
-          <div className="closeday-yn-row">
-            <button className="closeday-yn-btn yn-yes" onClick={() => answerQuestion(currentQ.id, true)}>Yes — +1</button>
-            <button className="closeday-yn-btn yn-no" onClick={() => answerQuestion(currentQ.id, false)}>No</button>
-          </div>
-          <p className="closeday-progress-label">{currentQIndex + 1} of {CLOSE_DAY_QUESTIONS.length}</p>
-        </div>
-      )}
-
-      {step === 'summary' && (
-        <div className="closeday-step">
-          <div className="closeday-score-block">
-            <div className="closeday-score-num">{score}<span>/5</span></div>
-            <div className="closeday-score-gut">Overall: <strong>{gutCall}</strong></div>
-          </div>
-          <div className="closeday-score-bars">
-            {CLOSE_DAY_QUESTIONS.map((q) => (
-              <div key={q.id} className={`closeday-bar-row ${answers[q.id] ? 'bar-yes' : 'bar-no'}`}>
-                <span className="closeday-bar-icon">{answers[q.id] ? '✓' : '✗'}</span>
-                <span className="closeday-bar-label">{q.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="closeday-summary-box">
-            <pre className="closeday-summary-text">{buildSummary()}</pre>
-          </div>
-          <button className="primary-button" onClick={copyToClipboard}>
-            {copied ? <><Check size={17} /> Copied!</> : <><Copy size={17} /> Copy for Apple Journal</>}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media (max-width: 860px) {
+  .mission-list.detailed { grid-template-columns: 1fr; }
+  .two-column, .form-grid, .today-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-card { align-items: flex-start; }
+  .hero-icon { display: none; }
+  .noise-bridge { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
 
-// ─── Capture ───────────────────────────────────────────────────────────────
-function CaptureView({ addThought, missions, setActiveTab }) {
-  return (
-    <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Capture</h2><p className="muted">Get it out of your head. Sort later.</p></div></div>
-      <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} missions={missions} />
-    </section>
-  );
+@media (max-width: 520px) {
+  .app-shell { padding-inline: 10px; }
+  .card, .hero-card, .mission-card, .mission-detail-card, .thought-card { border-radius: 16px; }
+  .topbar .primary-button span { display: none; }
+  .topbar .primary-button.compact { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+  .mission-card { flex-direction: column; }
+  .card-actions select { flex: 1; }
+  .bottom-nav { bottom: 8px; width: calc(100% - 16px); border-radius: 18px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .energy-toggle { gap: 4px; }
+  .energy-btn { padding: 5px 8px; font-size: 0.72rem; }
 }
 
-function CaptureForm({ addThought, missions, compact = false }) {
-  const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
-  const selected = form.category ? getCategory(form.category) : null;
-  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function submit(e) {
-    e.preventDefault();
-    if (!form.text.trim()) return;
-    addThought(form);
-    setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
-  }
-  return (
-    <form className="capture-form card" onSubmit={submit}>
-      <Field label="What is on your mind?">
-        <textarea className="big-input" placeholder="Dump the thought here. Sorting can happen after." value={form.text} onChange={(e) => set('text', e.target.value)} autoFocus={compact} />
-      </Field>
-      <div className="form-grid">
-        <Field label="Category">
-          <select value={form.category} onChange={(e) => set('category', e.target.value)}>
-            <option value="">Unsorted Inbox</option>
-            {categoryTiers.map((tier) => (
-              <optgroup key={tier.id} label={tier.label}>
-                {categories.filter((c) => c.tier === tier.id).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </Field>
-        <Field label="Life Area">
-          <select value={form.area} onChange={(e) => set('area', e.target.value)}>{lifeAreas.map((a) => <option key={a}>{a}</option>)}</select>
-        </Field>
-      </div>
-      {selected && (
-        <div className={`category-hint hint-${selected.color}`}>
-          <selected.icon size={18} /><div><strong>{selected.label}</strong><p>{selected.prompt}</p></div>
-        </div>
-      )}
-      <Field label="Next Action / Clarifying Step"><input placeholder="What is the very next physical step?" value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)} /></Field>
-      <div className="form-grid">
-        <Field label="Due / Follow-up Date"><input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} /></Field>
-        <Field label="Energy Required"><select value={form.energy} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
-      </div>
-      <Field label="Related Goal">
-        <select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}>
-          <option value="">None</option>
-          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
-        </select>
-      </Field>
-      <Field label="Notes"><textarea placeholder="Context, why it matters, anything you don't want to forget." value={form.notes} onChange={(e) => set('notes', e.target.value)} /></Field>
-      <button className="primary-button" type="submit"><Save size={17} /> Save to Command Center</button>
-    </form>
-  );
+/* â”€â”€ Thought card labeled sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.thought-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.thought-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.thought-item-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.thought-section {
+  margin-top: 10px;
+  display: grid;
+  gap: 4px;
+}
+.thought-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.thought-section-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
-// ─── Sort View ─────────────────────────────────────────────────────────────
-function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
-  const [collapsedTiers, setCollapsedTiers] = useState({});
-  function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
-  return (
-    <section className="screen stack">
-      <div className="section-header">
-        <div><p className="eyebrow">Sort & Convert</p><h2>Every Thought Gets a Role</h2><p className="muted">Act, solve, decide, wait, maintain, park, or let go.</p></div>
-        <Pill tone={unsorted.length ? 'red' : 'green'}>{unsorted.length} unsorted</Pill>
-      </div>
-      {unsorted.length > 0 && (
-        <div className="card inbox-triage">
-          <div className="mini-header"><Inbox size={18} /><h3>Inbox — Sort These First</h3></div>
-          <div className="thought-list">
-            {unsorted.slice(0, 3).map((t) => <TriageCard key={t.id} thought={t} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />)}
-          </div>
-        </div>
-      )}
-      <div className="tier-nav">
-        {categoryTiers.map((tier) => {
-          const tierCats = categories.filter((c) => c.tier === tier.id);
-          const isCollapsed = collapsedTiers[tier.id];
-          return (
-            <div key={tier.id} className={`tier-group tier-group-${tier.color}`}>
-              <button className="tier-header" onClick={() => toggleTier(tier.id)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <tier.icon size={16} className={`tier-icon tier-icon-${tier.color}`} />
-                  <div><span className="tier-label">{tier.label}</span><span className="tier-desc">{tier.description}</span></div>
-                </div>
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-              </button>
-              {!isCollapsed && (
-                <div className="tier-chips">
-                  {tierCats.map((cat) => {
-                    const CIcon = cat.icon;
-                    const count = thoughts.filter((t) => t.category === cat.id).length;
-                    const staleCt = thoughts.filter((t) => t.category === cat.id && stalenessLabel(getDaysOld(t.createdAt), cat.id)?.urgent).length;
-                    return (
-                      <button key={cat.id} className={`category-chip ${selectedCategory === cat.id ? `active chip-active-${cat.color}` : ''}`} onClick={() => setSelectedCategory(cat.id)}>
-                        <CIcon size={16} /><span>{cat.short}</span><small>{count}</small>
-                        {staleCt > 0 && <span className="stale-dot">{staleCt}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className="search-bar"><Search size={18} /><input placeholder="Search this category..." value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-      <CategoryDetail category={getCategory(selectedCategory)} thoughts={filteredThoughts} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
-    </section>
-  );
+/* â”€â”€ Sub-tab switcher (Progress page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.subtab-row {
+  display: flex;
+  gap: 8px;
+}
+.subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.subtab-btn:hover { border-color: var(--line-strong); color: var(--text); }
+.subtab-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
-function CategoryDetail({ category, thoughts, updateThought, deleteThought, convertThought, setModal }) {
-  const CIcon = category.icon;
-  return (
-    <div className="card category-detail">
-      <div className="section-header">
-        <div className="category-title"><IconBadge icon={CIcon} tone={category.color} /><div><h2>{category.label}</h2><p className="muted">{category.description}</p></div></div>
-      </div>
-      {thoughts.length ? (
-        <div className="thought-list">
-          {thoughts.map((t, i) => <ThoughtCard key={t.id} thought={t} index={i+1} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />)}
-        </div>
-      ) : <EmptyState title="Nothing here yet" text="Captured items sorted into this category will appear here." />}
-    </div>
-  );
+/* â”€â”€ Accomplishments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.accomplish-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.accomplish-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: grid;
+  gap: 3px;
+}
+.accomplish-stat strong { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.accomplish-stat span { font-size: 0.75rem; color: var(--text-muted); }
+
+.accomplish-day {
+  padding: 16px 18px;
+}
+.accomplish-day-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.accomplish-day-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.accomplish-day-date {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.accomplish-day-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+.accomplish-cat-list { display: grid; gap: 12px; }
+.accomplish-cat-group { display: grid; gap: 6px; }
+.accomplish-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+}
+.accomplish-cat-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+/* Category label colors matching pill tones */
+.cat-label-amber  { color: var(--cat-amber); }
+.cat-label-green  { color: var(--cat-green); }
+.cat-label-orange { color: var(--cat-orange); }
+.cat-label-purple { color: var(--cat-purple); }
+.cat-label-yellow { color: var(--cat-yellow); }
+.cat-label-teal   { color: var(--cat-teal); }
+.cat-label-pink   { color: var(--cat-pink); }
+.cat-label-emerald{ color: var(--cat-emerald); }
+.cat-label-slate  { color: var(--cat-slate); }
+.cat-label-red    { color: var(--cat-red); }
+.cat-label-blue   { color: var(--cat-blue); }
+
+.accomplish-cat-count {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.accomplish-items { display: grid; gap: 5px; padding-left: 4px; }
+.accomplish-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.accomplish-check { color: var(--status-track); flex-shrink: 0; margin-top: 1px; }
+
+/* Clickable stat card */
+.stat-card-btn {
+  cursor: pointer;
+  border: 0;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+.stat-card-btn:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
 }
 
-function TriageCard({ thought, updateThought, deleteThought, convertThought, setModal }) {
-  return (
-    <article className="thought-card triage">
-      <div className="thought-main"><h3>{thought.text}</h3><p>{thought.notes || 'Choose what this should become.'}</p></div>
-      <ConversionButtons thought={thought} convertThought={convertThought} />
-      <div className="card-actions">
-        <button className="text-button" onClick={() => setModal({ type: 'edit-thought', thought })}><Edit3 size={15} /> Edit</button>
-        <button className="danger-button" onClick={() => deleteThought(thought.id)}><Trash2 size={15} /> Delete</button>
-      </div>
-    </article>
-  );
+/* stack helper for subtab content */
+.stack { display: grid; gap: 16px; }
+
+/* â”€â”€ Responsive additions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+@media (max-width: 520px) {
+  .accomplish-summary { grid-template-columns: repeat(3, 1fr); }
+  .subtab-row { width: 100%; }
+  .subtab-btn { flex: 1; justify-content: center; }
 }
 
-function ThoughtCard({ thought, updateThought, deleteThought, convertThought, setModal, compact = false, index }) {
-  const category = getCategory(thought.category);
-  const CIcon = category.icon;
-  const stale = stalenessLabel(getDaysOld(thought.createdAt), thought.category);
-  const itemLabel = categoryItemLabel[thought.category] || 'Item';
-  const areaMeta = getAreaMeta(thought.area);
-  const AreaIcon = areaMeta.icon;
-  const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'amber';
-  return (
-    <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
-      <div className="thought-topline">
-        <div className="thought-labels">
-          <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
-          <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
-          {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
-          {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
-          {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
-        </div>
-        {!compact && <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })}><Flag size={16} className={thought.pinned ? 'filled-flag' : ''} /></button>}
-      </div>
-      <div className="thought-main">
-        <div className="thought-item-header">
-          {index != null && <span className="thought-number">{index}</span>}
-          <span className="thought-item-label">{itemLabel}</span>
-        </div>
-        <h3>{thought.text}</h3>
-        {thought.nextAction && <div className="thought-section"><span className="thought-section-label">Next Physical Step</span><p className="next-action"><ArrowRight size={15} /> {thought.nextAction}</p></div>}
-        {thought.notes && <div className="thought-section"><span className="thought-section-label">Notes</span><p className="thought-section-text">{thought.notes}</p></div>}
-        {thought.truth && <div className="thought-section"><span className="thought-section-label">Grounded Truth</span><p className="thought-section-text">{thought.truth}</p></div>}
-        {thought.exaggeration && <div className="thought-section"><span className="thought-section-label">Fear Loop / Exaggeration</span><p className="thought-section-text">{thought.exaggeration}</p></div>}
-        {thought.waitingOn && <div className="thought-section"><span className="thought-section-label">Waiting On</span><p className="thought-section-text">{thought.waitingOn}</p></div>}
-        {thought.decisionOptions && <div className="thought-section"><span className="thought-section-label">Options</span><p className="thought-section-text">{thought.decisionOptions}</p></div>}
-      </div>
-      {thought.category === 'anxiety-noise' && !compact && (
-        <div className="noise-bridge">
-          <p className="noise-bridge-label">Is there a real action hiding here?</p>
-          <button className="convert-action-btn" onClick={() => convertThought(thought, 'task')}><Zap size={14} /> Yes — convert to task</button>
-        </div>
-      )}
-      {!compact && <ConversionButtons thought={thought} convertThought={convertThought} />}
-      <div className="card-actions">
-        <select value={thought.status} onChange={(e) => updateThought(thought.id, { status: e.target.value })}>{statuses.map((s) => <option key={s}>{s}</option>)}</select>
-        <button className="text-button" onClick={() => setModal({ type: 'edit-thought', thought })}><Edit3 size={15} /> Edit</button>
-        {deleteThought && <button className="danger-button" onClick={() => deleteThought(thought.id)}><Trash2 size={15} /> Delete</button>}
-      </div>
-    </article>
-  );
+/* â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.loading-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.loading-icon {
+  color: var(--accent);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.92); }
 }
 
-function ConversionButtons({ thought, convertThought }) {
-  const buttons = [
-    { id: 'task', label: 'Task', icon: CheckCircle2 }, { id: 'problem', label: 'Problem', icon: HelpCircle },
-    { id: 'decision', label: 'Decision', icon: Compass }, { id: 'waiting', label: 'Waiting', icon: TimerReset },
-    { id: 'someday', label: 'Park It', icon: Archive }, { id: 'noise', label: 'Noise', icon: Brain },
-  ];
-  return (
-    <div className="convert-row">
-      {buttons.map((b) => { const BIcon = b.icon; return <button key={b.id} onClick={() => convertThought(thought, b.id)}><BIcon size={13} /> {b.label}</button>; })}
-    </div>
-  );
+/* â”€â”€ Close the Day button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.close-day-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12));
+  border: 1px solid rgba(139,92,246,0.25);
+  color: #a78bfa;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  transition: opacity 0.15s, transform 0.15s;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.close-day-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+/* â”€â”€ Close Day Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.closeday-modal { display: grid; gap: 20px; }
+
+.closeday-step { display: grid; gap: 16px; }
+
+.closeday-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
 }
 
-function ThoughtEditForm({ thought, missions, updateThought }) {
-  const [form, setForm] = useState({ ...thought });
-  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function submit(e) { e.preventDefault(); updateThought(thought.id, form); }
-  return (
-    <form className="capture-form" onSubmit={submit}>
-      <Field label="Title / Thought"><textarea className="big-input" value={form.text} onChange={(e) => set('text', e.target.value)} /></Field>
-      <div className="form-grid">
-        <Field label="Category">
-          <select value={form.category || ''} onChange={(e) => set('category', e.target.value)}>
-            <option value="">Unsorted</option>
-            {categoryTiers.map((tier) => <optgroup key={tier.id} label={tier.label}>{categories.filter((c) => c.tier === tier.id).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</optgroup>)}
-          </select>
-        </Field>
-        <Field label="Area"><select value={form.area || 'Personal'} onChange={(e) => set('area', e.target.value)}>{lifeAreas.map((a) => <option key={a}>{a}</option>)}</select></Field>
-      </div>
-      <Field label="Next Action"><input value={form.nextAction || ''} onChange={(e) => set('nextAction', e.target.value)} /></Field>
-      <div className="form-grid">
-        <Field label="Due / Follow-up"><input type="date" value={form.dueDate || ''} onChange={(e) => set('dueDate', e.target.value)} /></Field>
-        <Field label="Status"><select value={form.status || 'Open'} onChange={(e) => set('status', e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></Field>
-      </div>
-      <Field label="Energy Required"><select value={form.energy || 'Medium'} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
-      <Field label="Related Goal">
-        <select value={form.relatedMissionId || ''} onChange={(e) => set('relatedMissionId', e.target.value)}>
-          <option value="">None</option>
-          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
-        </select>
-      </Field>
-      {form.category === 'decisions' && <Field label="Options"><textarea value={form.decisionOptions || ''} onChange={(e) => set('decisionOptions', e.target.value)} placeholder="Option A / Option B / Current leaning" /></Field>}
-      {form.category === 'waiting-on' && <Field label="Waiting On"><input value={form.waitingOn || ''} onChange={(e) => set('waitingOn', e.target.value)} placeholder="Person, payment, email, answer..." /></Field>}
-      {form.category === 'anxiety-noise' && (
-        <>
-          <Field label="Grounded Truth"><textarea value={form.truth || ''} onChange={(e) => set('truth', e.target.value)} placeholder="What is actually true?" /></Field>
-          <Field label="Exaggeration / Fear Loop"><textarea value={form.exaggeration || ''} onChange={(e) => set('exaggeration', e.target.value)} placeholder="What part is your brain exaggerating?" /></Field>
-        </>
-      )}
-      <Field label="Notes"><textarea value={form.notes || ''} onChange={(e) => set('notes', e.target.value)} /></Field>
-      <button className="primary-button" type="submit"><Save size={17} /> Save Changes</button>
-    </form>
-  );
+.closeday-gut-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.closeday-gut-btn {
+  padding: 18px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 800;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.closeday-gut-btn:hover { border-color: var(--line-strong); color: var(--text); }
+.closeday-gut-btn.selected { border-color: var(--accent-border); background: var(--accent-dim); color: var(--accent); }
+.gut-yes.selected  { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.3); color: #34d399; }
+.gut-no.selected   { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); color: #f87171; }
+.gut-neutral.selected { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: var(--accent); }
+
+.closeday-progress {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.closeday-progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  transition: background 0.2s;
+}
+.closeday-progress-dot.active { background: var(--accent); }
+.closeday-progress-dot.done   { background: #34d399; }
+
+.closeday-q-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin: 0;
+}
+.closeday-q-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0;
+}
+.closeday-yn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.closeday-yn-btn {
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.yn-yes { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.25); color: #34d399; }
+.yn-yes:hover { background: rgba(52,211,153,0.2); }
+.yn-no  { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.25); color: #f87171; }
+.yn-no:hover { background: rgba(248,113,113,0.2); }
+
+.closeday-progress-label {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 
-// ─── Goals View ────────────────────────────────────────────────────────────
-const goalAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future', 'Other'];
-const goalStatuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
-const goalAreaColors = {
-  'Work': 'amber', 'School': 'purple', 'Money': 'emerald', 'Health': 'green',
-  'Relationships': 'pink', 'Family': 'orange', 'Personal': 'teal',
-  'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
-};
+.closeday-score-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  background: rgba(167,139,250,0.08);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: var(--radius-sm);
+}
+.closeday-score-num {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #a78bfa;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.closeday-score-num span { font-size: 1.4rem; color: var(--text-muted); }
+.closeday-score-gut { font-size: 0.85rem; color: var(--text-secondary); font-weight: 700; }
 
-function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
-  return (
-    <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
-      <div className="subtab-row">
-        <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
-        <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
-      </div>
-      {subTab === 'accomplishments' && <AccomplishmentsTab doneThoughts={doneThoughts} updateThought={updateThought} setModal={setModal} />}
-      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
-    </section>
-  );
+.closeday-score-bars { display: grid; gap: 6px; }
+.closeday-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+.closeday-bar-row.bar-yes { background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
+.closeday-bar-row.bar-no  { background: rgba(255,255,255,0.02); }
+.closeday-bar-icon { font-size: 0.85rem; font-weight: 900; width: 18px; text-align: center; }
+.bar-yes .closeday-bar-icon { color: #34d399; }
+.bar-no  .closeday-bar-icon { color: var(--text-muted); }
+.closeday-bar-label { color: var(--text-secondary); font-weight: 600; }
+
+.closeday-summary-box {
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.closeday-summary-text {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  margin: 0;
+  line-height: 1.6;
 }
 
-function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
-  const byDay = useMemo(() => {
-    const map = {};
-    doneThoughts.forEach((t) => {
-      const key = getDayKey(t.completedAt || t.createdAt);
-      if (!map[key]) map[key] = [];
-      map[key].push(t);
-    });
-    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [doneThoughts]);
+/* â”€â”€ Accomplishments â€” edit/revert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.accomplish-item-editable {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.accomplish-item-text { flex: 1; }
+.accomplish-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.accomplish-item-editable:hover .accomplish-item-actions { opacity: 1; }
+.accomplish-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.accomplish-action-btn:hover { border-color: var(--line-strong); color: var(--text); background: rgba(255,255,255,0.09); }
+.revert-btn:hover { border-color: rgba(245,158,11,0.3); color: var(--accent); background: var(--accent-dim); }
 
-  // Days collapsed by default; user can expand
-  const [expandedDays, setExpandedDays] = useState({});
-  function toggleDay(key) { setExpandedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
+/* â”€â”€ Fix 1: Next Actions task row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.task-action-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  cursor: default;
+}
+.task-text-btn {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  min-width: 0;
+}
+.task-text-btn:hover { background: transparent; }
+.task-done-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 100%;
+  min-height: 48px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.task-done-btn:hover { color: var(--status-track); background: rgba(52,211,153,0.08); }
 
-  const thisWeekCount = useMemo(() => {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= cutoff).length;
-  }, [doneThoughts]);
-
-  const previousDayCount = byDay[1] ? byDay[1][1].length : 0;
-  const proofDays = byDay.length;
-  const latestProof = byDay[0] ? byDay[0][1].length : 0;
-
-  if (doneThoughts.length === 0) {
-    return (
-      <div className="card accomplishment-empty-card">
-        <EmptyState icon={Trophy} title="No proof yet" text="When you mark something Done, it becomes evidence that you are becoming the person you said you wanted to be." />
-      </div>
-    );
-  }
-  return (
-    <div className="stack accomplishments-page">
-      <div className="accomplishment-hero-card">
-        <div className="accomplishment-hero-copy">
-          <p className="eyebrow">Identity Evidence</p>
-          <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
-          <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
-        </div>
-        <div className="hero-stat-row">
-          <div className="accomplish-stat identity-stat identity-stat--fire">
-            <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{previousDayCount}</strong>
-              <span>Yesterday</span>
-            </div>
-          </div>
-          <div className="accomplish-stat identity-stat identity-stat--calendar">
-            <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{thisWeekCount}</strong>
-              <span>This Week</span>
-            </div>
-          </div>
-          <div className="accomplish-stat identity-stat identity-stat--target">
-            <div className="identity-stat-icon identity-stat-icon--target"><Target size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{doneThoughts.length}</strong>
-              <span>Total</span>
-            </div>
-          </div>
-          <div className="accomplish-stat identity-stat identity-stat--green">
-            <div className="identity-stat-icon identity-stat-icon--green"><Star size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{proofDays}</strong>
-              <span>Days Strong</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="evidence-section-header">
-        <div><p className="eyebrow">Your Track Record</p><h2>Day by Day</h2><p className="muted">Every completed item, organized by the day you closed it.</p></div>
-      </div>
-
-      {byDay.map(([dayKey, items]) => {
-        const byCat = {};
-        const isExpanded = expandedDays[dayKey];
-        items.forEach((t) => { const cid = t.category || 'unsorted'; if (!byCat[cid]) byCat[cid] = []; byCat[cid].push(t); });
-        return (
-          <div key={dayKey} className="card accomplish-day identity-day-card">
-            <button className="accomplish-day-header accomplish-day-toggle identity-day-toggle" onClick={() => toggleDay(dayKey)}>
-              <div className="identity-day-medal"><CheckCircle2 size={15} /></div>
-              <div style={{ flex: 1 }}>
-                <p className="accomplish-day-date">{formatDateFull(dayKey)}</p>
-                <p className="accomplish-day-count">{items.length} proof point{items.length === 1 ? '' : 's'} logged</p>
-              </div>
-              <span className="identity-day-badge">Evidence</span>
-              {isExpanded ? <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
-            </button>
-            {isExpanded && (
-              <div className="accomplish-cat-list identity-evidence-list">
-                {Object.entries(byCat).map(([catId, catItems]) => {
-                  const cat = catId === 'unsorted' ? { label: 'Unsorted', short: 'Unsorted', icon: CircleDashed, color: 'slate' } : getCategory(catId);
-                  const CatIcon = cat.icon;
-                  return (
-                    <div key={catId} className="accomplish-cat-group identity-cat-group">
-                      <div className="accomplish-cat-header identity-cat-header"><CatIcon size={14} className={`task-cat-icon-${cat.color}`} /><span className={`accomplish-cat-label cat-label-${cat.color}`}>{cat.label}</span><span className="accomplish-cat-count">{catItems.length}</span></div>
-                      <div className="accomplish-items identity-proof-items">
-                        {catItems.map((t) => (
-                          <AccomplishItem key={t.id} t={t} updateThought={updateThought} setModal={setModal} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+/* â”€â”€ Fix 5: Daily Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.daily-quote-card {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+}
+.daily-quote-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.daily-quote-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.daily-quote-actions { display: flex; gap: 6px; }
+.quote-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.quote-icon-btn:hover { background: rgba(255,255,255,0.07); border-color: var(--line-strong); }
+.daily-quote-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+  font-style: italic;
+  margin: 0 0 8px;
+}
+.daily-quote-author {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0;
 }
 
-function AccomplishItem({ t, updateThought, setModal }) {
-  const [showMove, setShowMove] = useState(false);
-  const currentDay = getDayKey(t.completedAt || t.createdAt);
+/* â”€â”€ Fix 3: Accomplishments collapsible day header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.accomplish-day-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.accomplish-day-toggle:hover { opacity: 0.85; }
+.accomplish-cat-list { padding-top: 12px; }
 
-  function moveToDay(newDate) {
-    // Build a completedAt timestamp at noon local time on the chosen date
-    const [year, month, day] = newDate.split('-').map(Number);
-    const d = new Date(year, month - 1, day, 12, 0, 0);
-    updateThought(t.id, { completedAt: d.toISOString() });
-    setShowMove(false);
-  }
+/* â”€â”€ Fix 6: Goals View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Goals page header with border box */
+.goals-flat-header { display: grid; gap: 12px; }
+.goals-header-copy { flex: 1; }
+.goals-stat-strip {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.goals-stat-strip span { font-size: 0.8rem; color: var(--text-muted); }
+.goals-stat-strip strong { font-size: 0.95rem; font-weight: 800; color: var(--text); margin-right: 3px; }
+.goals-stat-ontrack strong { color: var(--cat-green); }
+.goals-stat-open strong { color: var(--cat-blue); }
+/* Mission area tag in Today view */
+.mission-area-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}
+.goals-area-group { display: grid; gap: 10px; }
+.goals-area-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.goals-area-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+.goals-area-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-left: auto;
+}
+.goals-list { display: grid; gap: 10px; }
 
-  return (
-    <div className="accomplish-item accomplish-item-editable">
-      <CheckCircle2 size={14} className="accomplish-check" />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span className="accomplish-item-text">{t.text}</span>
-        {showMove && (
-          <div className="accomplish-move-row">
-            <input
-              type="date"
-              defaultValue={currentDay}
-              style={{ flex: 1, fontSize: '0.78rem', padding: '4px 8px' }}
-              onChange={(e) => { if (e.target.value) moveToDay(e.target.value); }}
-            />
-            <button className="accomplish-action-btn" onClick={() => setShowMove(false)}><X size={12} /></button>
-          </div>
-        )}
-      </div>
-      <div className="accomplish-item-actions">
-        <button className="accomplish-action-btn" title="Move to day" onClick={() => setShowMove((v) => !v)}>
-          <CalendarDays size={13} />
-        </button>
-        <button className="accomplish-action-btn" title="Edit" onClick={() => setModal({ type: 'edit-thought', thought: t })}>
-          <Edit3 size={13} />
-        </button>
-        <button className="accomplish-action-btn revert-btn" title="Revert to active" onClick={() => updateThought(t.id, { status: 'Open', completedAt: '' })}>
-          <RotateCcw size={13} />
-        </button>
-      </div>
-    </div>
-  );
+.goal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+.goal-card-tint-amber   { background: rgba(245,158,11,0.055); border-color: rgba(245,158,11,0.18); }
+.goal-card-tint-green   { background: rgba(52,211,153,0.055); border-color: rgba(52,211,153,0.18); }
+.goal-card-tint-orange  { background: rgba(251,146,60,0.055); border-color: rgba(251,146,60,0.18); }
+.goal-card-tint-purple  { background: rgba(167,139,250,0.055); border-color: rgba(167,139,250,0.18); }
+.goal-card-tint-yellow  { background: rgba(251,191,36,0.055); border-color: rgba(251,191,36,0.18); }
+.goal-card-tint-teal    { background: rgba(45,212,191,0.055); border-color: rgba(45,212,191,0.18); }
+.goal-card-tint-pink    { background: rgba(244,114,182,0.055); border-color: rgba(244,114,182,0.18); }
+.goal-card-tint-emerald { background: rgba(16,185,129,0.055); border-color: rgba(16,185,129,0.18); }
+.goal-card-tint-slate   { background: rgba(148,163,184,0.04); border-color: rgba(148,163,184,0.14); }
+.goal-card-tint-red     { background: rgba(248,113,113,0.055); border-color: rgba(248,113,113,0.18); }
+.goal-card-tint-blue    { background: rgba(96,165,250,0.055); border-color: rgba(96,165,250,0.18); }
+.goal-card-tint-rose    { background: rgba(251,113,133,0.055); border-color: rgba(251,113,133,0.18); }
+.goal-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.goal-card-main { flex: 1; display: grid; gap: 5px; }
+.goal-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  justify-content: space-between;
+}
+.goal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.3;
+}
+.goal-why {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+}
+.goal-target-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0;
 }
 
-function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCategory }) {
-  const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
-  function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
-  function submit(e) { e.preventDefault(); saveReview(review); setReview({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' }); }
-  const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const counts = categories.map((c) => ({
-    ...c,
-    count: activeThoughts.filter((t) => t.category === c.id).length,
-    staleCount: activeThoughts.filter((t) => t.category === c.id && stalenessLabel(getDaysOld(t.createdAt), c.id)?.urgent).length,
-    closedCount: doneThoughts.filter((t) => t.category === c.id && new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length,
-  }));
-  return (
-    <div className="stack">
-      <div className="card">
-        <div className="mini-header"><h3>What's in each category</h3></div>
-        <div className="stats-grid">
-          {counts.map((item) => {
-            const SIcon = item.icon;
-            return (
-              <button key={item.id} className={`stat-card stat-card-btn stat-card-${item.color}`} onClick={() => goToCategory(item.id)}>
-                <SIcon size={16} className={`stat-icon-${item.color}`} /><strong>{item.count}</strong><span>{item.short}</span>
-                {item.staleCount > 0 && <span className="stat-stale">{item.staleCount} stale</span>}
-                <div className="stat-closed-row"><CheckCircle2 size={11} /><span>{item.closedCount} closed this wk</span></div>
-              </button>
-            );
-          })}
-        </div>
-        <p className="muted small" style={{ marginTop: 10 }}>Tap any category to jump to it in Sort. Closed counts items completed in the last 7 days.</p>
-      </div>
-      <form className="card capture-form" onSubmit={submit}>
-        <div className="mini-header"><RefreshCw size={18} /><h3>Sunday Life Reset</h3></div>
-        <Field label="What improved this week?"><textarea value={review.improved} onChange={(e) => set('improved', e.target.value)} /></Field>
-        <Field label="What did I avoid?"><textarea value={review.avoided} onChange={(e) => set('avoided', e.target.value)} /></Field>
-        <Field label="What actually mattered?"><textarea value={review.mattered} onChange={(e) => set('mattered', e.target.value)} /></Field>
-        <Field label="What kept stressing me out?"><textarea value={review.stress} onChange={(e) => set('stress', e.target.value)} /></Field>
-        <Field label="Next week's 3 priorities"><textarea value={review.nextWeek} onChange={(e) => set('nextWeek', e.target.value)} placeholder={"1. ...\n2. ...\n3. ..."} /></Field>
-        <button className="primary-button" type="submit"><Save size={17} /> Save Weekly Review</button>
-      </form>
-      <div className="card">
-        <div className="mini-header"><Clock3 size={18} /><h3>Past Reviews</h3></div>
-        {reviews.length ? (
-          <div className="thought-list">
-            {reviews.map((item) => (
-              <article className="review-card" key={item.id}>
-                <p className="eyebrow">{formatDate(item.createdAt)}</p>
-                <h3>Next Week's 3</h3><p>{item.nextWeek || 'No priorities written.'}</p>
-                <details><summary>Open full review</summary>
-                  <p><strong>Improved:</strong> {item.improved}</p>
-                  <p><strong>Avoided:</strong> {item.avoided}</p>
-                  <p><strong>Mattered:</strong> {item.mattered}</p>
-                  <p><strong>Stress:</strong> {item.stress}</p>
-                </details>
-              </article>
-            ))}
-          </div>
-        ) : <EmptyState title="No reviews yet" text="Save your first weekly reset to start building clarity over time." />}
-      </div>
-    </div>
-  );
+.goal-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.goal-progress-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.goal-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), #34d399);
+  transition: width 0.3s ease;
+}
+.goal-progress-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-// ─── Plan View — Triage Layer + Agenda Rail + Mission Control ──────────────
-function PlanView({ openTasks, openLoops, holdItems, missions, milestones, today, updateThought, updateMission, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
-  const [subTab, setSubTab] = useState('week');
-  const [selectedGoalId, setSelectedGoalId] = useState('');
-  const [triage, setTriage] = useState(null);
-  const [triageLoading, setTriageLoading] = useState(false);
-  const [triageError, setTriageError] = useState('');
-  const [appliedIds, setAppliedIds] = useState([]);
-
-  const todayKey = getLocalTodayKey();
-  const allPlanItems = useMemo(() => [...openTasks, ...openLoops, ...holdItems], [openTasks, openLoops, holdItems]);
-  const itemById = useMemo(() => {
-    const map = {};
-    allPlanItems.forEach((t) => { map[t.id] = t; });
-    return map;
-  }, [allPlanItems]);
-
-  // Triage annotations, keyed by item id — session-only, never persisted
-  const rankById = useMemo(() => {
-    const map = {};
-    (triage?.top3 || []).forEach((entry, i) => { map[entry.id] = { rank: i + 1, reason: entry.reason || '' }; });
-    return map;
-  }, [triage]);
-  const blockerById = useMemo(() => {
-    const map = {};
-    (triage?.blockers || []).forEach((entry) => { map[entry.id] = entry.note || ''; });
-    return map;
-  }, [triage]);
-
-  // Jump from Today's goal links straight into that goal's war room
-  useEffect(() => {
-    if (highlightGoalId) {
-      setSelectedGoalId(highlightGoalId);
-      setSubTab('roadmap');
-      setHighlightGoalId('');
-    }
-  }, [highlightGoalId, setHighlightGoalId]);
-
-  useEffect(() => {
-    if (!selectedGoalId && missions.length) setSelectedGoalId(missions[0].id);
-  }, [missions, selectedGoalId]);
-
-  async function runTriage() {
-    setTriageLoading(true);
-    setTriageError('');
-    setAppliedIds([]);
-    try {
-      const payload = {
-        todayKey,
-        focus: today ? { main: today.mainMissionText, avoiding: today.avoiding } : null,
-        missions: missions.map((m) => ({
-          id: m.id, title: m.title, area: m.area, status: m.status,
-          targetDate: m.targetDate || null, weeklyGoal: m.weeklyGoal || '',
-        })),
-        items: allPlanItems.map((t) => ({
-          id: t.id, text: t.text, category: t.category, area: t.area,
-          energy: t.energy, dueDate: t.dueDate || null, status: t.status,
-          daysOld: getDaysOld(t.createdAt), missionId: t.relatedMissionId || null,
-          nextAction: t.nextAction || '', waitingOn: t.waitingOn || '',
-        })),
-      };
-      const res = await fetch('/api/triage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `Triage failed (${res.status})`);
-      setTriage(data);
-    } catch (err) {
-      setTriageError(err.message || 'Triage failed');
-    }
-    setTriageLoading(false);
-  }
-
-  function applyDate(id, date) {
-    updateThought(id, { dueDate: date });
-    setAppliedIds((prev) => [...prev, id]);
-  }
-
-  return (
-    <div className="stack">
-      <TriagePanel
-        triage={triage} loading={triageLoading} error={triageError}
-        runTriage={runTriage} itemById={itemById} todayKey={todayKey}
-        appliedIds={appliedIds} applyDate={applyDate}
-      />
-      <div className="subtab-row">
-        <button className={`subtab-btn ${subTab === 'week' ? 'active' : ''}`} onClick={() => setSubTab('week')}><CalendarDays size={15} /> This Week</button>
-        <button className={`subtab-btn ${subTab === 'roadmap' ? 'active' : ''}`} onClick={() => setSubTab('roadmap')}><Flag size={15} /> Roadmap</button>
-      </div>
-      {subTab === 'week' && (
-        <WeekView
-          items={allPlanItems} todayKey={todayKey}
-          updateThought={updateThought} promoteToToday={promoteToToday}
-          rankById={rankById} blockerById={blockerById}
-          setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-        />
-      )}
-      {subTab === 'roadmap' && (
-        <RoadmapView
-          missions={missions} items={allPlanItems} milestones={milestones} todayKey={todayKey}
-          updateMission={updateMission} updateThought={updateThought}
-          setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-          rankById={rankById} blockerById={blockerById}
-          selectedGoalId={selectedGoalId} setSelectedGoalId={setSelectedGoalId}
-          setModal={setModal}
-          setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-        />
-      )}
-    </div>
-  );
+.goal-expanded { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.goal-section { display: grid; gap: 4px; }
+.goal-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.goal-section-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, appliedIds, applyDate }) {
-  return (
-    <div className="card triage-card">
-      <div className="mini-header triage-header">
-        <div className="triage-title"><Sparkles size={18} /><h3>Claude Triage</h3></div>
-        <button className="primary-button compact" onClick={runTriage} disabled={loading}>
-          {loading ? <RefreshCw size={16} className="spin" /> : <Zap size={16} />}
-          <span>{loading ? 'Reading the board…' : triage ? 'Re-run' : 'Run Triage'}</span>
-        </button>
-      </div>
-      {!triage && !loading && !error && (
-        <p className="muted small">Claude reads every open item, then marks the board below: top 3 ranked, blockers flagged, dates proposed. Nothing is saved until you approve it.</p>
-      )}
-      {error && (
-        <div className="triage-error">
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
-      {triage && !loading && (
-        <div className="triage-result">
-          {triage.headline && <p className="triage-headline">{triage.headline}</p>}
-          <p className="muted small">Top 3 and blockers are marked directly on the board below.</p>
+.goal-linked-list { display: grid; gap: 5px; }
+.goal-linked-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.goal-linked-item span { flex: 1; }
+.done-linked { opacity: 0.5; }
+.done-linked span { text-decoration: line-through; }
 
-          {Array.isArray(triage.schedule) && triage.schedule.length > 0 && (
-            <div className="triage-section">
-              <p className="triage-section-label"><CalendarDays size={14} /> Proposed dates</p>
-              {triage.schedule.map((entry) => {
-                const item = itemById[entry.id];
-                if (!item || !entry.date) return null;
-                const applied = appliedIds.includes(entry.id);
-                return (
-                  <div key={entry.id} className="triage-item">
-                    <div className="triage-item-body">
-                      <span>{item.text}</span>
-                      <p className="triage-reason">{dayShortLabel(entry.date, todayKey)}{entry.reason ? ` — ${entry.reason}` : ''}</p>
-                    </div>
-                    <button
-                      className={`triage-apply-btn ${applied ? 'applied' : ''}`}
-                      onClick={() => applyDate(entry.id, entry.date)}
-                      disabled={applied}
-                    >
-                      {applied ? <Check size={14} /> : <Plus size={14} />}
-                      {applied ? 'Set' : 'Apply'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+.goal-card-actions { display: grid; gap: 10px; }
 
-          {Array.isArray(triage.warnings) && triage.warnings.length > 0 && (
-            <div className="triage-section">
-              {triage.warnings.map((w, i) => (
-                <p key={i} className="triage-warning"><AlertCircle size={13} /> {w}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+/* â”€â”€ Fix 1: Today mission cards â€” life area background tints â”€â”€â”€â”€â”€â”€â”€ */
+.mission-card-area-work        { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.18); }
+.mission-card-area-school      { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); }
+.mission-card-area-money       { background: rgba(96,165,250,0.07); border-color: rgba(96,165,250,0.18); }
+.mission-card-area-health      { background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
+.mission-card-area-relationships { background: rgba(244,114,182,0.07); border-color: rgba(244,114,182,0.18); }
+.mission-card-area-family      { background: rgba(251,146,60,0.07); border-color: rgba(251,146,60,0.18); }
+.mission-card-area-personal    { background: rgba(45,212,191,0.07); border-color: rgba(45,212,191,0.18); }
+.mission-card-area-appprojects { background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.18); }
+.mission-card-area-future      { background: rgba(148,163,184,0.07); border-color: rgba(148,163,184,0.18); }
+
+/* â”€â”€ Fix 1: Next Actions â€” colored category icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.task-cat-icon-green   { color: var(--cat-green); }
+.task-cat-icon-amber   { color: var(--cat-amber); }
+.task-cat-icon-orange  { color: var(--cat-orange); }
+.task-cat-icon-purple  { color: var(--cat-purple); }
+.task-cat-icon-teal    { color: var(--cat-teal); }
+.task-cat-icon-pink    { color: var(--cat-pink); }
+.task-cat-icon-emerald { color: var(--cat-emerald); }
+.task-cat-icon-blue    { color: var(--cat-blue); }
+.task-cat-icon-slate   { color: var(--cat-slate); }
+.task-cat-icon-red     { color: var(--cat-red); }
+.task-cat-icon-yellow  { color: var(--cat-yellow); }
+
+/* â”€â”€ Fix 5: Tier icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.tier-icon-tier-act   { color: var(--accent); }
+.tier-icon-tier-think { color: #a78bfa; }
+.tier-icon-tier-hold  { color: var(--text-muted); }
+
+/* â”€â”€ Weekly Review stat card tints + colored icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.stat-card-amber   { background: rgba(245,158,11,0.07)  !important; border-color: rgba(245,158,11,0.18)  !important; }
+.stat-card-green   { background: rgba(52,211,153,0.07)  !important; border-color: rgba(52,211,153,0.18)  !important; }
+.stat-card-orange  { background: rgba(251,146,60,0.07)  !important; border-color: rgba(251,146,60,0.18)  !important; }
+.stat-card-purple  { background: rgba(167,139,250,0.07) !important; border-color: rgba(167,139,250,0.18) !important; }
+.stat-card-yellow  { background: rgba(251,191,36,0.07)  !important; border-color: rgba(251,191,36,0.18)  !important; }
+.stat-card-teal    { background: rgba(45,212,191,0.07)  !important; border-color: rgba(45,212,191,0.18)  !important; }
+.stat-card-pink    { background: rgba(244,114,182,0.07) !important; border-color: rgba(244,114,182,0.18) !important; }
+.stat-card-emerald { background: rgba(16,185,129,0.07)  !important; border-color: rgba(16,185,129,0.18)  !important; }
+.stat-card-slate   { background: rgba(148,163,184,0.05) !important; border-color: rgba(148,163,184,0.12) !important; }
+.stat-card-red     { background: rgba(248,113,113,0.07) !important; border-color: rgba(248,113,113,0.18) !important; }
+.stat-card-blue    { background: rgba(96,165,250,0.07)  !important; border-color: rgba(96,165,250,0.18)  !important; }
+
+.stat-icon-amber   { color: var(--cat-amber); }
+.stat-icon-green   { color: var(--cat-green); }
+.stat-icon-orange  { color: var(--cat-orange); }
+.stat-icon-purple  { color: var(--cat-purple); }
+.stat-icon-yellow  { color: var(--cat-yellow); }
+.stat-icon-teal    { color: var(--cat-teal); }
+.stat-icon-pink    { color: var(--cat-pink); }
+.stat-icon-emerald { color: var(--cat-emerald); }
+.stat-icon-slate   { color: var(--cat-slate); }
+.stat-icon-red     { color: var(--cat-red); }
+.stat-icon-blue    { color: var(--cat-blue); }
+
+/* â”€â”€ Goal linked item as clickable button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.goal-linked-btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s, background 0.15s;
+}
+.goal-linked-btn:hover {
+  border-color: var(--line-strong);
+  background: rgba(255,255,255,0.06);
 }
 
-function DateChips({ item, todayKey, updateThought }) {
-  return (
-    <div className="date-chip-row">
-      <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: todayKey })}>Today</button>
-      <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: addDaysToKey(todayKey, 1) })}>Tmr</button>
-      <input
-        type="date" className="date-chip-input" value={item.dueDate || ''}
-        onChange={(e) => updateThought(item.id, { dueDate: e.target.value })}
-      />
-    </div>
-  );
+/* â”€â”€ Rose token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+:root { --cat-rose: #fb7185; }
+
+.pill-rose    { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
+.icon-rose    { background: rgba(251,113,133,0.14); color: var(--cat-rose); }
+.chip-active-rose { background: rgba(251,113,133,0.14) !important; border-color: rgba(251,113,133,0.3) !important; color: var(--cat-rose) !important; }
+.stat-card-rose   { background: rgba(251,113,133,0.07) !important; border-color: rgba(251,113,133,0.18) !important; }
+.stat-icon-rose   { color: var(--cat-rose); }
+.cat-label-rose   { color: var(--cat-rose); }
+.task-cat-icon-rose { color: var(--cat-rose); }
+.mission-card-area-health { background: rgba(251,113,133,0.07); border-color: rgba(251,113,133,0.18); }
+
+/* â”€â”€ Nav active colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.bottom-nav button.active.nav-amber  { color: var(--cat-amber);  background: rgba(245,158,11,0.14); }
+.bottom-nav button.active.nav-gray   { color: #cbd5e1;           background: rgba(148,163,184,0.14); }
+.bottom-nav button.active.nav-purple { color: var(--cat-purple); background: rgba(167,139,250,0.14); }
+.bottom-nav button.active.nav-blue   { color: var(--cat-blue);   background: rgba(96,165,250,0.14); }
+.bottom-nav button.active.nav-cyan   { color: #22d3ee;           background: rgba(34,211,238,0.14); }
+.bottom-nav button.active.nav-green  { color: var(--cat-green);  background: rgba(52,211,153,0.14); }
+
+/* â”€â”€ Area pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.pill-rose { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
+
+/* â”€â”€ Energy pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Low=slate, Medium=yellow, High=rose â€” already covered by existing pill-slate/yellow/rose */
+
+/* â”€â”€ Accomplish move-to-day row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.accomplish-move-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+.accomplish-item-actions {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.accomplish-item-editable:hover .accomplish-item-actions { opacity: 1; }
+
+/* â”€â”€ BlakeOS Command upgrade: ring, strip, and Today cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.hero-command-layout {
+  align-items: stretch;
+}
+.command-ring-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: rgba(10,14,22,0.6);
+  border: 1px solid rgba(245,158,11,0.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.command-ring-svg-wrap {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+}
+.command-ring-svg-wrap svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.command-ring-center {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 0 16px;
+}
+.command-ring-center strong {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text);
+}
+.command-ring-center span {
+  font-size: 0.48rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.3;
+}
+.command-ring-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.command-state-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.command-state-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.command-state-label {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.command-state-tagline {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.35;
+}
+.command-ring-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.command-metric-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 7px 4px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.command-metric-tile strong {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+}
+.command-metric-tile span {
+  font-size: 0.56rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.2;
+}
+.command-metric-amber  { background: rgba(245,158,11,0.09)  !important; border-color: rgba(245,158,11,0.22)  !important; }
+.command-metric-green  { background: rgba(52,211,153,0.09)  !important; border-color: rgba(52,211,153,0.22)  !important; }
+.command-metric-blue   { background: rgba(96,165,250,0.09)  !important; border-color: rgba(96,165,250,0.22)  !important; }
+.command-metric-red    { background: rgba(248,113,113,0.09) !important; border-color: rgba(248,113,113,0.22) !important; }
+.command-metric-amber strong { color: var(--cat-amber); }
+.command-metric-green strong { color: var(--cat-green); }
+.command-metric-blue strong  { color: var(--cat-blue); }
+.command-metric-red strong   { color: var(--cat-red); }
+.daily-command-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(14,18,28,0.72);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.daily-command-strip::-webkit-scrollbar { display: none; }
+.command-strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.command-strip-btn {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.command-strip-btn:hover { opacity: 0.85; filter: brightness(1.15); }
+.command-strip-date { cursor: default; }
+.command-strip-state {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+/* Interactive button color variants */
+.strip-blue {
+  color: var(--cat-blue);
+  background: rgba(96,165,250,0.1);
+  border-color: rgba(96,165,250,0.25);
+}
+.strip-green {
+  color: var(--cat-green);
+  background: rgba(52,211,153,0.1);
+  border-color: rgba(52,211,153,0.25);
+}
+.strip-orange {
+  color: var(--cat-orange);
+  background: rgba(251,146,60,0.1);
+  border-color: rgba(251,146,60,0.25);
+}
+.strip-red {
+  color: var(--cat-red);
+  background: rgba(248,113,113,0.1);
+  border-color: rgba(248,113,113,0.25);
+}
+.strip-amber {
+  color: var(--cat-amber);
+  background: rgba(245,158,11,0.1);
+  border-color: rgba(245,158,11,0.25);
+}
+.command-strip-load {
+  color: var(--cat-teal);
+  background: rgba(45,212,191,0.09);
+  border-color: rgba(45,212,191,0.2);
+}
+.command-strip-load.strip-red {
+  color: var(--cat-red);
+  background: rgba(248,113,113,0.09);
+  border-color: rgba(248,113,113,0.2);
+}
+.command-strip-load.strip-amber {
+  color: var(--cat-amber);
+  background: rgba(245,158,11,0.09);
+  border-color: rgba(245,158,11,0.2);
+}
+.command-strip-load.strip-green {
+  color: var(--cat-green);
+  background: rgba(52,211,153,0.09);
+  border-color: rgba(52,211,153,0.2);
+}
+.todays-command-card {
+  border-color: rgba(245,158,11,0.16);
+  background: linear-gradient(180deg, rgba(245,158,11,0.035), var(--bg-card));
+}
+.today-command-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.today-command-card-slot {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.035);
+  overflow: hidden;
+}
+.today-command-card-slot::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: 0.95;
+}
+.today-command-card-slot::after {
+  content: "";
+  position: absolute;
+  inset: -60px -40px auto auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: var(--slot-glow, rgba(245,158,11,0.14));
+  filter: blur(12px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.today-command-card-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.today-command-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.today-command-title-wrap { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.today-command-label-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.today-command-title-wrap p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.today-command-card-slot textarea {
+  position: relative;
+  z-index: 1;
+  min-height: 104px;
+  background: rgba(10,14,22,0.55);
+  border-color: rgba(255,255,255,0.08);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.today-command-card-slot textarea::placeholder { color: rgba(168,176,192,0.6); }
+.today-command-pull {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+}
+.today-command-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.today-command-done {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  color: var(--cat-green);
+  border-color: rgba(52,211,153,0.3);
+  background: rgba(52,211,153,0.1);
+}
+.today-command-done:hover { background: rgba(52,211,153,0.18); }
+.today-command-amber {
+  --slot-glow: rgba(245,158,11,0.16);
+  border-color: rgba(245,158,11,0.24);
+  background: linear-gradient(135deg, rgba(245,158,11,0.09), rgba(255,255,255,0.025));
+}
+.today-command-amber::before { background: var(--cat-amber); }
+.today-command-amber .today-command-label-row,
+.today-command-amber .today-command-number { color: var(--cat-amber); }
+.today-command-rose {
+  --slot-glow: rgba(251,113,133,0.16);
+  border-color: rgba(251,113,133,0.24);
+  background: linear-gradient(135deg, rgba(251,113,133,0.085), rgba(255,255,255,0.025));
+}
+.today-command-rose::before { background: var(--cat-rose); }
+.today-command-rose .today-command-label-row,
+.today-command-rose .today-command-number { color: var(--cat-rose); }
+/* Emerald = light green for body/stability */
+.today-command-emerald {
+  --slot-glow: rgba(52,211,153,0.16);
+  border-color: rgba(52,211,153,0.24);
+  background: linear-gradient(135deg, rgba(52,211,153,0.085), rgba(255,255,255,0.025));
+}
+.today-command-emerald::before { background: var(--cat-green); }
+.today-command-emerald .today-command-label-row,
+.today-command-emerald .today-command-number { color: var(--cat-green); }
+.today-command-blue {
+  --slot-glow: rgba(96,165,250,0.16);
+  border-color: rgba(96,165,250,0.24);
+  background: linear-gradient(135deg, rgba(96,165,250,0.085), rgba(255,255,255,0.025));
+}
+.today-command-blue::before { background: var(--cat-blue); }
+.today-command-blue .today-command-label-row,
+.today-command-blue .today-command-number { color: var(--cat-blue); }
+.today-command-red {
+  --slot-glow: rgba(248,113,113,0.16);
+  border-color: rgba(248,113,113,0.24);
+  background: linear-gradient(135deg, rgba(248,113,113,0.085), rgba(255,255,255,0.025));
+}
+.today-command-red::before { background: var(--cat-red); }
+.today-command-red .today-command-label-row,
+.today-command-red .today-command-number { color: var(--cat-red); }
+.today-command-card-slot.needs-set { opacity: 0.86; }
+.today-command-card-slot.is-set {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 10px 30px rgba(0,0,0,0.18);
+}
+.linked-slot-card textarea { border-color: var(--accent-border) !important; }
+
+/* â”€â”€ Progress psychology: accomplishments as identity evidence â”€â”€â”€â”€â”€ */
+.accomplishments-page { gap: 14px; }
+.accomplishment-hero-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 22px 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(245,158,11,0.2);
+  background:
+    linear-gradient(to bottom, rgba(10,13,18,0.0) 0%, rgba(10,13,18,0.0) 40%, rgba(10,13,18,0.82) 78%, rgba(10,13,18,0.97) 100%),
+    linear-gradient(to right, rgba(10,13,18,0.92) 28%, rgba(10,13,18,0.4) 55%, rgba(10,13,18,0.0) 100%),
+    url('/mountain-hero.webp') top center/cover no-repeat;
+  min-height: 380px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.accomplishment-hero-copy { display: flex; flex-direction: column; gap: 8px; max-width: 280px; }
+.accomplishment-hero-copy h2 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  letter-spacing: -0.04em;
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 0;
+}
+.hero-accent { color: var(--accent); }
+.accomplishment-hero-copy p { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.4; }
+.hero-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+@media (max-width: 520px) {
+  .hero-stat-row { grid-template-columns: repeat(2, 1fr); }
+  .accomplishment-hero-card { min-height: 420px; }
+}
+.identity-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.identity-stat {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 14px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+.identity-stat--fire     { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.18); }
+.identity-stat--calendar { background: rgba(96,165,250,0.08);  border-color: rgba(96,165,250,0.18);  }
+.identity-stat--target   { background: rgba(245,158,11,0.08);  border-color: rgba(245,158,11,0.18);  }
+.identity-stat--green    { background: rgba(52,211,153,0.08);  border-color: rgba(52,211,153,0.18);  }
+.identity-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.identity-stat-icon--fire     { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: #f87171; }
+.identity-stat-icon--calendar { background: rgba(96,165,250,0.15);  border: 1px solid rgba(96,165,250,0.3);  color: #60a5fa; }
+.identity-stat-icon--target   { background: rgba(245,158,11,0.15);  border: 1px solid rgba(245,158,11,0.3);  color: #f59e0b; }
+.identity-stat-icon--green    { background: rgba(52,211,153,0.15);  border: 1px solid rgba(52,211,153,0.3);  color: #34d399; }
+.identity-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.identity-stat strong            { font-size: 1.6rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+.identity-stat--fire strong      { color: #f87171 !important; }
+.identity-stat--calendar strong  { color: #60a5fa !important; }
+.identity-stat--target strong    { color: #f59e0b !important; }
+.identity-stat--green strong     { color: #34d399 !important; }
+.identity-stat span { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+.stat-green { color: #34d399 !important; }
+.proof-score-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  border-radius: var(--radius);
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  width: fit-content;
+}
+.proof-trophy-icon { color: var(--accent); flex-shrink: 0; }
+.proof-score-body { display: flex; flex-direction: column; gap: 2px; }
+.proof-score-card strong {
+  font-size: 1.8rem;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--accent);
+}
+.proof-score-card span {
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.3;
+}
+.momentum-signal-card {
+  border-color: rgba(45,212,191,0.18);
+  background: linear-gradient(135deg, rgba(45,212,191,0.07), var(--bg-card));
+}
+.momentum-signal-card p { color: var(--text-secondary); font-size: 0.92rem; }
+.momentum-signal-card strong { color: var(--cat-teal); }
+.evidence-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 4px 2px 0;
+}
+.identity-day-card {
+  overflow: hidden;
+  padding: 0;
+  border-color: rgba(255,255,255,0.09);
+}
+.identity-day-toggle {
+  padding: 15px 18px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(245,158,11,0.055), rgba(255,255,255,0.015));
+}
+.identity-day-medal {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--status-track);
+  background: rgba(52,211,153,0.11);
+  border: 1px solid rgba(52,211,153,0.22);
+  flex-shrink: 0;
+}
+.identity-day-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.identity-evidence-list {
+  padding: 14px 18px 18px;
+}
+.identity-cat-group {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.018);
+}
+.identity-cat-header { margin-bottom: 6px; }
+.identity-proof-items { padding-left: 0; }
+.accomplishment-empty-card {
+  background: linear-gradient(135deg, rgba(245,158,11,0.06), var(--bg-card));
+  border-color: rgba(245,158,11,0.15);
 }
 
-function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips, showDate }) {
-  const [promoted, setPromoted] = useState(false);
-  const cat = getCategory(item.category);
-  const CatIcon = cat.icon;
-  const areaMeta = getAreaMeta(item.area);
-  const rank = rankById[item.id];
-  const blockNote = blockerById[item.id];
-  const isTop1 = rank?.rank === 1;
-  return (
-    <div className={`plan-task ${isTop1 ? 'plan-top1' : ''} ${blockNote ? 'plan-blocked' : ''}`}>
-      <div className="plan-task-row">
-        <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-          <CircleDashed size={16} />
-        </button>
-        {rank && <span className="plan-rank">{rank.rank}</span>}
-        <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-        {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
-      </div>
-      {rank?.reason && (
-        <div className="triage-line">
-          <Sparkles size={12} className="triage-line-icon" />
-          <span><b>Why #{rank.rank}:</b> {rank.reason}</span>
-        </div>
-      )}
-      {blockNote && (
-        <div className="triage-line triage-line-block">
-          <AlertCircle size={12} className="triage-line-icon" />
-          <span><b>Blocker:</b> {blockNote}</span>
-        </div>
-      )}
-      <div className="plan-task-meta">
-        <Pill tone={cat.color} className="plan-pill"><CatIcon size={11} /> {cat.short}</Pill>
-        <Pill tone={areaMeta.color} className="plan-pill">{item.area}</Pill>
-        {showDate && item.dueDate && (
-          <Pill tone={item.dueDate < todayKey ? 'red' : 'default'} className="plan-pill"><CalendarDays size={11} /> {dayShortLabel(item.dueDate, todayKey)}</Pill>
-        )}
-        <span className="plan-energy"><EnergyIcon level={item.energy} /><span>{item.energy}</span></span>
-        {isTop1 && (
-          <button
-            className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
-            onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
-            disabled={promoted}
-          >
-            {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
-            {promoted ? 'On Today' : 'Make Main'}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-function WeekView({ items, todayKey, updateThought, promoteToToday, rankById, blockerById, setActiveTab, setSelectedCategory }) {
-  const [lens, setLens] = useState('day');
-  const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysToKey(todayKey, i));
-  const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey).sort(sortByTier);
-  const unscheduled = items.filter((t) => !t.dueDate).sort(sortByTier);
-  const later = items.filter((t) => t.dueDate && t.dueDate > weekKeys[6]);
-
-  function goToItem(item) {
-    setSelectedCategory(item.category);
-    setActiveTab('sort');
-  }
-
-  function loadLabel(n) {
-    if (n === 0) return '—';
-    if (n === 1) return '1 item · light';
-    if (n <= 2) return `${n} items`;
-    return `${n} items · heavy`;
-  }
-
-  function renderTask(item, opts = {}) {
-    return (
-      <PlanTask
-        key={item.id} item={item} todayKey={todayKey}
-        updateThought={updateThought} promoteToToday={promoteToToday}
-        rankById={rankById} blockerById={blockerById}
-        goToItem={goToItem} showChips={opts.chips || false} showDate={opts.date || false}
-      />
-    );
-  }
-
-  const lensToggle = (
-    <div className="plan-lens-toggle">
-      <button className={lens === 'day' ? 'active' : ''} onClick={() => setLens('day')}><CalendarDays size={13} /> By Day</button>
-      <button className={lens === 'type' ? 'active' : ''} onClick={() => setLens('type')}><Layers size={13} /> By Type</button>
-    </div>
-  );
-
-  if (lens === 'type') {
-    return (
-      <div className="stack">
-        {lensToggle}
-        {categoryTiers.map((tier) => {
-          const TierIcon = tier.icon;
-          const tierItems = items
-            .filter((t) => getCategory(t.category).tier === tier.id)
-            .sort((a, b) => {
-              if (a.dueDate && b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
-              if (a.dueDate) return -1;
-              if (b.dueDate) return 1;
-              return sortByTier(a, b);
-            });
-          return (
-            <div key={tier.id} className={`card plan-tier-card plan-tier-${tier.id}`}>
-              <div className="plan-day-head plan-tier-head">
-                <span className="plan-day-label plan-tier-label"><TierIcon size={14} /> {tier.label}</span>
-                <span className="plan-day-load">{tierItems.length || '—'}</span>
-              </div>
-              <p className="plan-tier-desc">{tier.description}</p>
-              {tierItems.length ? (
-                <div className="plan-tier-items">
-                  {tierItems.map((item) => renderTask(item, { chips: !item.dueDate, date: true }))}
-                </div>
-              ) : (
-                <p className="plan-day-empty">Nothing open in this tier.</p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  return (
-    <div className="stack">
-      {lensToggle}
-      <div className="plan-rail">
-        {overdue.length > 0 && (
-          <div className="plan-day plan-day-overdue">
-            <div className="plan-day-node plan-node-red"><AlertCircle size={11} /></div>
-            <div className="plan-day-head">
-              <span className="plan-day-label plan-label-red">Overdue</span>
-              <span className="plan-day-load">{overdue.length} item{overdue.length === 1 ? '' : 's'}</span>
-            </div>
-            {overdue.map((item) => renderTask(item, { chips: true }))}
-          </div>
-        )}
-
-        {weekKeys.map((key) => {
-          const dayItems = items.filter((t) => t.dueDate === key).sort(sortByTier);
-          const isToday = key === todayKey;
-          const dayNum = parseKey(key).getDate();
-          return (
-            <div key={key} className={`plan-day ${isToday ? 'plan-day-today' : ''}`}>
-              <div className={`plan-day-node ${isToday ? 'plan-node-amber' : ''}`}>{dayNum}</div>
-              <div className="plan-day-head">
-                <span className={`plan-day-label ${isToday ? 'plan-label-amber' : ''}`}>{dayShortLabel(key, todayKey)}</span>
-                <span className="plan-day-load">{loadLabel(dayItems.length)}</span>
-              </div>
-              {dayItems.length ? dayItems.map((item) => renderTask(item, {})) : (
-                <p className="plan-day-empty">Open</p>
-              )}
-            </div>
-          );
-        })}
-
-        {later.length > 0 && (
-          <div className="plan-day">
-            <div className="plan-day-node"><Telescope size={11} /></div>
-            <div className="plan-day-head">
-              <span className="plan-day-label">Beyond this week</span>
-              <span className="plan-day-load">{later.length}</span>
-            </div>
-            {later
-              .slice()
-              .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
-              .map((item) => renderTask(item, { date: true }))}
-          </div>
-        )}
-
-        <div className="plan-day">
-          <div className="plan-day-node"><Inbox size={11} /></div>
-          <div className="plan-day-head">
-            <span className="plan-day-label">Unscheduled</span>
-            <span className="plan-day-load">{unscheduled.length || '—'}</span>
-          </div>
-          {unscheduled.length ? (
-            unscheduled.map((item) => renderTask(item, { chips: true }))
-          ) : (
-            <p className="plan-day-empty">Every open item has a date. That's a planned week.</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMilestone }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(milestone?.title || '');
-  useEffect(() => { setDraft(milestone?.title || ''); }, [milestone?.title]);
-
-  function save() {
-    setEditing(false);
-    if ((milestone?.title || '') !== draft) setMilestone(missionId, weekStart, draft);
-  }
-
-  if (editing || (!milestone)) {
-    if (!editing) {
-      return (
-        <button className="milestone-unset" onClick={() => setEditing(true)}>
-          <Plus size={13} /> Set milestone — what does done look like this week?
-        </button>
-      );
-    }
-    return (
-      <input
-        autoFocus className="milestone-input" value={draft}
-        placeholder="Done means…"
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={save}
-        onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
-      />
-    );
-  }
-  return (
-    <div className="milestone-row">
-      <button
-        className={`milestone-check ${milestone.done ? 'done' : ''}`}
-        title={milestone.done ? 'Reopen' : 'Mark done'}
-        onClick={() => toggleMilestone(milestone.id, !milestone.done)}
-      >
-        <Check size={12} />
-      </button>
-      <button className={`milestone-text ${milestone.done ? 'done' : ''}`} onClick={() => setEditing(true)}>
-        {milestone.title}
-      </button>
-    </div>
-  );
+@media (max-width: 860px) {
+  .hero-command-layout { flex-direction: column; }
+  .command-ring-panel { width: 100%; }
+  .command-ring-metrics { grid-template-columns: repeat(4, 1fr); }
+  .today-command-grid { grid-template-columns: 1fr; }
+  .identity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .accomplishment-hero-card { flex-direction: column; align-items: flex-start; }
+  .proof-score-card { width: 100%; min-width: 0; }
 }
 
-function RoadmapView({ missions, items, milestones, todayKey, updateMission, updateThought, setMilestone, toggleMilestone, rankById, blockerById, selectedGoalId, setSelectedGoalId, setModal, setActiveTab, setSelectedCategory }) {
-  const goal = missions.find((m) => m.id === selectedGoalId) || missions[0];
-
-  if (!missions.length) {
-    return (
-      <div className="card">
-        <EmptyState title="No goals yet" text="Create your first goal to start building a roadmap." />
-        <button className="primary-button full-width" onClick={() => setModal({ type: 'goal-form', mission: null })}>
-          <Plus size={16} /> New Goal
-        </button>
-      </div>
-    );
-  }
-
-  const meta = getAreaMeta(goal.area);
-  const GIcon = meta.icon;
-  const linked = items.filter((t) => t.relatedMissionId === goal.id);
-  const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
-  const blockedCount = linked.filter((t) => blockerById[t.id]).length;
-  const currentWeek = weekStartKey(todayKey);
-  const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
-  const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
-
-  // Ladder: from earliest milestone week (or current week) through target week, capped at 16 weeks
-  let weeks = [];
-  if (goal.targetDate) {
-    const targetWeek = weekStartKey(goal.targetDate);
-    const earliestMs = goalMilestones.length ? goalMilestones[0].weekStart : currentWeek;
-    let start = earliestMs < currentWeek ? earliestMs : currentWeek;
-    if (targetWeek < start) start = targetWeek;
-    for (let wk = start, i = 0; wk <= targetWeek && i < 16; wk = addDaysToKey(wk, 7), i += 1) {
-      weeks.push(wk);
-    }
-  }
-  const currentIdx = weeks.indexOf(currentWeek);
-  const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
-
-  function goToItem(item) {
-    setSelectedCategory(item.category);
-    setActiveTab('sort');
-  }
-
-  function renderWeekTask(item) {
-    const blockNote = blockerById[item.id];
-    const rank = rankById[item.id];
-    return (
-      <div key={item.id} className={`plan-task roadmap-task ${blockNote ? 'plan-blocked' : ''}`}>
-        <div className="plan-task-row">
-          <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-            <CircleDashed size={15} />
-          </button>
-          {rank && <span className="plan-rank">{rank.rank}</span>}
-          <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).replace('Today', 'Today').split(',')[0]}</Pill>}
-        </div>
-        {blockNote && (
-          <div className="triage-line triage-line-block">
-            <AlertCircle size={12} className="triage-line-icon" />
-            <span><b>Blocker:</b> {blockNote}</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const undated = linked.filter((t) => !t.dueDate);
-
-  return (
-    <div className="stack">
-      <div className="goal-picker">
-        {missions.map((m) => {
-          const mMeta = getAreaMeta(m.area);
-          const MIcon = mMeta.icon;
-          return (
-            <button
-              key={m.id}
-              className={`goal-chip ${m.id === goal.id ? 'active' : ''}`}
-              onClick={() => setSelectedGoalId(m.id)}
-            >
-              <MIcon size={13} /> {m.title}
-            </button>
-          );
-        })}
-        <button className="goal-chip goal-chip-new" onClick={() => setModal({ type: 'goal-form', mission: null })}>
-          <Plus size={13} /> New Goal
-        </button>
-      </div>
-
-      <div className={`card roadmap-hq roadmap-tint-${meta.color}`}>
-        <div className="roadmap-head">
-          <div className="roadmap-title">
-            <GIcon size={17} className={`stat-icon-${meta.color}`} />
-            <h3>{goal.title}</h3>
-          </div>
-          <div className="roadmap-head-actions">
-            {daysLeft !== null ? (
-              <Pill tone={countdownTone}>{daysLeft < 0 ? `${Math.abs(daysLeft)}d past` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}</Pill>
-            ) : (
-              <Pill tone="slate">No target</Pill>
-            )}
-            <button className="icon-only-btn" title="Edit goal" onClick={() => setModal({ type: 'goal-form', mission: goal })}>
-              <Edit3 size={15} />
-            </button>
-          </div>
-        </div>
-        {goal.why && <p className="roadmap-why">{goal.why}</p>}
-        <p className="roadmap-sub">
-          {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
-          {' · '}{linked.length} open item{linked.length === 1 ? '' : 's'}
-          {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
-        </p>
-
-        {!goal.targetDate && (
-          <div className="roadmap-target-prompt">
-            <label className="roadmap-target-label">Set a target date to build the week-by-week ladder</label>
-            <input
-              type="date" className="date-chip-input roadmap-target-input"
-              value=""
-              onChange={(e) => updateMission(goal.id, { targetDate: e.target.value })}
-            />
-          </div>
-        )}
-
-        {goal.targetDate && weeks.length > 0 && (
-          <>
-            <div className="roadmap-progress">
-              <div className="prog-track"><div className="prog-fill" style={{ width: `${progressPct}%` }} /></div>
-              <div className="prog-labels">
-                <span>{dayShortLabel(todayKey, todayKey)}</span>
-                <span>{currentIdx >= 0 ? `Week ${currentIdx + 1} of ${weeks.length}` : `${weeks.length} weeks`}</span>
-                <span>{formatDate(goal.targetDate + 'T00:00:00')}</span>
-              </div>
-            </div>
-
-            <div className="roadmap-ladder">
-              {weeks.map((wk, i) => {
-                const ms = goalMilestones.find((m) => m.weekStart === wk) || null;
-                const weekTasks = linked.filter((t) => t.dueDate && weekStartKey(t.dueDate) === wk);
-                const isNow = wk === currentWeek;
-                const isPast = wk < currentWeek;
-                return (
-                  <div key={wk} className={`roadmap-week ${isNow ? 'now' : ''} ${ms?.done ? 'done' : ''} ${isPast && !ms?.done ? 'past' : ''}`}>
-                    <div className="roadmap-week-dot" />
-                    <div className="roadmap-week-head">
-                      <span className="roadmap-week-label">Week {i + 1} · {weekRangeLabel(wk)}{isNow ? ' · Now' : ''}</span>
-                      {ms?.done && <Pill tone="green" className="plan-pill">Done</Pill>}
-                      {!ms?.done && weekTasks.length > 0 && <span className="plan-day-load">{weekTasks.length} item{weekTasks.length === 1 ? '' : 's'}</span>}
-                    </div>
-                    <MilestoneSlot
-                      missionId={goal.id} weekStart={wk} milestone={ms}
-                      setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-                    />
-                    {weekTasks.length > 0 && (
-                      <div className="roadmap-week-tasks">
-                        {weekTasks.map(renderWeekTask)}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {undated.length > 0 && (
-          <div className="roadmap-undated">
-            <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
-            {undated.map((item) => (
-              <div key={item.id} className="plan-task roadmap-task">
-                <div className="plan-task-row">
-                  <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-                    <CircleDashed size={15} />
-                  </button>
-                  <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-                  <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {linked.length === 0 && (
-          <p className="muted small">No open items linked to this goal yet. Link items in Sort (set their related goal) and they'll appear on the ladder by due date.</p>
-        )}
-      </div>
-    </div>
-  );
+@media (max-width: 520px) {
+  .command-ring-panel { align-items: flex-start; }
+  .command-ring-svg-wrap { width: 90px; height: 90px; }
+  .command-ring-center strong { font-size: 1.1rem; }
+  .command-ring-metrics { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .command-metric-tile strong { font-size: 0.82rem; }
+  .command-metric-tile span { font-size: 0.48rem; }
+  .daily-command-strip { border-radius: 18px; }
+  .today-command-card-slot { padding: 13px; }
+  .today-command-card-top { gap: 8px; }
+  .today-command-label-row { font-size: 0.72rem; }
+  .today-command-card-slot textarea { min-height: 92px; }
+  .identity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .identity-day-badge { display: none; }
+  .accomplishment-hero-card { padding: 18px; min-height: 180px; }
 }
 
-function GoalFormModal({ mission, addMission, updateMission, deleteMission, onClose }) {
-  const [form, setForm] = useState({
-    title: mission?.title || '',
-    why: mission?.why || '',
-    area: mission?.area || 'Personal',
-    targetDate: mission?.targetDate || '',
-    status: mission?.status || 'Open',
-  });
-  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function submit() {
-    if (!form.title.trim()) return;
-    if (mission) updateMission(mission.id, form);
-    else addMission(form);
-    onClose();
-  }
-  function handleDelete() {
-    if (window.confirm(`Delete goal "${mission.title}"? Its weekly milestones will be deleted too. Linked items stay in Sort.`)) {
-      deleteMission(mission.id);
-      onClose();
-    }
-  }
-  return (
-    <div className="capture-form">
-      <Field label="Goal"><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Paragon Repricing Tool" /></Field>
-      <Field label="Why it matters"><textarea value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
-      <Field label="Life area">
-        <select value={form.area} onChange={(e) => set('area', e.target.value)}>
-          {lifeAreas.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-      </Field>
-      <Field label="Target date"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
-      <Field label="Status">
-        <select value={form.status} onChange={(e) => set('status', e.target.value)}>
-          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </Field>
-      <button className="primary-button" onClick={submit}><Save size={16} /> {mission ? 'Save Goal' : 'Create Goal'}</button>
-      {mission && (
-        <button className="danger-button" onClick={handleDelete}><Trash2 size={15} /> Delete goal</button>
-      )}
-    </div>
-  );
+/* ── Manage Goals Modal ─────────────────────────────────────────────────── */
+.manage-goals-modal { display: grid; gap: 14px; }
+.manage-goals-list { display: grid; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.manage-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.manage-goal-item:hover:not(.manage-goal-disabled) { filter: brightness(1.12); }
+.manage-goal-selected {
+  border-color: var(--accent-border) !important;
+  background: var(--accent-dim) !important;
+}
+.manage-goal-disabled { opacity: 0.4; cursor: not-allowed; }
+.manage-goal-check { color: var(--text-muted); flex-shrink: 0; }
+.manage-goal-selected .manage-goal-check { color: var(--accent); }
+.manage-goal-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.manage-goal-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.manage-goal-badge {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.manage-goals-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+/* ── Behavioral Command Cards + softer cyberpunk accent pass ───────────── */
+:root {
+  --accent: #ff5a3d;
+  --accent-dim: rgba(255, 90, 61, 0.115);
+  --accent-border: rgba(255, 90, 61, 0.26);
+  --cat-amber: #ffb020;
+  --cat-orange: #ff7a2f;
+  --cat-red: #ff5a3d;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 78% 42% at 12% 0%, rgba(255,90,61,0.055) 0%, transparent 52%),
+    radial-gradient(ellipse 64% 38% at 90% 16%, rgba(52,211,153,0.04) 0%, transparent 42%),
+    radial-gradient(ellipse 52% 32% at 62% 100%, rgba(96,165,250,0.035) 0%, transparent 46%),
+    var(--bg);
+}
+
+.topbar {
+  background: linear-gradient(180deg, rgba(12,15,20,0.9), rgba(12,15,20,0.68) 70%, rgba(12,15,20,0));
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #ff7a2f, #ff5a3d);
+  color: #0c0f14;
+  box-shadow: 0 0 24px rgba(255, 90, 61, 0.12);
+}
+
+.hero-card,
+.todays-command-card {
+  border-color: rgba(255,90,61,0.18);
+  background:
+    radial-gradient(circle at 84% 16%, rgba(255,90,61,0.075), transparent 34%),
+    linear-gradient(135deg, rgba(255,90,61,0.045), rgba(20,26,36,0.96) 58%);
+}
+.accomplishment-hero-card {
+  border-color: rgba(255,90,61,0.18);
+}
+
+.proof-score-card,
+.accomplish-stat strong,
+.command-state-label,
+.eyebrow {
+  color: var(--accent);
+}
+
+.command-strip-state,
+.bottom-nav button.active.nav-amber,
+.category-chip.active,
+.subtab-btn.active {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+}
+
+.today-command-card-slot {
+  background:
+    radial-gradient(circle at 86% 0%, var(--slot-glow, rgba(255,90,61,0.09)), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.042), rgba(255,255,255,0.018));
+}
+
+.today-command-red {
+  --slot-glow: rgba(255,90,61,0.105);
+  border-color: rgba(255,90,61,0.22);
+  background: linear-gradient(135deg, rgba(255,90,61,0.062), rgba(255,255,255,0.023));
+}
+.today-command-red::before { background: #ff5a3d; }
+.today-command-red .today-command-label-row,
+.today-command-red .today-command-number { color: #ff7a66; }
+
+.today-command-orange {
+  --slot-glow: rgba(255,122,47,0.13);
+  border-color: rgba(255,122,47,0.23);
+  background: linear-gradient(135deg, rgba(255,122,47,0.07), rgba(255,255,255,0.023));
+}
+.today-command-orange::before { background: var(--cat-orange); }
+.today-command-orange .today-command-label-row,
+.today-command-orange .today-command-number { color: var(--cat-orange); }
+
+.today-command-amber {
+  --slot-glow: rgba(255,176,32,0.12);
+  border-color: rgba(255,176,32,0.22);
+  background: linear-gradient(135deg, rgba(255,176,32,0.065), rgba(255,255,255,0.023));
+}
+.today-command-blue {
+  --slot-glow: rgba(96,165,250,0.12);
+  border-color: rgba(96,165,250,0.22);
+}
+
+.today-command-card-slot textarea {
+  min-height: 118px;
+  white-space: pre-line;
+  line-height: 1.45;
+}
+
+.behavior-mode-explainer {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-strong);
+}
+.behavior-mode-explainer strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 2px;
+}
+.behavior-mode-explainer p {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.behavior-mode-red { color: #ff7a66; background: rgba(255,90,61,0.075); border-color: rgba(255,90,61,0.2); }
+.behavior-mode-orange { color: var(--cat-orange); background: rgba(255,122,47,0.075); border-color: rgba(255,122,47,0.2); }
+.behavior-mode-amber { color: var(--cat-amber); background: rgba(255,176,32,0.07); border-color: rgba(255,176,32,0.2); }
+.behavior-mode-blue { color: var(--cat-blue); background: rgba(96,165,250,0.07); border-color: rgba(96,165,250,0.2); }
+
+.promote-behavior-item { justify-content: flex-start; }
+.promote-behavior-item span:not(.pill) { flex: 1; }
+
+@media (max-width: 520px) {
+  .today-command-grid { gap: 12px; }
+  .today-command-card-slot { padding: 14px 13px; }
+  .today-command-label-row { font-size: 0.74rem; }
+}
+
+/* ─── Plan Tab v2 — Triage Layer + Agenda Rail + Mission Control ────────── */
+.spin { animation: plan-spin 1s linear infinite; }
+@keyframes plan-spin { to { transform: rotate(360deg); } }
+
+/* Triage card */
+.triage-card { border-color: rgba(251,146,60,0.25); }
+.triage-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.triage-title { display: flex; align-items: center; gap: 8px; color: var(--cat-orange); }
+.triage-title h3 { color: var(--text); }
+.triage-error {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  padding: 10px 12px; border-radius: 10px; font-size: 0.82rem;
+  background: rgba(248,113,113,0.1); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2);
+}
+.triage-result { display: grid; gap: 12px; margin-top: 12px; }
+.triage-headline {
+  font-size: 0.92rem; line-height: 1.45; color: var(--text);
+  padding: 10px 12px; border-radius: 10px;
+  background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.18);
+}
+.triage-section { display: grid; gap: 8px; }
+.triage-section-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.triage-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+}
+.triage-item-body { flex: 1; display: grid; gap: 3px; }
+.triage-item-body > span { font-size: 0.88rem; line-height: 1.35; color: var(--text); }
+.triage-reason { font-size: 0.76rem; line-height: 1.4; color: var(--text-secondary); }
+.triage-apply-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 600;
+  background: rgba(251,146,60,0.12); color: var(--cat-orange);
+  border: 1px solid rgba(251,146,60,0.25); cursor: pointer;
+}
+.triage-apply-btn:hover { background: rgba(251,146,60,0.2); }
+.triage-apply-btn.applied {
+  background: rgba(52,211,153,0.12); color: #6ee7b7;
+  border-color: rgba(52,211,153,0.25); cursor: default;
+}
+.triage-warning { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #fcd34d; }
+
+/* Agenda rail */
+.plan-rail { position: relative; padding-left: 30px; display: grid; gap: 20px; }
+.plan-rail::before {
+  content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px;
+  background: linear-gradient(var(--line-strong) 70%, transparent); border-radius: 2px;
+}
+.plan-day { position: relative; display: grid; gap: 7px; }
+.plan-day-node {
+  position: absolute; left: -30px; top: 0;
+  width: 23px; height: 23px; border-radius: 50%;
+  background: var(--bg-soft); border: 2px solid var(--line-strong);
+  display: grid; place-items: center;
+  font-size: 0.58rem; font-weight: 800; color: var(--text-muted);
+}
+.plan-node-amber { border-color: var(--cat-amber); color: var(--cat-amber); box-shadow: 0 0 12px rgba(245,158,11,0.35); }
+.plan-node-red { border-color: #f87171; color: #fca5a5; }
+.plan-day-head { display: flex; align-items: baseline; justify-content: space-between; }
+.plan-day-label {
+  font-size: 0.76rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.plan-label-amber { color: var(--cat-amber); }
+.plan-label-red { color: #fca5a5; }
+.plan-day-load { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+.plan-day-empty { font-size: 0.76rem; color: var(--text-muted); font-style: italic; padding: 2px 0; }
+
+/* Task cards */
+.plan-task {
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 13px;
+  padding: 10px 12px; display: grid; gap: 7px;
+}
+.plan-task.plan-top1 {
+  border-color: rgba(245,158,11,0.5);
+  background: linear-gradient(135deg, rgba(245,158,11,0.09), var(--bg-card) 60%);
+}
+.plan-task.plan-blocked { border-left: 3px solid #f87171; }
+.plan-task-row { display: flex; align-items: center; gap: 8px; }
+.plan-check {
+  flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px;
+  border-radius: 8px; background: transparent; border: none;
+  color: var(--text-secondary); cursor: pointer;
+}
+.plan-check:hover { color: #6ee7b7; }
+.plan-rank {
+  flex-shrink: 0; width: 21px; height: 21px; border-radius: 7px;
+  display: grid; place-items: center; font-size: 0.7rem; font-weight: 800;
+  background: rgba(245,158,11,0.16); color: var(--cat-amber);
+}
+.plan-task-text {
+  flex: 1; text-align: left; background: transparent; border: none; padding: 0;
+  color: var(--text); font-size: 0.87rem; line-height: 1.35; cursor: pointer;
+}
+.plan-task-meta { display: flex; align-items: center; gap: 7px; }
+.plan-pill { font-size: 0.64rem; padding: 2px 7px; }
+.triage-line {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 7px 9px; border-radius: 9px;
+  background: rgba(251,146,60,0.07); border: 1px dashed rgba(251,146,60,0.28);
+  font-size: 0.73rem; line-height: 1.4; color: var(--text-secondary);
+}
+.triage-line b { color: #fdba74; font-weight: 700; }
+.triage-line-icon { flex-shrink: 0; margin-top: 2px; color: var(--cat-orange); }
+.triage-line.triage-line-block { background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.3); }
+.triage-line.triage-line-block b { color: #fca5a5; }
+.triage-line.triage-line-block .triage-line-icon { color: #f87171; }
+.date-chip-row { flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+.date-chip {
+  padding: 5px 8px; border-radius: 7px; font-size: 0.68rem; font-weight: 600;
+  background: rgba(255,255,255,0.05); color: var(--text-secondary);
+  border: 1px solid var(--line); cursor: pointer;
+}
+.date-chip:hover { border-color: var(--line-strong); color: var(--text); }
+.date-chip-input {
+  width: 32px; height: 26px; padding: 0; border-radius: 7px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--line);
+  color: transparent; cursor: pointer; font-size: 0.68rem;
+}
+.date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+/* Goal picker */
+.goal-picker { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.goal-picker::-webkit-scrollbar { display: none; }
+.goal-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 13px; border-radius: 12px; font-size: 0.76rem; font-weight: 700;
+  border: 1px solid var(--line-strong); color: var(--text-secondary);
+  background: var(--bg-card); white-space: nowrap; cursor: pointer;
+}
+.goal-chip.active { border-color: rgba(251,146,60,0.55); color: #fdba74; background: rgba(251,146,60,0.1); }
+.goal-chip-new { border-style: dashed; }
+
+/* Mission Control HQ */
+.roadmap-hq {
+  border: 1px solid rgba(251,146,60,0.3); border-radius: 18px;
+  background: linear-gradient(160deg, rgba(251,146,60,0.06), var(--bg-card) 40%);
+  display: grid; gap: 12px;
+}
+.roadmap-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.roadmap-title { display: flex; align-items: center; gap: 8px; }
+.roadmap-title h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; }
+.roadmap-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.icon-only-btn {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--line);
+  color: var(--text-secondary); cursor: pointer;
+}
+.icon-only-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.roadmap-why { font-size: 0.82rem; line-height: 1.45; color: var(--text-secondary); }
+.roadmap-sub { font-size: 0.73rem; color: var(--text-muted); }
+.roadmap-blocked-note { color: #fca5a5; font-weight: 600; }
+.roadmap-target-prompt { display: grid; gap: 7px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(251,146,60,0.35); }
+.roadmap-target-label { font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
+.roadmap-target-input { width: 150px; color: var(--text); padding: 0 8px; height: 32px; }
+.roadmap-progress { display: grid; gap: 5px; }
+.prog-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--cat-amber), var(--cat-orange)); transition: width 0.4s ease; }
+.prog-labels { display: flex; justify-content: space-between; font-size: 0.64rem; color: var(--text-muted); font-weight: 600; }
+
+/* Week ladder */
+.roadmap-ladder { display: grid; }
+.roadmap-week { position: relative; padding-left: 24px; padding-bottom: 16px; display: grid; gap: 7px; }
+.roadmap-week::before {
+  content: ''; position: absolute; left: 8px; top: 22px; bottom: 0; width: 2px;
+  background: var(--line-strong);
+}
+.roadmap-week:last-child::before { display: none; }
+.roadmap-week-dot {
+  position: absolute; left: 1px; top: 3px; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--line-strong); background: var(--bg-soft);
+}
+.roadmap-week.done .roadmap-week-dot { background: var(--cat-green); border-color: var(--cat-green); }
+.roadmap-week.now .roadmap-week-dot { border-color: var(--cat-amber); box-shadow: 0 0 10px rgba(245,158,11,0.4); }
+.roadmap-week-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.roadmap-week-label {
+  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.roadmap-week.now .roadmap-week-label { color: var(--cat-amber); }
+.roadmap-week.past .roadmap-week-label { color: #b4886066; }
+.roadmap-week-tasks { display: grid; gap: 6px; }
+.roadmap-task { padding: 9px 11px; }
+.roadmap-undated { display: grid; gap: 8px; }
+
+/* Milestones */
+.milestone-unset {
+  display: inline-flex; align-items: center; gap: 6px; text-align: left;
+  font-size: 0.76rem; font-style: italic; color: var(--text-muted);
+  border: 1px dashed var(--line-strong); border-radius: 10px; padding: 8px 11px;
+  background: transparent; cursor: pointer; width: 100%;
+}
+.milestone-unset:hover { color: var(--text-secondary); border-color: rgba(251,146,60,0.4); }
+.milestone-input {
+  width: 100%; font-size: 0.86rem; padding: 8px 11px; border-radius: 10px;
+  background: var(--bg-input); border: 1px solid rgba(251,146,60,0.4); color: var(--text);
+}
+.milestone-input:focus { outline: none; border-color: var(--cat-orange); }
+.milestone-row { display: flex; align-items: flex-start; gap: 8px; }
+.milestone-check {
+  flex-shrink: 0; display: grid; place-items: center; width: 20px; height: 20px;
+  border-radius: 7px; border: 1.5px solid var(--line-strong);
+  background: transparent; color: transparent; cursor: pointer; margin-top: 1px;
+}
+.milestone-check:hover { border-color: var(--cat-green); color: rgba(52,211,153,0.5); }
+.milestone-check.done { background: var(--cat-green); border-color: var(--cat-green); color: #0c0f14; }
+.milestone-text {
+  flex: 1; text-align: left; background: transparent; border: none; padding: 0;
+  font-size: 0.88rem; font-weight: 700; line-height: 1.35; color: var(--text); cursor: pointer;
+}
+.milestone-text.done { color: var(--text-muted); text-decoration: line-through; }
+
+/* Roadmap area tints */
+.roadmap-tint-amber  { border-left: 3px solid var(--cat-amber); }
+.roadmap-tint-purple { border-left: 3px solid var(--cat-purple); }
+.roadmap-tint-blue   { border-left: 3px solid var(--cat-blue); }
+.roadmap-tint-rose   { border-left: 3px solid #fb7185; }
+.roadmap-tint-pink   { border-left: 3px solid #f472b6; }
+.roadmap-tint-orange { border-left: 3px solid var(--cat-orange); }
+.roadmap-tint-teal   { border-left: 3px solid #2dd4bf; }
+.roadmap-tint-yellow { border-left: 3px solid #facc15; }
+.roadmap-tint-slate  { border-left: 3px solid #94a3b8; }
+
+/* Full-width primary button (used in empty roadmap state) */
+.primary-button.full-width { width: 100%; justify-content: center; }
+
+/* ─── Plan v3 — lens toggle, tier view, richer task meta ─────────────────── */
+.plan-lens-toggle {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px;
+  width: fit-content;
+}
+.plan-lens-toggle button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border-radius: 9px; font-size: 0.74rem; font-weight: 700;
+  background: transparent; border: none; color: var(--text-secondary); cursor: pointer;
+}
+.plan-lens-toggle button.active {
+  background: rgba(251,146,60,0.12); color: #fdba74;
+  border: 1px solid rgba(251,146,60,0.3);
+}
+.plan-energy {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.66rem; font-weight: 600; color: var(--text-secondary);
+}
+.plan-task-meta { flex-wrap: wrap; }
+.plan-tier-card { display: grid; gap: 8px; }
+.plan-tier-head { margin-bottom: 0; }
+.plan-tier-label { display: inline-flex; align-items: center; gap: 6px; }
+.plan-tier-desc { font-size: 0.73rem; color: var(--text-muted); margin-top: -2px; }
+.plan-tier-items { display: grid; gap: 7px; }
+.plan-tier-act-now { border-left: 3px solid var(--cat-orange); }
+.plan-tier-act-now .plan-tier-label { color: #fdba74; }
+.plan-tier-needs-thinking { border-left: 3px solid var(--cat-purple); }
+.plan-tier-needs-thinking .plan-tier-label { color: #c4b5fd; }
+.plan-tier-hold { border-left: 3px solid var(--cat-slate); }
+.plan-tier-hold .plan-tier-label { color: #94a3b8; }
