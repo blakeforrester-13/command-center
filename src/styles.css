@@ -2504,19 +2504,37 @@ body {
 .triage-line.triage-line-block { background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.3); }
 .triage-line.triage-line-block b { color: #fca5a5; }
 .triage-line.triage-line-block .triage-line-icon { color: #f87171; }
-.date-chip-row { flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+.date-chip-group { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.date-chip-label {
+  font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.date-chip-row { flex-shrink: 0; display: flex; align-items: center; gap: 5px; position: relative; }
 .date-chip {
   padding: 5px 8px; border-radius: 7px; font-size: 0.68rem; font-weight: 600;
   background: rgba(255,255,255,0.05); color: var(--text-secondary);
   border: 1px solid var(--line); cursor: pointer;
 }
 .date-chip:hover { border-color: var(--line-strong); color: var(--text); }
+.date-chip-calendar {
+  display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+}
+.date-chip-input-hidden {
+  position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
+}
 .date-chip-input {
   width: 32px; height: 26px; padding: 0; border-radius: 7px;
   background: rgba(255,255,255,0.05); border: 1px solid var(--line);
   color: transparent; cursor: pointer; font-size: 0.68rem;
 }
 .date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+
+/* ── Mission priority signal — shown on active-mission ThoughtCards ──── */
+.mission-signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 /* Goal picker */
 .goal-picker { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
