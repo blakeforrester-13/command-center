@@ -63,6 +63,12 @@ function getAreaMeta(area) {
   return lifeAreaMeta[area] || { color: 'slate', icon: CircleDashed };
 }
 
+const PRIORITY_SIGNALS = [
+  { id: 'time-locked', label: 'Time-Locked', icon: '🔒', tone: 'rose' },
+  { id: 'multiplier',  label: 'Multiplier',  icon: '✖️', tone: 'purple' },
+  { id: 'coast',       label: 'Coast',       icon: '⛵', tone: 'slate' },
+];
+
 const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future'];
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
@@ -159,6 +165,7 @@ function dbToThought(row) {
     pinned: row.pinned || false, relatedMissionId: row.related_mission_id || '',
     decisionOptions: row.decision_options || '', waitingOn: row.waiting_on || '',
     truth: row.truth || '', exaggeration: row.exaggeration || '',
+    prioritySignals: row.priority_signals ? row.priority_signals.split(',').filter(Boolean) : [],
   };
 }
 function thoughtToDb(t) {
@@ -171,6 +178,7 @@ function thoughtToDb(t) {
     pinned: t.pinned || false, related_mission_id: t.relatedMissionId || '',
     decision_options: t.decisionOptions || '', waiting_on: t.waitingOn || '',
     truth: t.truth || '', exaggeration: t.exaggeration || '',
+    priority_signals: (t.prioritySignals && t.prioritySignals.length) ? t.prioritySignals.join(',') : null,
   };
 }
 function dbToMission(row) {
@@ -179,7 +187,6 @@ function dbToMission(row) {
     weeklyGoal: row.weekly_goal || '', nextAction: row.next_action || '',
     status: row.status || 'Open', area: row.area || 'Personal',
     createdAt: row.created_at, targetDate: row.target_date || '',
-    prioritySignal: row.priority_signal || '',
   };
 }
 function missionToDb(m) {
@@ -188,7 +195,6 @@ function missionToDb(m) {
     weekly_goal: m.weeklyGoal || '', next_action: m.nextAction || '',
     status: m.status || 'Open', area: m.area || 'Personal',
     created_at: m.createdAt, target_date: m.targetDate || null,
-    priority_signal: m.prioritySignal || null,
   };
 }
 function dbToToday(row) {
@@ -417,6 +423,7 @@ function App() {
       dueDate: input.dueDate || '', energy: input.energy || 'Medium',
       pinned: false, relatedMissionId: input.relatedMissionId || '',
       decisionOptions: '', waitingOn: '', truth: '', exaggeration: '',
+      prioritySignals: [],
     };
     if (!thought.text) return;
     setThoughts((prev) => [thought, ...prev]);
@@ -445,7 +452,6 @@ function App() {
       nextAction: input.nextAction || '', status: input.status || 'Open',
       area: input.area || 'Personal', createdAt: new Date().toISOString(),
       targetDate: input.targetDate || '',
-      prioritySignal: input.prioritySignal || '',
     };
     if (!mission.title) return;
     setMissions((prev) => [mission, ...prev]);
@@ -1434,6 +1440,15 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
         </div>
         {!compact && <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })}><Flag size={16} className={thought.pinned ? 'filled-flag' : ''} /></button>}
       </div>
+      {thought.category === 'active-missions' && thought.prioritySignals && thought.prioritySignals.length > 0 && (
+        <div className="mission-signal-row">
+          {thought.prioritySignals.map((sid) => {
+            const s = PRIORITY_SIGNALS.find((x) => x.id === sid);
+            if (!s) return null;
+            return <Pill key={sid} tone={s.tone}>{s.icon} {s.label}</Pill>;
+          })}
+        </div>
+      )}
       <div className="thought-main">
         <div className="thought-item-header">
           {index != null && <span className="thought-number">{index}</span>}
@@ -1477,8 +1492,14 @@ function ConversionButtons({ thought, convertThought }) {
 }
 
 function ThoughtEditForm({ thought, missions, updateThought }) {
-  const [form, setForm] = useState({ ...thought });
+  const [form, setForm] = useState({ ...thought, prioritySignals: thought.prioritySignals || [] });
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function toggleSignal(id) {
+    setForm((prev) => {
+      const has = prev.prioritySignals.includes(id);
+      return { ...prev, prioritySignals: has ? prev.prioritySignals.filter((x) => x !== id) : [...prev.prioritySignals, id] };
+    });
+  }
   function submit(e) { e.preventDefault(); updateThought(thought.id, form); }
   return (
     <form className="capture-form" onSubmit={submit}>
@@ -1504,6 +1525,21 @@ function ThoughtEditForm({ thought, missions, updateThought }) {
           {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
         </select>
       </Field>
+      {form.category === 'active-missions' && (
+        <div className="field">
+          <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(select any that apply)</span></span>
+          <div className="goal-signal-toggles">
+            {PRIORITY_SIGNALS.map((s) => {
+              const active = form.prioritySignals.includes(s.id);
+              return (
+                <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
+                  {s.icon} {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {form.category === 'decisions' && <Field label="Options"><textarea value={form.decisionOptions || ''} onChange={(e) => set('decisionOptions', e.target.value)} placeholder="Option A / Option B / Current leaning" /></Field>}
       {form.category === 'waiting-on' && <Field label="Waiting On"><input value={form.waitingOn || ''} onChange={(e) => set('waitingOn', e.target.value)} placeholder="Person, payment, email, answer..." /></Field>}
       {form.category === 'anxiety-noise' && (
@@ -1940,14 +1976,22 @@ function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, ap
 }
 
 function DateChips({ item, todayKey, updateThought }) {
+  const inputRef = React.useRef(null);
   return (
-    <div className="date-chip-row">
-      <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: todayKey })}>Today</button>
-      <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: addDaysToKey(todayKey, 1) })}>Tmr</button>
-      <input
-        type="date" className="date-chip-input" value={item.dueDate || ''}
-        onChange={(e) => updateThought(item.id, { dueDate: e.target.value })}
-      />
+    <div className="date-chip-group">
+      <span className="date-chip-label">Reschedule</span>
+      <div className="date-chip-row">
+        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: todayKey })}>Today</button>
+        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: addDaysToKey(todayKey, 1) })}>Tmr</button>
+        <button className="date-chip date-chip-calendar" onClick={() => inputRef.current?.showPicker ? inputRef.current.showPicker() : inputRef.current?.focus()}>
+          <CalendarDays size={13} />
+        </button>
+        <input
+          ref={inputRef}
+          type="date" className="date-chip-input-hidden" value={item.dueDate || ''}
+          onChange={(e) => updateThought(item.id, { dueDate: e.target.value })}
+        />
+      </div>
     </div>
   );
 }
@@ -1955,6 +1999,9 @@ function DateChips({ item, todayKey, updateThought }) {
 function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips }) {
   const [promoted, setPromoted] = useState(false);
   const cat = getCategory(item.category);
+  const areaMeta = getAreaMeta(item.area);
+  const AreaIcon = areaMeta.icon;
+  const energyTone = item.energy === 'Low' ? 'slate' : item.energy === 'High' ? 'rose' : 'amber';
   const rank = rankById[item.id];
   const blockNote = blockerById[item.id];
   const isTop1 = rank?.rank === 1;
@@ -1982,7 +2029,8 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blo
       )}
       <div className="plan-task-meta">
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
-        <EnergyIcon level={item.energy} />
+        <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
+        {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
         {isTop1 && (
           <button
             className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
@@ -2139,12 +2187,6 @@ function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMi
   );
 }
 
-const PRIORITY_SIGNALS = [
-  { id: 'time-locked', label: 'Time-Locked', icon: '⏰', tone: 'rose' },
-  { id: 'multiplier',  label: 'Multiplier',  icon: '⚡', tone: 'purple' },
-  { id: 'loud',        label: 'Loud — can coast', icon: '📢', tone: 'slate' },
-];
-
 function RoadmapView({ missions, items, milestones, todayKey, updateMission, updateThought, setMilestone, toggleMilestone, rankById, blockerById, selectedGoalId, setSelectedGoalId, setModal, setActiveTab, setSelectedCategory }) {
   const goal = missions.find((m) => m.id === selectedGoalId) || missions[0];
 
@@ -2167,7 +2209,6 @@ function RoadmapView({ missions, items, milestones, todayKey, updateMission, upd
   const currentWeek = weekStartKey(todayKey);
   const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
   const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
-  const signal = PRIORITY_SIGNALS.find((s) => s.id === goal.prioritySignal);
 
   // Ladder: from earliest milestone week (or current week) through target week, capped at 16 weeks
   let weeks = [];
@@ -2258,12 +2299,6 @@ function RoadmapView({ missions, items, milestones, todayKey, updateMission, upd
           {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
         </p>
 
-        {signal && (
-          <div className="roadmap-signal-row">
-            <Pill tone={signal.tone}>{signal.icon} {signal.label}</Pill>
-          </div>
-        )}
-
         {!goal.targetDate && (
           <div className="roadmap-target-prompt">
             <label className="roadmap-target-label">Set a target date to build the week-by-week ladder</label>
@@ -2348,12 +2383,8 @@ function GoalFormModal({ mission, addMission, updateMission, deleteMission, onCl
     area: mission?.area || 'Personal',
     targetDate: mission?.targetDate || '',
     status: mission?.status || 'Open',
-    prioritySignal: mission?.prioritySignal || '',
   });
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function toggleSignal(id) {
-    set('prioritySignal', form.prioritySignal === id ? '' : id);
-  }
   function submit() {
     if (!form.title.trim()) return;
     if (mission) updateMission(mission.id, form);
@@ -2381,19 +2412,6 @@ function GoalFormModal({ mission, addMission, updateMission, deleteMission, onCl
           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </Field>
-      <div className="field">
-        <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional — pick one)</span></span>
-        <div className="goal-signal-toggles">
-          {PRIORITY_SIGNALS.map((s) => {
-            const active = form.prioritySignal === s.id;
-            return (
-              <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
-                {s.icon} {s.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
       <button className="primary-button" onClick={submit}><Save size={16} /> {mission ? 'Save Goal' : 'Create Goal'}</button>
       {mission && (
         <button className="danger-button" onClick={handleDelete}><Trash2 size={15} /> Delete goal</button>
