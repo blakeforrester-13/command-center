@@ -134,6 +134,19 @@ function dayShortLabel(key, todayKey) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 }
+function weekStartKey(key) {
+  // Monday-start weeks
+  const d = parseKey(key);
+  const day = d.getDay();
+  return addDaysToKey(key, day === 0 ? -6 : 1 - day);
+}
+function weekRangeLabel(weekKey) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const s = parseKey(weekKey);
+  const e = parseKey(addDaysToKey(weekKey, 6));
+  if (s.getMonth() === e.getMonth()) return `${months[s.getMonth()]} ${s.getDate()}\u2013${e.getDate()}`;
+  return `${months[s.getMonth()]} ${s.getDate()} \u2013 ${months[e.getMonth()]} ${e.getDate()}`;
+}
 
 // ─── DB helpers — convert snake_case DB rows ↔ camelCase app objects ───────
 function dbToThought(row) {
@@ -185,6 +198,18 @@ function dbToToday(row) {
     lifeWinText: row.life_win_text || 'Clear one small real-life open loop.',
     avoiding: row.avoiding || 'Name the thing you do not want to deal with.',
     updatedAt: row.updated_at,
+  };
+}
+function dbToMilestone(row) {
+  return {
+    id: row.id, missionId: row.mission_id, weekStart: row.week_start,
+    title: row.title, done: row.done || false, createdAt: row.created_at,
+  };
+}
+function milestoneToDb(m) {
+  return {
+    id: m.id, mission_id: m.missionId, week_start: m.weekStart,
+    title: m.title, done: m.done || false, created_at: m.createdAt,
   };
 }
 function dbToReview(row) {
@@ -292,6 +317,7 @@ function App() {
   const [missions, setMissions] = useState([]);
   const [today, setToday] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('today');
   const [progressSubTab, setProgressSubTab] = useState('accomplishments');
@@ -312,17 +338,19 @@ function App() {
   // ── Load all data from Supabase on mount ──
   useEffect(() => {
     async function loadAll() {
-      const [thoughtsRes, missionsRes, todayRes, reviewsRes] = await Promise.all([
+      const [thoughtsRes, missionsRes, todayRes, reviewsRes, milestonesRes] = await Promise.all([
         supabase.from('thoughts').select('*').order('created_at', { ascending: false }),
         supabase.from('missions').select('*').order('created_at', { ascending: false }),
         supabase.from('today_focus').select('*').eq('id', 1).single(),
         supabase.from('reviews').select('*').order('created_at', { ascending: false }),
+        supabase.from('milestones').select('*').order('week_start', { ascending: true }),
       ]);
       if (thoughtsRes.data) setThoughts(thoughtsRes.data.map(dbToThought));
       if (missionsRes.data) setMissions(missionsRes.data.map(dbToMission));
       if (todayRes.data) setToday(dbToToday(todayRes.data));
       else setToday({ mainMissionId: '', mainMissionText: 'Pick one thing that moves life forward today.', bodyWin: 'Do one action that keeps your body/life stable.', lifeWinId: '', lifeWinText: 'Clear one small real-life open loop.', avoiding: 'Name the thing you do not want to deal with.', updatedAt: new Date().toISOString() });
       if (reviewsRes.data) setReviews(reviewsRes.data.map(dbToReview));
+      if (milestonesRes.data) setMilestones(milestonesRes.data.map(dbToMilestone));
       setLoading(false);
     }
     loadAll();
@@ -445,6 +473,31 @@ function App() {
     });
   }
 
+  // \u2500\u2500 Milestones \u2500\u2500
+  async function setMilestone(missionId, weekStart, title) {
+    const existing = milestones.find((m) => m.missionId === missionId && m.weekStart === weekStart);
+    const trimmed = title.trim();
+    if (existing && !trimmed) {
+      setMilestones((prev) => prev.filter((m) => m.id !== existing.id));
+      await supabase.from('milestones').delete().eq('id', existing.id);
+      return;
+    }
+    if (!trimmed) return;
+    if (existing) {
+      setMilestones((prev) => prev.map((m) => m.id === existing.id ? { ...m, title: trimmed } : m));
+      await supabase.from('milestones').update({ title: trimmed }).eq('id', existing.id);
+    } else {
+      const row = { id: crypto.randomUUID(), missionId, weekStart, title: trimmed, done: false, createdAt: new Date().toISOString() };
+      setMilestones((prev) => [...prev, row]);
+      await supabase.from('milestones').insert(milestoneToDb(row));
+    }
+  }
+
+  async function toggleMilestone(id, done) {
+    setMilestones((prev) => prev.map((m) => m.id === id ? { ...m, done } : m));
+    await supabase.from('milestones').update({ done }).eq('id', id);
+  }
+
   function convertThought(thought, conversion) {
     const patches = {
       task: { category: 'next-actions', status: 'Open' },
@@ -492,7 +545,6 @@ function App() {
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
     { id: 'sort',     label: 'Command',  icon: Layers,     color: 'nav-purple' },
     { id: 'plan',     label: 'Plan',     icon: CalendarDays, color: 'nav-orange' },
-    { id: 'goals',    label: 'Goals',    icon: Mountain,   color: 'nav-blue'   },
     { id: 'progress', label: 'Progress', icon: TrendingUp, color: 'nav-green'  },
   ];
 
@@ -536,7 +588,7 @@ function App() {
             setModal={setModal} updateThought={updateThought}
             promoteToToday={promoteToToday}
             completeSlot={completeSlot}
-            goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('goals'); }}
+            goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('plan'); }}
             onManageGoals={() => setModal({ type: 'manage-goals' })}
           />
         )}
@@ -553,19 +605,13 @@ function App() {
         {activeTab === 'plan' && (
           <PlanView
             openTasks={openTasks} openLoops={openLoops}
-            missions={missions} today={today}
+            missions={missions} milestones={milestones} today={today}
             updateThought={updateThought} updateMission={updateMission}
+            setMilestone={setMilestone} toggleMilestone={toggleMilestone}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             promoteToToday={promoteToToday}
-          />
-        )}
-        {activeTab === 'goals' && (
-          <GoalsView
-            missions={missions} thoughts={activeThoughts}
-            addMission={addMission} updateMission={updateMission}
-            deleteMission={deleteMission}
-            setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
+            setModal={setModal}
           />
         )}
         {activeTab === 'progress' && (
@@ -618,6 +664,15 @@ function App() {
           <CloseDayModal
             thoughts={thoughts}
             missions={missions}
+            onClose={() => setModal(null)}
+          />
+        </Modal>
+      )}
+      {modal?.type === 'goal-form' && (
+        <Modal title={modal.mission ? 'Edit Goal' : 'New Goal'} onClose={() => setModal(null)}>
+          <GoalFormModal
+            mission={modal.mission}
+            addMission={addMission} updateMission={updateMission} deleteMission={deleteMission}
             onClose={() => setModal(null)}
           />
         </Modal>
@@ -912,7 +967,7 @@ function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTa
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('goals')}><Target size={15} /><span>{missions} goal{missions === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{missions} goal{missions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
@@ -1469,242 +1524,6 @@ const goalAreaColors = {
   'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
 };
 
-function GoalsView({ missions, thoughts, addMission, updateMission, deleteMission, setActiveTab, setSelectedCategory, highlightGoalId, setHighlightGoalId }) {
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work', targetDate: '' });
-  const [customArea, setCustomArea] = useState('');
-  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function submit(e) {
-    e.preventDefault();
-    const finalArea = form.area === 'Other' && customArea.trim() ? customArea.trim() : form.area;
-    addMission({ ...form, area: finalArea });
-    setForm({ title: '', why: '', weeklyGoal: '', nextAction: '', status: 'Open', area: 'Work', targetDate: '' });
-    setCustomArea('');
-    setShowForm(false);
-  }
-
-  const byArea = useMemo(() => {
-    const map = {};
-    missions.forEach((m) => {
-      if (!map[m.area]) map[m.area] = [];
-      map[m.area].push(m);
-    });
-    return Object.entries(map);
-  }, [missions]);
-
-  return (
-    <section className="screen stack">
-      <div className="section-header goals-page-header">
-        <div className="goals-header-copy"><p className="eyebrow">Big Picture</p><h2>Goals</h2><p className="muted">Your major life objectives. Active tasks in Command serve these.</p></div>
-        <button className="primary-button compact" onClick={() => setShowForm((v) => !v)}><Plus size={16} /> Add Goal</button>
-      </div>
-
-      {showForm && (
-        <form className="card capture-form" onSubmit={submit}>
-          <div className="mini-header"><Mountain size={18} /><h3>New Goal</h3></div>
-          <Field label="Goal"><input placeholder="e.g. Launch my first app" value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
-          <Field label="Why it matters"><textarea value={form.why} onChange={(e) => set('why', e.target.value)} placeholder="What does achieving this unlock?" /></Field>
-          <div className="form-grid">
-            <Field label="Life Area">
-              <select value={form.area} onChange={(e) => set('area', e.target.value)}>
-                {goalAreas.map((a) => <option key={a}>{a}</option>)}
-              </select>
-            </Field>
-            {form.area === 'Other' && <Field label="Custom Area"><input value={customArea} onChange={(e) => setCustomArea(e.target.value)} placeholder="Name it" /></Field>}
-            <Field label="Status"><select value={form.status} onChange={(e) => set('status', e.target.value)}>{goalStatuses.map((s) => <option key={s}>{s}</option>)}</select></Field>
-          </div>
-          <div className="form-grid">
-            <Field label="Target Date (optional)"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
-            <Field label="This week's push"><input value={form.weeklyGoal} onChange={(e) => set('weeklyGoal', e.target.value)} placeholder="What moves this forward this week?" /></Field>
-          </div>
-          <Field label="Next action"><input value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)} placeholder="First concrete step" /></Field>
-          <button className="primary-button" type="submit"><Target size={17} /> Save Goal</button>
-        </form>
-      )}
-
-      {missions.length === 0 && !showForm && (
-        <div className="card"><EmptyState icon={Mountain} title="No goals yet" text="Add your first big-picture goal to start connecting your daily actions to your life direction." /></div>
-      )}
-
-      {byArea.map(([area, areaGoals]) => {
-        const areaMeta = getAreaMeta(area);
-        return (
-          <div key={area} className="goals-area-group">
-            <div className="goals-area-header">
-              <IconBadge icon={areaMeta.icon} tone={areaMeta.color} />
-              <h3 className="goals-area-label">{area}</h3>
-              <span className="goals-area-count">{areaGoals.length} goal{areaGoals.length !== 1 ? 's' : ''}</span>
-            </div>
-            <div className="goals-list">
-              {areaGoals.map((m) => {
-                const linked = thoughts.filter((t) => t.relatedMissionId === m.id);
-                const linkedActive = linked.filter((t) => t.status !== 'Done');
-                const linkedDone = linked.filter((t) => t.status === 'Done');
-                return (
-                  <GoalCard
-                    key={m.id} goal={m} linkedActive={linkedActive} linkedDone={linkedDone}
-                    updateMission={updateMission} deleteMission={deleteMission}
-                    setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-                    isHighlighted={highlightGoalId === m.id}
-                    onHighlightClear={() => setHighlightGoalId('')}
-                    areaColor={areaMeta.color}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-function GoalCard({ goal, linkedActive, linkedDone, updateMission, deleteMission, setActiveTab, setSelectedCategory, isHighlighted, onHighlightClear, areaColor }) {
-  const [expanded, setExpanded] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const cardRef = React.useRef(null);
-
-  useEffect(() => {
-    if (isHighlighted) {
-      setExpanded(true);
-      setTimeout(() => {
-        cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (onHighlightClear) setTimeout(onHighlightClear, 1800);
-      }, 80);
-    }
-  }, [isHighlighted]);
-
-  const statusTone = goal.status === 'On Track' ? 'green' : goal.status === 'Slipping' ? 'amber' : goal.status === 'Blocked' ? 'red' : goal.status === 'Done' ? 'slate' : 'default';
-  const progress = linkedDone.length + linkedActive.length > 0
-    ? Math.round((linkedDone.length / (linkedDone.length + linkedActive.length)) * 100)
-    : 0;
-
-  return (
-    <article className={`goal-card goal-card-tint-${areaColor || 'slate'} ${isHighlighted ? 'goal-card-highlighted' : ''}`} ref={cardRef}>
-      <div className="goal-card-top">
-        <div className="goal-card-main">
-          <div className="goal-card-title-row">
-            <h3 className="goal-title">{goal.title}</h3>
-            <Pill tone={statusTone}>{goal.status}</Pill>
-          </div>
-          {goal.why && <p className="goal-why">{goal.why}</p>}
-          {goal.targetDate && (
-            <p className="goal-target-date"><CalendarDays size={12} /> Target: {formatDate(goal.targetDate)}</p>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <button className="icon-button" title="Edit goal" onClick={() => { setEditing((v) => !v); setExpanded(true); }}>
-            <Edit3 size={15} />
-          </button>
-          <button className="icon-button" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Status always visible */}
-      <select value={goal.status} onChange={(e) => updateMission(goal.id, { status: e.target.value })}
-        style={{ width: '100%', borderRadius: 999, fontSize: '0.8rem', padding: '7px 12px' }}>
-        {goalStatuses.map((s) => <option key={s}>{s}</option>)}
-      </select>
-
-      {/* Progress bar */}
-      {(linkedActive.length + linkedDone.length) > 0 && (
-        <div className="goal-progress-row">
-          <div className="goal-progress-bar">
-            <div className="goal-progress-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <span className="goal-progress-label">{linkedDone.length}/{linkedDone.length + linkedActive.length} tasks done</span>
-        </div>
-      )}
-
-      {expanded && (
-        <div className="goal-expanded">
-          {!editing && goal.weeklyGoal && (
-            <div className="goal-section">
-              <span className="goal-section-label">This week's push</span>
-              <p className="goal-section-text">{goal.weeklyGoal}</p>
-            </div>
-          )}
-          {!editing && goal.nextAction && (
-            <div className="goal-section">
-              <span className="goal-section-label">Next action</span>
-              <p className="goal-section-text"><ArrowRight size={13} /> {goal.nextAction}</p>
-            </div>
-          )}
-
-          {editing && (
-            <div className="goal-card-actions">
-              <div className="form-grid" style={{ gap: 8 }}>
-                <Field label="This week's push">
-                  <input value={goal.weeklyGoal} onChange={(e) => updateMission(goal.id, { weeklyGoal: e.target.value })} />
-                </Field>
-                <Field label="Target date">
-                  <input type="date" value={goal.targetDate || ''} onChange={(e) => updateMission(goal.id, { targetDate: e.target.value })} />
-                </Field>
-              </div>
-              <Field label="Next action">
-                <input value={goal.nextAction} onChange={(e) => updateMission(goal.id, { nextAction: e.target.value })} />
-              </Field>
-              <Field label="Why it matters">
-                <textarea value={goal.why} onChange={(e) => updateMission(goal.id, { why: e.target.value })} />
-              </Field>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="secondary-button compact" onClick={() => setEditing(false)}><Check size={14} /> Done editing</button>
-                <button className="danger-button" onClick={() => deleteMission(goal.id)}><Trash2 size={14} /> Delete</button>
-              </div>
-            </div>
-          )}
-
-          {/* Linked active items */}
-          {linkedActive.length > 0 && (
-            <div className="goal-section">
-              <span className="goal-section-label">Active items serving this goal ({linkedActive.length})</span>
-              <div className="goal-linked-list">
-                {linkedActive.map((t) => {
-                  const cat = getCategory(t.category);
-                  return (
-                    <button key={t.id} className="goal-linked-item goal-linked-btn" onClick={() => { setSelectedCategory(t.category); setActiveTab('sort'); }}>
-                      <cat.icon size={13} className={`task-cat-icon-${cat.color}`} />
-                      <span>{t.text}</span>
-                      <Pill tone={cat.color}>{cat.short}</Pill>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {linkedDone.length > 0 && (
-            <div className="goal-section">
-              <span className="goal-section-label">Completed ({linkedDone.length})</span>
-              <div className="goal-linked-list">
-                {linkedDone.slice(0, 5).map((t) => (
-                  <div key={t.id} className="goal-linked-item done-linked">
-                    <CheckCircle2 size={13} />
-                    <span>{t.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {linkedActive.length === 0 && linkedDone.length === 0 && (
-            <p className="muted small">No active items linked yet. Set "Related Goal" when capturing a thought.</p>
-          )}
-
-          {!editing && (
-            <button className="secondary-button compact" onClick={() => { setSelectedCategory('next-actions'); setActiveTab('sort'); }}>
-              <Layers size={14} /> Go to Sort
-            </button>
-          )}
-        </div>
-      )}
-    </article>
-  );
-}
-
-// ─── Progress ──────────────────────────────────────────────────────────────
 function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
   return (
     <section className="screen stack">
@@ -1939,9 +1758,10 @@ function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCate
   );
 }
 
-// ─── Plan View — Triage + Week + Roadmap ───────────────────────────────────
-function PlanView({ openTasks, openLoops, missions, today, updateThought, updateMission, setActiveTab, setSelectedCategory, promoteToToday }) {
+// ─── Plan View — Triage Layer + Agenda Rail + Mission Control ──────────────
+function PlanView({ openTasks, openLoops, missions, milestones, today, updateThought, updateMission, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
+  const [selectedGoalId, setSelectedGoalId] = useState('');
   const [triage, setTriage] = useState(null);
   const [triageLoading, setTriageLoading] = useState(false);
   const [triageError, setTriageError] = useState('');
@@ -1954,6 +1774,31 @@ function PlanView({ openTasks, openLoops, missions, today, updateThought, update
     allPlanItems.forEach((t) => { map[t.id] = t; });
     return map;
   }, [allPlanItems]);
+
+  // Triage annotations, keyed by item id — session-only, never persisted
+  const rankById = useMemo(() => {
+    const map = {};
+    (triage?.top3 || []).forEach((entry, i) => { map[entry.id] = { rank: i + 1, reason: entry.reason || '' }; });
+    return map;
+  }, [triage]);
+  const blockerById = useMemo(() => {
+    const map = {};
+    (triage?.blockers || []).forEach((entry) => { map[entry.id] = entry.note || ''; });
+    return map;
+  }, [triage]);
+
+  // Jump from Today's goal links straight into that goal's war room
+  useEffect(() => {
+    if (highlightGoalId) {
+      setSelectedGoalId(highlightGoalId);
+      setSubTab('roadmap');
+      setHighlightGoalId('');
+    }
+  }, [highlightGoalId, setHighlightGoalId]);
+
+  useEffect(() => {
+    if (!selectedGoalId && missions.length) setSelectedGoalId(missions[0].id);
+  }, [missions, selectedGoalId]);
 
   async function runTriage() {
     setTriageLoading(true);
@@ -1999,7 +1844,6 @@ function PlanView({ openTasks, openLoops, missions, today, updateThought, update
         triage={triage} loading={triageLoading} error={triageError}
         runTriage={runTriage} itemById={itemById} todayKey={todayKey}
         appliedIds={appliedIds} applyDate={applyDate}
-        promoteToToday={promoteToToday}
       />
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'week' ? 'active' : ''}`} onClick={() => setSubTab('week')}><CalendarDays size={15} /> This Week</button>
@@ -2008,14 +1852,19 @@ function PlanView({ openTasks, openLoops, missions, today, updateThought, update
       {subTab === 'week' && (
         <WeekView
           items={allPlanItems} openTasks={openTasks} todayKey={todayKey}
-          updateThought={updateThought}
+          updateThought={updateThought} promoteToToday={promoteToToday}
+          rankById={rankById} blockerById={blockerById}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
         />
       )}
       {subTab === 'roadmap' && (
         <RoadmapView
-          missions={missions} items={allPlanItems} todayKey={todayKey}
-          updateMission={updateMission}
+          missions={missions} items={allPlanItems} milestones={milestones} todayKey={todayKey}
+          updateMission={updateMission} updateThought={updateThought}
+          setMilestone={setMilestone} toggleMilestone={toggleMilestone}
+          rankById={rankById} blockerById={blockerById}
+          selectedGoalId={selectedGoalId} setSelectedGoalId={setSelectedGoalId}
+          setModal={setModal}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
         />
       )}
@@ -2023,8 +1872,7 @@ function PlanView({ openTasks, openLoops, missions, today, updateThought, update
   );
 }
 
-function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, appliedIds, applyDate, promoteToToday }) {
-  const [promotedId, setPromotedId] = useState('');
+function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, appliedIds, applyDate }) {
   return (
     <div className="card triage-card">
       <div className="mini-header triage-header">
@@ -2035,7 +1883,7 @@ function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, ap
         </button>
       </div>
       {!triage && !loading && !error && (
-        <p className="muted small">Claude reads every open item, flags blockers, picks your top 3, and proposes dates. Nothing is saved until you approve it.</p>
+        <p className="muted small">Claude reads every open item, then marks the board below: top 3 ranked, blockers flagged, dates proposed. Nothing is saved until you approve it.</p>
       )}
       {error && (
         <div className="triage-error">
@@ -2046,54 +1894,7 @@ function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, ap
       {triage && !loading && (
         <div className="triage-result">
           {triage.headline && <p className="triage-headline">{triage.headline}</p>}
-
-          {Array.isArray(triage.top3) && triage.top3.length > 0 && (
-            <div className="triage-section">
-              <p className="triage-section-label"><Crosshair size={14} /> Top 3 today</p>
-              {triage.top3.map((entry, i) => {
-                const item = itemById[entry.id];
-                if (!item) return null;
-                const isPromoted = promotedId === item.id;
-                return (
-                  <div key={entry.id} className="triage-item">
-                    <span className="triage-rank">{i + 1}</span>
-                    <div className="triage-item-body">
-                      <span>{item.text}</span>
-                      {entry.reason && <p className="triage-reason">{entry.reason}</p>}
-                    </div>
-                    {i === 0 && (
-                      <button
-                        className={`triage-apply-btn ${isPromoted ? 'applied' : ''}`}
-                        onClick={() => { promoteToToday('main', item.id, item.text); setPromotedId(item.id); }}
-                        disabled={isPromoted}
-                      >
-                        {isPromoted ? <Check size={14} /> : <ArrowUpCircle size={14} />}
-                        {isPromoted ? 'On Today' : 'Make Main'}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {Array.isArray(triage.blockers) && triage.blockers.length > 0 && (
-            <div className="triage-section">
-              <p className="triage-section-label triage-label-red"><AlertCircle size={14} /> Blockers</p>
-              {triage.blockers.map((entry) => {
-                const item = itemById[entry.id];
-                if (!item) return null;
-                return (
-                  <div key={entry.id} className="triage-item">
-                    <div className="triage-item-body">
-                      <span>{item.text}</span>
-                      {entry.note && <p className="triage-reason">{entry.note}</p>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <p className="muted small">Top 3 and blockers are marked directly on the board below.</p>
 
           {Array.isArray(triage.schedule) && triage.schedule.length > 0 && (
             <div className="triage-section">
@@ -2148,7 +1949,53 @@ function DateChips({ item, todayKey, updateThought }) {
   );
 }
 
-function WeekView({ items, openTasks, todayKey, updateThought, setActiveTab, setSelectedCategory }) {
+function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips }) {
+  const [promoted, setPromoted] = useState(false);
+  const cat = getCategory(item.category);
+  const rank = rankById[item.id];
+  const blockNote = blockerById[item.id];
+  const isTop1 = rank?.rank === 1;
+  return (
+    <div className={`plan-task ${isTop1 ? 'plan-top1' : ''} ${blockNote ? 'plan-blocked' : ''}`}>
+      <div className="plan-task-row">
+        <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+          <CircleDashed size={16} />
+        </button>
+        {rank && <span className="plan-rank">{rank.rank}</span>}
+        <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+        {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
+      </div>
+      {rank?.reason && (
+        <div className="triage-line">
+          <Sparkles size={12} className="triage-line-icon" />
+          <span><b>Why #{rank.rank}:</b> {rank.reason}</span>
+        </div>
+      )}
+      {blockNote && (
+        <div className="triage-line triage-line-block">
+          <AlertCircle size={12} className="triage-line-icon" />
+          <span><b>Blocker:</b> {blockNote}</span>
+        </div>
+      )}
+      <div className="plan-task-meta">
+        <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
+        <EnergyIcon level={item.energy} />
+        {isTop1 && (
+          <button
+            className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
+            onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
+            disabled={promoted}
+          >
+            {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
+            {promoted ? 'On Today' : 'Make Main'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, rankById, blockerById, setActiveTab, setSelectedCategory }) {
   const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysToKey(todayKey, i));
   const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey);
   const unscheduled = openTasks.filter((t) => !t.dueDate);
@@ -2159,168 +2006,365 @@ function WeekView({ items, openTasks, todayKey, updateThought, setActiveTab, set
     setActiveTab('sort');
   }
 
-  function renderRow(item, showChips) {
-    const cat = getCategory(item.category);
+  function loadLabel(n) {
+    if (n === 0) return '—';
+    if (n === 1) return '1 item · light';
+    if (n <= 2) return `${n} items`;
+    return `${n} items · heavy`;
+  }
+
+  function renderTask(item, showChips) {
     return (
-      <div key={item.id} className="plan-row">
-        <button
-          className="plan-check"
-          title="Mark done"
-          onClick={() => updateThought(item.id, { status: 'Done' })}
-        >
-          <CircleDashed size={16} />
-        </button>
-        <button className="plan-row-text" onClick={() => goToItem(item)}>
-          <span>{item.text}</span>
-          <span className="plan-row-meta">
-            <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
-            <EnergyIcon level={item.energy} />
-          </span>
-        </button>
-        {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
-      </div>
+      <PlanTask
+        key={item.id} item={item} todayKey={todayKey}
+        updateThought={updateThought} promoteToToday={promoteToToday}
+        rankById={rankById} blockerById={blockerById}
+        goToItem={goToItem} showChips={showChips}
+      />
     );
   }
 
   return (
-    <div className="stack">
+    <div className="plan-rail">
       {overdue.length > 0 && (
-        <div className="card plan-day-card plan-overdue">
-          <div className="plan-day-header">
-            <span className="plan-day-label plan-label-red"><AlertCircle size={15} /> Overdue</span>
-            <span className="plan-day-count">{overdue.length}</span>
+        <div className="plan-day plan-day-overdue">
+          <div className="plan-day-node plan-node-red"><AlertCircle size={11} /></div>
+          <div className="plan-day-head">
+            <span className="plan-day-label plan-label-red">Overdue</span>
+            <span className="plan-day-load">{overdue.length} item{overdue.length === 1 ? '' : 's'}</span>
           </div>
-          {overdue.map((item) => renderRow(item, true))}
+          {overdue.map((item) => renderTask(item, true))}
         </div>
       )}
 
       {weekKeys.map((key) => {
         const dayItems = items.filter((t) => t.dueDate === key);
         const isToday = key === todayKey;
+        const dayNum = parseKey(key).getDate();
         return (
-          <div key={key} className={`card plan-day-card ${isToday ? 'plan-today' : ''} ${dayItems.length === 0 ? 'plan-day-empty' : ''}`}>
-            <div className="plan-day-header">
+          <div key={key} className={`plan-day ${isToday ? 'plan-day-today' : ''}`}>
+            <div className={`plan-day-node ${isToday ? 'plan-node-amber' : ''}`}>{dayNum}</div>
+            <div className="plan-day-head">
               <span className={`plan-day-label ${isToday ? 'plan-label-amber' : ''}`}>{dayShortLabel(key, todayKey)}</span>
-              <span className="plan-day-count">{dayItems.length || '—'}</span>
+              <span className="plan-day-load">{loadLabel(dayItems.length)}</span>
             </div>
-            {dayItems.map((item) => renderRow(item, false))}
+            {dayItems.length ? dayItems.map((item) => renderTask(item, false)) : (
+              <p className="plan-day-empty">Open</p>
+            )}
           </div>
         );
       })}
 
       {later.length > 0 && (
-        <div className="card plan-day-card">
-          <div className="plan-day-header">
-            <span className="plan-day-label"><Telescope size={15} /> Beyond this week</span>
-            <span className="plan-day-count">{later.length}</span>
+        <div className="plan-day">
+          <div className="plan-day-node"><Telescope size={11} /></div>
+          <div className="plan-day-head">
+            <span className="plan-day-label">Beyond this week</span>
+            <span className="plan-day-load">{later.length}</span>
           </div>
           {later
             .slice()
             .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
             .map((item) => (
-              <div key={item.id} className="plan-row">
-                <button className="plan-row-text" onClick={() => goToItem(item)}>
-                  <span>{item.text}</span>
-                  <span className="plan-row-meta"><Pill tone="slate" className="plan-pill">{formatDate(item.dueDate + 'T00:00:00')}</Pill></span>
-                </button>
+              <div key={item.id} className="plan-task">
+                <div className="plan-task-row">
+                  <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+                  <Pill tone="slate" className="plan-pill">{dayShortLabel(item.dueDate, todayKey)}</Pill>
+                </div>
               </div>
             ))}
         </div>
       )}
 
-      <div className="card plan-day-card">
-        <div className="plan-day-header">
-          <span className="plan-day-label"><Inbox size={15} /> Unscheduled actions</span>
-          <span className="plan-day-count">{unscheduled.length}</span>
+      <div className="plan-day">
+        <div className="plan-day-node"><Inbox size={11} /></div>
+        <div className="plan-day-head">
+          <span className="plan-day-label">Unscheduled</span>
+          <span className="plan-day-load">{unscheduled.length || '—'}</span>
         </div>
         {unscheduled.length ? (
-          unscheduled.map((item) => renderRow(item, true))
+          unscheduled.map((item) => renderTask(item, true))
         ) : (
-          <p className="muted small">Every open action has a date. That's a planned week.</p>
+          <p className="plan-day-empty">Every open action has a date. That's a planned week.</p>
         )}
       </div>
     </div>
   );
 }
 
-function RoadmapView({ missions, items, todayKey, updateMission, setActiveTab, setSelectedCategory }) {
-  const sorted = missions.slice().sort((a, b) => {
-    if (a.targetDate && b.targetDate) return a.targetDate < b.targetDate ? -1 : 1;
-    if (a.targetDate) return -1;
-    if (b.targetDate) return 1;
-    return 0;
-  });
+function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMilestone }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(milestone?.title || '');
+  useEffect(() => { setDraft(milestone?.title || ''); }, [milestone?.title]);
+
+  function save() {
+    setEditing(false);
+    if ((milestone?.title || '') !== draft) setMilestone(missionId, weekStart, draft);
+  }
+
+  if (editing || (!milestone)) {
+    if (!editing) {
+      return (
+        <button className="milestone-unset" onClick={() => setEditing(true)}>
+          <Plus size={13} /> Set milestone — what does done look like this week?
+        </button>
+      );
+    }
+    return (
+      <input
+        autoFocus className="milestone-input" value={draft}
+        placeholder="Done means…"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+      />
+    );
+  }
+  return (
+    <div className="milestone-row">
+      <button
+        className={`milestone-check ${milestone.done ? 'done' : ''}`}
+        title={milestone.done ? 'Reopen' : 'Mark done'}
+        onClick={() => toggleMilestone(milestone.id, !milestone.done)}
+      >
+        <Check size={12} />
+      </button>
+      <button className={`milestone-text ${milestone.done ? 'done' : ''}`} onClick={() => setEditing(true)}>
+        {milestone.title}
+      </button>
+    </div>
+  );
+}
+
+function RoadmapView({ missions, items, milestones, todayKey, updateMission, updateThought, setMilestone, toggleMilestone, rankById, blockerById, selectedGoalId, setSelectedGoalId, setModal, setActiveTab, setSelectedCategory }) {
+  const goal = missions.find((m) => m.id === selectedGoalId) || missions[0];
 
   if (!missions.length) {
     return (
       <div className="card">
-        <EmptyState title="No goals yet" text="Create goals in the Goals tab, then give each one a target date here to build your roadmap." />
+        <EmptyState title="No goals yet" text="Create your first goal to start building a roadmap." />
+        <button className="primary-button full-width" onClick={() => setModal({ type: 'goal-form', mission: null })}>
+          <Plus size={16} /> New Goal
+        </button>
       </div>
     );
   }
 
+  const meta = getAreaMeta(goal.area);
+  const GIcon = meta.icon;
+  const linked = items.filter((t) => t.relatedMissionId === goal.id);
+  const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
+  const blockedCount = linked.filter((t) => blockerById[t.id]).length;
+  const currentWeek = weekStartKey(todayKey);
+  const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
+  const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
+
+  // Ladder: from earliest milestone week (or current week) through target week, capped at 16 weeks
+  let weeks = [];
+  if (goal.targetDate) {
+    const targetWeek = weekStartKey(goal.targetDate);
+    const earliestMs = goalMilestones.length ? goalMilestones[0].weekStart : currentWeek;
+    let start = earliestMs < currentWeek ? earliestMs : currentWeek;
+    if (targetWeek < start) start = targetWeek;
+    for (let wk = start, i = 0; wk <= targetWeek && i < 16; wk = addDaysToKey(wk, 7), i += 1) {
+      weeks.push(wk);
+    }
+  }
+  const currentIdx = weeks.indexOf(currentWeek);
+  const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
+
+  function goToItem(item) {
+    setSelectedCategory(item.category);
+    setActiveTab('sort');
+  }
+
+  function renderWeekTask(item) {
+    const blockNote = blockerById[item.id];
+    const rank = rankById[item.id];
+    return (
+      <div key={item.id} className={`plan-task roadmap-task ${blockNote ? 'plan-blocked' : ''}`}>
+        <div className="plan-task-row">
+          <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+            <CircleDashed size={15} />
+          </button>
+          {rank && <span className="plan-rank">{rank.rank}</span>}
+          <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).replace('Today', 'Today').split(',')[0]}</Pill>}
+        </div>
+        {blockNote && (
+          <div className="triage-line triage-line-block">
+            <AlertCircle size={12} className="triage-line-icon" />
+            <span><b>Blocker:</b> {blockNote}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const undated = linked.filter((t) => !t.dueDate);
+
   return (
     <div className="stack">
-      {sorted.map((mission) => {
-        const meta = getAreaMeta(mission.area);
-        const MIcon = meta.icon;
-        const linked = items
-          .filter((t) => t.relatedMissionId === mission.id)
-          .sort((a, b) => {
-            if (a.dueDate && b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
-            if (a.dueDate) return -1;
-            if (b.dueDate) return 1;
-            return 0;
-          });
-        const daysLeft = mission.targetDate ? daysBetweenKeys(todayKey, mission.targetDate) : null;
-        const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
-        const dueThisWeek = linked.filter((t) => t.dueDate && t.dueDate >= todayKey && t.dueDate <= addDaysToKey(todayKey, 6)).length;
-        return (
-          <div key={mission.id} className={`card roadmap-card roadmap-tint-${meta.color}`}>
-            <div className="roadmap-head">
-              <div className="roadmap-title">
-                <MIcon size={16} className={`stat-icon-${meta.color}`} />
-                <h3>{mission.title}</h3>
-              </div>
-              {daysLeft !== null ? (
-                <Pill tone={countdownTone}>{daysLeft < 0 ? `${Math.abs(daysLeft)}d past` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}</Pill>
-              ) : (
-                <Pill tone="slate">No target</Pill>
-              )}
-            </div>
-            <div className="roadmap-target-row">
-              <label className="roadmap-target-label">Target date</label>
-              <input
-                type="date" className="date-chip-input"
-                value={mission.targetDate || ''}
-                onChange={(e) => updateMission(mission.id, { targetDate: e.target.value })}
-              />
-              {linked.length > 0 && (
-                <span className="roadmap-week-note">{dueThisWeek} of {linked.length} open item{linked.length === 1 ? '' : 's'} due this week</span>
-              )}
-            </div>
-            {mission.weeklyGoal && <p className="roadmap-weekly"><Flag size={13} /> This week: {mission.weeklyGoal}</p>}
-            {linked.length > 0 ? (
-              <div className="roadmap-items">
-                {linked.map((item) => {
-                  const cat = getCategory(item.category);
-                  return (
-                    <button key={item.id} className="plan-row plan-row-text roadmap-item" onClick={() => { setSelectedCategory(item.category); setActiveTab('sort'); }}>
-                      <span>{item.text}</span>
-                      <span className="plan-row-meta">
-                        {item.dueDate ? <Pill tone={item.dueDate < todayKey ? 'red' : 'default'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey)}</Pill> : <Pill tone="slate" className="plan-pill">No date</Pill>}
-                        <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="muted small">No open items linked to this goal. Link items in Sort to make this roadmap real.</p>
-            )}
+      <div className="goal-picker">
+        {missions.map((m) => {
+          const mMeta = getAreaMeta(m.area);
+          const MIcon = mMeta.icon;
+          return (
+            <button
+              key={m.id}
+              className={`goal-chip ${m.id === goal.id ? 'active' : ''}`}
+              onClick={() => setSelectedGoalId(m.id)}
+            >
+              <MIcon size={13} /> {m.title}
+            </button>
+          );
+        })}
+        <button className="goal-chip goal-chip-new" onClick={() => setModal({ type: 'goal-form', mission: null })}>
+          <Plus size={13} /> New Goal
+        </button>
+      </div>
+
+      <div className={`card roadmap-hq roadmap-tint-${meta.color}`}>
+        <div className="roadmap-head">
+          <div className="roadmap-title">
+            <GIcon size={17} className={`stat-icon-${meta.color}`} />
+            <h3>{goal.title}</h3>
           </div>
-        );
-      })}
+          <div className="roadmap-head-actions">
+            {daysLeft !== null ? (
+              <Pill tone={countdownTone}>{daysLeft < 0 ? `${Math.abs(daysLeft)}d past` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}</Pill>
+            ) : (
+              <Pill tone="slate">No target</Pill>
+            )}
+            <button className="icon-only-btn" title="Edit goal" onClick={() => setModal({ type: 'goal-form', mission: goal })}>
+              <Edit3 size={15} />
+            </button>
+          </div>
+        </div>
+        {goal.why && <p className="roadmap-why">{goal.why}</p>}
+        <p className="roadmap-sub">
+          {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
+          {' · '}{linked.length} open item{linked.length === 1 ? '' : 's'}
+          {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
+        </p>
+
+        {!goal.targetDate && (
+          <div className="roadmap-target-prompt">
+            <label className="roadmap-target-label">Set a target date to build the week-by-week ladder</label>
+            <input
+              type="date" className="date-chip-input roadmap-target-input"
+              value=""
+              onChange={(e) => updateMission(goal.id, { targetDate: e.target.value })}
+            />
+          </div>
+        )}
+
+        {goal.targetDate && weeks.length > 0 && (
+          <>
+            <div className="roadmap-progress">
+              <div className="prog-track"><div className="prog-fill" style={{ width: `${progressPct}%` }} /></div>
+              <div className="prog-labels">
+                <span>{dayShortLabel(todayKey, todayKey)}</span>
+                <span>{currentIdx >= 0 ? `Week ${currentIdx + 1} of ${weeks.length}` : `${weeks.length} weeks`}</span>
+                <span>{formatDate(goal.targetDate + 'T00:00:00')}</span>
+              </div>
+            </div>
+
+            <div className="roadmap-ladder">
+              {weeks.map((wk, i) => {
+                const ms = goalMilestones.find((m) => m.weekStart === wk) || null;
+                const weekTasks = linked.filter((t) => t.dueDate && weekStartKey(t.dueDate) === wk);
+                const isNow = wk === currentWeek;
+                const isPast = wk < currentWeek;
+                return (
+                  <div key={wk} className={`roadmap-week ${isNow ? 'now' : ''} ${ms?.done ? 'done' : ''} ${isPast && !ms?.done ? 'past' : ''}`}>
+                    <div className="roadmap-week-dot" />
+                    <div className="roadmap-week-head">
+                      <span className="roadmap-week-label">Week {i + 1} · {weekRangeLabel(wk)}{isNow ? ' · Now' : ''}</span>
+                      {ms?.done && <Pill tone="green" className="plan-pill">Done</Pill>}
+                      {!ms?.done && weekTasks.length > 0 && <span className="plan-day-load">{weekTasks.length} item{weekTasks.length === 1 ? '' : 's'}</span>}
+                    </div>
+                    <MilestoneSlot
+                      missionId={goal.id} weekStart={wk} milestone={ms}
+                      setMilestone={setMilestone} toggleMilestone={toggleMilestone}
+                    />
+                    {weekTasks.length > 0 && (
+                      <div className="roadmap-week-tasks">
+                        {weekTasks.map(renderWeekTask)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {undated.length > 0 && (
+          <div className="roadmap-undated">
+            <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
+            {undated.map((item) => (
+              <div key={item.id} className="plan-task roadmap-task">
+                <div className="plan-task-row">
+                  <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+                    <CircleDashed size={15} />
+                  </button>
+                  <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+                  <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {linked.length === 0 && (
+          <p className="muted small">No open items linked to this goal yet. Link items in Sort (set their related goal) and they'll appear on the ladder by due date.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GoalFormModal({ mission, addMission, updateMission, deleteMission, onClose }) {
+  const [form, setForm] = useState({
+    title: mission?.title || '',
+    why: mission?.why || '',
+    area: mission?.area || 'Personal',
+    targetDate: mission?.targetDate || '',
+    status: mission?.status || 'Open',
+  });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit() {
+    if (!form.title.trim()) return;
+    if (mission) updateMission(mission.id, form);
+    else addMission(form);
+    onClose();
+  }
+  function handleDelete() {
+    if (window.confirm(`Delete goal "${mission.title}"? Its weekly milestones will be deleted too. Linked items stay in Sort.`)) {
+      deleteMission(mission.id);
+      onClose();
+    }
+  }
+  return (
+    <div className="capture-form">
+      <Field label="Goal"><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Paragon Repricing Tool" /></Field>
+      <Field label="Why it matters"><textarea value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <Field label="Life area">
+        <select value={form.area} onChange={(e) => set('area', e.target.value)}>
+          {lifeAreas.map((a) => <option key={a} value={a}>{a}</option>)}
+        </select>
+      </Field>
+      <Field label="Target date"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
+      <Field label="Status">
+        <select value={form.status} onChange={(e) => set('status', e.target.value)}>
+          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </Field>
+      <button className="primary-button" onClick={submit}><Save size={16} /> {mission ? 'Save Goal' : 'Create Goal'}</button>
+      {mission && (
+        <button className="danger-button" onClick={handleDelete}><Trash2 size={15} /> Delete goal</button>
+      )}
     </div>
   );
 }
