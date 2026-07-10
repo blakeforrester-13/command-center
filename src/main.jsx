@@ -112,6 +112,11 @@ function getLocalTodayKey() {
   return local.toISOString().slice(0, 10);
 }
 function getCategory(id) { return categories.find((c) => c.id === id) || categories[0]; }
+function tierRank(categoryId) {
+  const idx = categories.findIndex((c) => c.id === categoryId);
+  return idx === -1 ? categories.length : idx;
+}
+function sortByTier(a, b) { return tierRank(a.category) - tierRank(b.category); }
 
 // ── Date-key math — always parse YYYY-MM-DD parts directly, never new Date(string) ──
 function parseKey(key) {
@@ -363,6 +368,7 @@ function App() {
   const openTasks = activeThoughts.filter((t) => t.category === 'next-actions');
   const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
+  const holdItems = activeThoughts.filter((t) => ['maintenance', 'relationships', 'money-adult-life', 'someday'].includes(t.category));
   const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
 
   const pinnedMissions = useMemo(() => {
@@ -604,7 +610,7 @@ function App() {
         )}
         {activeTab === 'plan' && (
           <PlanView
-            openTasks={openTasks} openLoops={openLoops}
+            openTasks={openTasks} openLoops={openLoops} holdItems={holdItems}
             missions={missions} milestones={milestones} today={today}
             updateThought={updateThought} updateMission={updateMission}
             setMilestone={setMilestone} toggleMilestone={toggleMilestone}
@@ -1759,7 +1765,7 @@ function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCate
 }
 
 // ─── Plan View — Triage Layer + Agenda Rail + Mission Control ──────────────
-function PlanView({ openTasks, openLoops, missions, milestones, today, updateThought, updateMission, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+function PlanView({ openTasks, openLoops, holdItems, missions, milestones, today, updateThought, updateMission, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [selectedGoalId, setSelectedGoalId] = useState('');
   const [triage, setTriage] = useState(null);
@@ -1768,7 +1774,7 @@ function PlanView({ openTasks, openLoops, missions, milestones, today, updateTho
   const [appliedIds, setAppliedIds] = useState([]);
 
   const todayKey = getLocalTodayKey();
-  const allPlanItems = useMemo(() => [...openTasks, ...openLoops], [openTasks, openLoops]);
+  const allPlanItems = useMemo(() => [...openTasks, ...openLoops, ...holdItems], [openTasks, openLoops, holdItems]);
   const itemById = useMemo(() => {
     const map = {};
     allPlanItems.forEach((t) => { map[t.id] = t; });
@@ -1851,7 +1857,7 @@ function PlanView({ openTasks, openLoops, missions, milestones, today, updateTho
       </div>
       {subTab === 'week' && (
         <WeekView
-          items={allPlanItems} openTasks={openTasks} todayKey={todayKey}
+          items={allPlanItems} todayKey={todayKey}
           updateThought={updateThought} promoteToToday={promoteToToday}
           rankById={rankById} blockerById={blockerById}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
@@ -1949,9 +1955,11 @@ function DateChips({ item, todayKey, updateThought }) {
   );
 }
 
-function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips }) {
+function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips, showDate }) {
   const [promoted, setPromoted] = useState(false);
   const cat = getCategory(item.category);
+  const CatIcon = cat.icon;
+  const areaMeta = getAreaMeta(item.area);
   const rank = rankById[item.id];
   const blockNote = blockerById[item.id];
   const isTop1 = rank?.rank === 1;
@@ -1978,8 +1986,12 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blo
         </div>
       )}
       <div className="plan-task-meta">
-        <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
-        <EnergyIcon level={item.energy} />
+        <Pill tone={cat.color} className="plan-pill"><CatIcon size={11} /> {cat.short}</Pill>
+        <Pill tone={areaMeta.color} className="plan-pill">{item.area}</Pill>
+        {showDate && item.dueDate && (
+          <Pill tone={item.dueDate < todayKey ? 'red' : 'default'} className="plan-pill"><CalendarDays size={11} /> {dayShortLabel(item.dueDate, todayKey)}</Pill>
+        )}
+        <span className="plan-energy"><EnergyIcon level={item.energy} /><span>{item.energy}</span></span>
         {isTop1 && (
           <button
             className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
@@ -1994,11 +2006,11 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blo
     </div>
   );
 }
-
-function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, rankById, blockerById, setActiveTab, setSelectedCategory }) {
+function WeekView({ items, todayKey, updateThought, promoteToToday, rankById, blockerById, setActiveTab, setSelectedCategory }) {
+  const [lens, setLens] = useState('day');
   const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysToKey(todayKey, i));
-  const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey);
-  const unscheduled = openTasks.filter((t) => !t.dueDate);
+  const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey).sort(sortByTier);
+  const unscheduled = items.filter((t) => !t.dueDate).sort(sortByTier);
   const later = items.filter((t) => t.dueDate && t.dueDate > weekKeys[6]);
 
   function goToItem(item) {
@@ -2013,85 +2025,122 @@ function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, r
     return `${n} items · heavy`;
   }
 
-  function renderTask(item, showChips) {
+  function renderTask(item, opts = {}) {
     return (
       <PlanTask
         key={item.id} item={item} todayKey={todayKey}
         updateThought={updateThought} promoteToToday={promoteToToday}
         rankById={rankById} blockerById={blockerById}
-        goToItem={goToItem} showChips={showChips}
+        goToItem={goToItem} showChips={opts.chips || false} showDate={opts.date || false}
       />
     );
   }
 
-  return (
-    <div className="plan-rail">
-      {overdue.length > 0 && (
-        <div className="plan-day plan-day-overdue">
-          <div className="plan-day-node plan-node-red"><AlertCircle size={11} /></div>
-          <div className="plan-day-head">
-            <span className="plan-day-label plan-label-red">Overdue</span>
-            <span className="plan-day-load">{overdue.length} item{overdue.length === 1 ? '' : 's'}</span>
-          </div>
-          {overdue.map((item) => renderTask(item, true))}
-        </div>
-      )}
+  const lensToggle = (
+    <div className="plan-lens-toggle">
+      <button className={lens === 'day' ? 'active' : ''} onClick={() => setLens('day')}><CalendarDays size={13} /> By Day</button>
+      <button className={lens === 'type' ? 'active' : ''} onClick={() => setLens('type')}><Layers size={13} /> By Type</button>
+    </div>
+  );
 
-      {weekKeys.map((key) => {
-        const dayItems = items.filter((t) => t.dueDate === key);
-        const isToday = key === todayKey;
-        const dayNum = parseKey(key).getDate();
-        return (
-          <div key={key} className={`plan-day ${isToday ? 'plan-day-today' : ''}`}>
-            <div className={`plan-day-node ${isToday ? 'plan-node-amber' : ''}`}>{dayNum}</div>
-            <div className="plan-day-head">
-              <span className={`plan-day-label ${isToday ? 'plan-label-amber' : ''}`}>{dayShortLabel(key, todayKey)}</span>
-              <span className="plan-day-load">{loadLabel(dayItems.length)}</span>
-            </div>
-            {dayItems.length ? dayItems.map((item) => renderTask(item, false)) : (
-              <p className="plan-day-empty">Open</p>
-            )}
-          </div>
-        );
-      })}
-
-      {later.length > 0 && (
-        <div className="plan-day">
-          <div className="plan-day-node"><Telescope size={11} /></div>
-          <div className="plan-day-head">
-            <span className="plan-day-label">Beyond this week</span>
-            <span className="plan-day-load">{later.length}</span>
-          </div>
-          {later
-            .slice()
-            .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
-            .map((item) => (
-              <div key={item.id} className="plan-task">
-                <div className="plan-task-row">
-                  <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-                  <Pill tone="slate" className="plan-pill">{dayShortLabel(item.dueDate, todayKey)}</Pill>
-                </div>
+  if (lens === 'type') {
+    return (
+      <div className="stack">
+        {lensToggle}
+        {categoryTiers.map((tier) => {
+          const TierIcon = tier.icon;
+          const tierItems = items
+            .filter((t) => getCategory(t.category).tier === tier.id)
+            .sort((a, b) => {
+              if (a.dueDate && b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
+              if (a.dueDate) return -1;
+              if (b.dueDate) return 1;
+              return sortByTier(a, b);
+            });
+          return (
+            <div key={tier.id} className={`card plan-tier-card plan-tier-${tier.id}`}>
+              <div className="plan-day-head plan-tier-head">
+                <span className="plan-day-label plan-tier-label"><TierIcon size={14} /> {tier.label}</span>
+                <span className="plan-day-load">{tierItems.length || '—'}</span>
               </div>
-            ))}
-        </div>
-      )}
+              <p className="plan-tier-desc">{tier.description}</p>
+              {tierItems.length ? (
+                <div className="plan-tier-items">
+                  {tierItems.map((item) => renderTask(item, { chips: !item.dueDate, date: true }))}
+                </div>
+              ) : (
+                <p className="plan-day-empty">Nothing open in this tier.</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
-      <div className="plan-day">
-        <div className="plan-day-node"><Inbox size={11} /></div>
-        <div className="plan-day-head">
-          <span className="plan-day-label">Unscheduled</span>
-          <span className="plan-day-load">{unscheduled.length || '—'}</span>
-        </div>
-        {unscheduled.length ? (
-          unscheduled.map((item) => renderTask(item, true))
-        ) : (
-          <p className="plan-day-empty">Every open action has a date. That's a planned week.</p>
+  return (
+    <div className="stack">
+      {lensToggle}
+      <div className="plan-rail">
+        {overdue.length > 0 && (
+          <div className="plan-day plan-day-overdue">
+            <div className="plan-day-node plan-node-red"><AlertCircle size={11} /></div>
+            <div className="plan-day-head">
+              <span className="plan-day-label plan-label-red">Overdue</span>
+              <span className="plan-day-load">{overdue.length} item{overdue.length === 1 ? '' : 's'}</span>
+            </div>
+            {overdue.map((item) => renderTask(item, { chips: true }))}
+          </div>
         )}
+
+        {weekKeys.map((key) => {
+          const dayItems = items.filter((t) => t.dueDate === key).sort(sortByTier);
+          const isToday = key === todayKey;
+          const dayNum = parseKey(key).getDate();
+          return (
+            <div key={key} className={`plan-day ${isToday ? 'plan-day-today' : ''}`}>
+              <div className={`plan-day-node ${isToday ? 'plan-node-amber' : ''}`}>{dayNum}</div>
+              <div className="plan-day-head">
+                <span className={`plan-day-label ${isToday ? 'plan-label-amber' : ''}`}>{dayShortLabel(key, todayKey)}</span>
+                <span className="plan-day-load">{loadLabel(dayItems.length)}</span>
+              </div>
+              {dayItems.length ? dayItems.map((item) => renderTask(item, {})) : (
+                <p className="plan-day-empty">Open</p>
+              )}
+            </div>
+          );
+        })}
+
+        {later.length > 0 && (
+          <div className="plan-day">
+            <div className="plan-day-node"><Telescope size={11} /></div>
+            <div className="plan-day-head">
+              <span className="plan-day-label">Beyond this week</span>
+              <span className="plan-day-load">{later.length}</span>
+            </div>
+            {later
+              .slice()
+              .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
+              .map((item) => renderTask(item, { date: true }))}
+          </div>
+        )}
+
+        <div className="plan-day">
+          <div className="plan-day-node"><Inbox size={11} /></div>
+          <div className="plan-day-head">
+            <span className="plan-day-label">Unscheduled</span>
+            <span className="plan-day-load">{unscheduled.length || '—'}</span>
+          </div>
+          {unscheduled.length ? (
+            unscheduled.map((item) => renderTask(item, { chips: true }))
+          ) : (
+            <p className="plan-day-empty">Every open item has a date. That's a planned week.</p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
 function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMilestone }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(milestone?.title || '');
