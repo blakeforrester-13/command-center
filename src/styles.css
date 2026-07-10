@@ -1531,6 +1531,108 @@ input:focus, textarea:focus, select:focus {
 
 .goal-card-actions { display: grid; gap: 10px; }
 
+/* ── Next action shown inline under title ── */
+.goal-next-action-inline {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Info pills row ── */
+.goal-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Priority signal pill row ── */
+.goal-signal-row {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Signal pill tone overrides ── */
+.pill-rose   { background: rgba(251,113,133,0.15); color: #fb7185; border: 1px solid rgba(251,113,133,0.3); }
+.pill-purple { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.3); }
+
+/* ── Card footer: status + conversion buttons ── */
+.goal-card-footer {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+
+.goal-status-select {
+  width: 100%;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  padding: 7px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+}
+
+.goal-convert-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.goal-convert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line-strong);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.goal-convert-btn:hover {
+  background: rgba(255,255,255,0.09);
+  color: var(--text);
+}
+
+/* ── Priority signal toggle buttons inside edit panel ── */
+.goal-signal-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.goal-signal-toggle {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line-strong);
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.signal-inactive {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+.signal-inactive:hover { opacity: 0.85; }
+
+.signal-active-rose   { background: rgba(251,113,133,0.15); color: #fb7185; border-color: rgba(251,113,133,0.4); opacity: 1; }
+.signal-active-purple { background: rgba(167,139,250,0.15); color: #a78bfa; border-color: rgba(167,139,250,0.4); opacity: 1; }
+.signal-active-slate  { background: rgba(148,163,184,0.15); color: #94a3b8; border-color: rgba(148,163,184,0.3); opacity: 1; }
+
 /* â”€â”€ Fix 1: Today mission cards â€” life area background tints â”€â”€â”€â”€â”€â”€â”€ */
 .mission-card-area-work        { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.18); }
 .mission-card-area-school      { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); }
@@ -2359,234 +2461,3 @@ body {
   .today-command-card-slot { padding: 14px 13px; }
   .today-command-label-row { font-size: 0.74rem; }
 }
-
-/* ─── Plan Tab v2 — Triage Layer + Agenda Rail + Mission Control ────────── */
-.spin { animation: plan-spin 1s linear infinite; }
-@keyframes plan-spin { to { transform: rotate(360deg); } }
-
-/* Triage card */
-.triage-card { border-color: rgba(251,146,60,0.25); }
-.triage-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.triage-title { display: flex; align-items: center; gap: 8px; color: var(--cat-orange); }
-.triage-title h3 { color: var(--text); }
-.triage-error {
-  display: flex; align-items: center; gap: 8px; margin-top: 10px;
-  padding: 10px 12px; border-radius: 10px; font-size: 0.82rem;
-  background: rgba(248,113,113,0.1); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2);
-}
-.triage-result { display: grid; gap: 12px; margin-top: 12px; }
-.triage-headline {
-  font-size: 0.92rem; line-height: 1.45; color: var(--text);
-  padding: 10px 12px; border-radius: 10px;
-  background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.18);
-}
-.triage-section { display: grid; gap: 8px; }
-.triage-section-label {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.triage-item {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border-radius: 10px;
-  background: rgba(255,255,255,0.03); border: 1px solid var(--line);
-}
-.triage-item-body { flex: 1; display: grid; gap: 3px; }
-.triage-item-body > span { font-size: 0.88rem; line-height: 1.35; color: var(--text); }
-.triage-reason { font-size: 0.76rem; line-height: 1.4; color: var(--text-secondary); }
-.triage-apply-btn {
-  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 600;
-  background: rgba(251,146,60,0.12); color: var(--cat-orange);
-  border: 1px solid rgba(251,146,60,0.25); cursor: pointer;
-}
-.triage-apply-btn:hover { background: rgba(251,146,60,0.2); }
-.triage-apply-btn.applied {
-  background: rgba(52,211,153,0.12); color: #6ee7b7;
-  border-color: rgba(52,211,153,0.25); cursor: default;
-}
-.triage-warning { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #fcd34d; }
-
-/* Agenda rail */
-.plan-rail { position: relative; padding-left: 30px; display: grid; gap: 20px; }
-.plan-rail::before {
-  content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px;
-  background: linear-gradient(var(--line-strong) 70%, transparent); border-radius: 2px;
-}
-.plan-day { position: relative; display: grid; gap: 7px; }
-.plan-day-node {
-  position: absolute; left: -30px; top: 0;
-  width: 23px; height: 23px; border-radius: 50%;
-  background: var(--bg-soft); border: 2px solid var(--line-strong);
-  display: grid; place-items: center;
-  font-size: 0.58rem; font-weight: 800; color: var(--text-muted);
-}
-.plan-node-amber { border-color: var(--cat-amber); color: var(--cat-amber); box-shadow: 0 0 12px rgba(245,158,11,0.35); }
-.plan-node-red { border-color: #f87171; color: #fca5a5; }
-.plan-day-head { display: flex; align-items: baseline; justify-content: space-between; }
-.plan-day-label {
-  font-size: 0.76rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--text-secondary);
-}
-.plan-label-amber { color: var(--cat-amber); }
-.plan-label-red { color: #fca5a5; }
-.plan-day-load { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
-.plan-day-empty { font-size: 0.76rem; color: var(--text-muted); font-style: italic; padding: 2px 0; }
-
-/* Task cards */
-.plan-task {
-  background: var(--bg-card); border: 1px solid var(--line); border-radius: 13px;
-  padding: 10px 12px; display: grid; gap: 7px;
-}
-.plan-task.plan-top1 {
-  border-color: rgba(245,158,11,0.5);
-  background: linear-gradient(135deg, rgba(245,158,11,0.09), var(--bg-card) 60%);
-}
-.plan-task.plan-blocked { border-left: 3px solid #f87171; }
-.plan-task-row { display: flex; align-items: center; gap: 8px; }
-.plan-check {
-  flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px;
-  border-radius: 8px; background: transparent; border: none;
-  color: var(--text-secondary); cursor: pointer;
-}
-.plan-check:hover { color: #6ee7b7; }
-.plan-rank {
-  flex-shrink: 0; width: 21px; height: 21px; border-radius: 7px;
-  display: grid; place-items: center; font-size: 0.7rem; font-weight: 800;
-  background: rgba(245,158,11,0.16); color: var(--cat-amber);
-}
-.plan-task-text {
-  flex: 1; text-align: left; background: transparent; border: none; padding: 0;
-  color: var(--text); font-size: 0.87rem; line-height: 1.35; cursor: pointer;
-}
-.plan-task-meta { display: flex; align-items: center; gap: 7px; }
-.plan-pill { font-size: 0.64rem; padding: 2px 7px; }
-.triage-line {
-  display: flex; align-items: flex-start; gap: 6px;
-  padding: 7px 9px; border-radius: 9px;
-  background: rgba(251,146,60,0.07); border: 1px dashed rgba(251,146,60,0.28);
-  font-size: 0.73rem; line-height: 1.4; color: var(--text-secondary);
-}
-.triage-line b { color: #fdba74; font-weight: 700; }
-.triage-line-icon { flex-shrink: 0; margin-top: 2px; color: var(--cat-orange); }
-.triage-line.triage-line-block { background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.3); }
-.triage-line.triage-line-block b { color: #fca5a5; }
-.triage-line.triage-line-block .triage-line-icon { color: #f87171; }
-.date-chip-row { flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
-.date-chip {
-  padding: 5px 8px; border-radius: 7px; font-size: 0.68rem; font-weight: 600;
-  background: rgba(255,255,255,0.05); color: var(--text-secondary);
-  border: 1px solid var(--line); cursor: pointer;
-}
-.date-chip:hover { border-color: var(--line-strong); color: var(--text); }
-.date-chip-input {
-  width: 32px; height: 26px; padding: 0; border-radius: 7px;
-  background: rgba(255,255,255,0.05); border: 1px solid var(--line);
-  color: transparent; cursor: pointer; font-size: 0.68rem;
-}
-.date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
-
-/* Goal picker */
-.goal-picker { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-.goal-picker::-webkit-scrollbar { display: none; }
-.goal-chip {
-  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 13px; border-radius: 12px; font-size: 0.76rem; font-weight: 700;
-  border: 1px solid var(--line-strong); color: var(--text-secondary);
-  background: var(--bg-card); white-space: nowrap; cursor: pointer;
-}
-.goal-chip.active { border-color: rgba(251,146,60,0.55); color: #fdba74; background: rgba(251,146,60,0.1); }
-.goal-chip-new { border-style: dashed; }
-
-/* Mission Control HQ */
-.roadmap-hq {
-  border: 1px solid rgba(251,146,60,0.3); border-radius: 18px;
-  background: linear-gradient(160deg, rgba(251,146,60,0.06), var(--bg-card) 40%);
-  display: grid; gap: 12px;
-}
-.roadmap-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.roadmap-title { display: flex; align-items: center; gap: 8px; }
-.roadmap-title h3 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; }
-.roadmap-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.icon-only-btn {
-  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
-  background: rgba(255,255,255,0.05); border: 1px solid var(--line);
-  color: var(--text-secondary); cursor: pointer;
-}
-.icon-only-btn:hover { color: var(--text); border-color: var(--line-strong); }
-.roadmap-why { font-size: 0.82rem; line-height: 1.45; color: var(--text-secondary); }
-.roadmap-sub { font-size: 0.73rem; color: var(--text-muted); }
-.roadmap-blocked-note { color: #fca5a5; font-weight: 600; }
-.roadmap-target-prompt { display: grid; gap: 7px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(251,146,60,0.35); }
-.roadmap-target-label { font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
-.roadmap-target-input { width: 150px; color: var(--text); padding: 0 8px; height: 32px; }
-.roadmap-progress { display: grid; gap: 5px; }
-.prog-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--cat-amber), var(--cat-orange)); transition: width 0.4s ease; }
-.prog-labels { display: flex; justify-content: space-between; font-size: 0.64rem; color: var(--text-muted); font-weight: 600; }
-
-/* Week ladder */
-.roadmap-ladder { display: grid; }
-.roadmap-week { position: relative; padding-left: 24px; padding-bottom: 16px; display: grid; gap: 7px; }
-.roadmap-week::before {
-  content: ''; position: absolute; left: 8px; top: 22px; bottom: 0; width: 2px;
-  background: var(--line-strong);
-}
-.roadmap-week:last-child::before { display: none; }
-.roadmap-week-dot {
-  position: absolute; left: 1px; top: 3px; width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid var(--line-strong); background: var(--bg-soft);
-}
-.roadmap-week.done .roadmap-week-dot { background: var(--cat-green); border-color: var(--cat-green); }
-.roadmap-week.now .roadmap-week-dot { border-color: var(--cat-amber); box-shadow: 0 0 10px rgba(245,158,11,0.4); }
-.roadmap-week-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.roadmap-week-label {
-  font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--text-muted);
-}
-.roadmap-week.now .roadmap-week-label { color: var(--cat-amber); }
-.roadmap-week.past .roadmap-week-label { color: #b4886066; }
-.roadmap-week-tasks { display: grid; gap: 6px; }
-.roadmap-task { padding: 9px 11px; }
-.roadmap-undated { display: grid; gap: 8px; }
-
-/* Milestones */
-.milestone-unset {
-  display: inline-flex; align-items: center; gap: 6px; text-align: left;
-  font-size: 0.76rem; font-style: italic; color: var(--text-muted);
-  border: 1px dashed var(--line-strong); border-radius: 10px; padding: 8px 11px;
-  background: transparent; cursor: pointer; width: 100%;
-}
-.milestone-unset:hover { color: var(--text-secondary); border-color: rgba(251,146,60,0.4); }
-.milestone-input {
-  width: 100%; font-size: 0.86rem; padding: 8px 11px; border-radius: 10px;
-  background: var(--bg-input); border: 1px solid rgba(251,146,60,0.4); color: var(--text);
-}
-.milestone-input:focus { outline: none; border-color: var(--cat-orange); }
-.milestone-row { display: flex; align-items: flex-start; gap: 8px; }
-.milestone-check {
-  flex-shrink: 0; display: grid; place-items: center; width: 20px; height: 20px;
-  border-radius: 7px; border: 1.5px solid var(--line-strong);
-  background: transparent; color: transparent; cursor: pointer; margin-top: 1px;
-}
-.milestone-check:hover { border-color: var(--cat-green); color: rgba(52,211,153,0.5); }
-.milestone-check.done { background: var(--cat-green); border-color: var(--cat-green); color: #0c0f14; }
-.milestone-text {
-  flex: 1; text-align: left; background: transparent; border: none; padding: 0;
-  font-size: 0.88rem; font-weight: 700; line-height: 1.35; color: var(--text); cursor: pointer;
-}
-.milestone-text.done { color: var(--text-muted); text-decoration: line-through; }
-
-/* Roadmap area tints */
-.roadmap-tint-amber  { border-left: 3px solid var(--cat-amber); }
-.roadmap-tint-purple { border-left: 3px solid var(--cat-purple); }
-.roadmap-tint-blue   { border-left: 3px solid var(--cat-blue); }
-.roadmap-tint-rose   { border-left: 3px solid #fb7185; }
-.roadmap-tint-pink   { border-left: 3px solid #f472b6; }
-.roadmap-tint-orange { border-left: 3px solid var(--cat-orange); }
-.roadmap-tint-teal   { border-left: 3px solid #2dd4bf; }
-.roadmap-tint-yellow { border-left: 3px solid #facc15; }
-.roadmap-tint-slate  { border-left: 3px solid #94a3b8; }
-
-/* Full-width primary button (used in empty roadmap state) */
-.primary-button.full-width { width: 100%; justify-content: center; }
