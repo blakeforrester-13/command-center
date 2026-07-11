@@ -2927,3 +2927,106 @@ body {
   .execute-select-title, .execute-task-title { font-size: 1.25rem; }
   .execute-duration-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ═══ Roadmap hierarchy: Life Direction > Goal > Mission > Action ════════ */
+.direction-group {
+  border: 1px solid rgba(255,90,61,0.16);
+  border-radius: 18px;
+  background: rgba(20,26,36,0.92);
+  overflow: hidden;
+}
+.direction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: linear-gradient(90deg, rgba(255,90,61,0.07), rgba(255,255,255,0.015));
+}
+.direction-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+.direction-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.direction-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.direction-body {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.goal-node-toggle { cursor: pointer; }
+
+.mission-node-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.mission-node {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+  overflow: hidden;
+}
+.mission-node-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.mission-node-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.mission-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mission-node-actions {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.mission-node-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mission-node-action:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.06); }
+.mission-node-action span:first-of-type { flex: 1; }
