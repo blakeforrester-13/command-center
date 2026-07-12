@@ -1,6 +1,6 @@
-/* â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Design tokens ─────────────────────────────────────────────────────── */
 :root {
-  /* Base palette â€” dark charcoal, not pure black */
+  /* Base palette — dark charcoal, not pure black */
   --bg:           #0c0f14;
   --bg-soft:      #141820;
   --bg-card:      rgba(20, 26, 36, 0.92);
@@ -16,19 +16,19 @@
   --line:         rgba(255, 255, 255, 0.07);
   --line-strong:  rgba(255, 255, 255, 0.12);
 
-  /* Accent â€” single amber accent for momentum/action */
+  /* Accent — single amber accent for momentum/action */
   --accent:       #f59e0b;
   --accent-dim:   rgba(245, 158, 11, 0.14);
   --accent-border: rgba(245, 158, 11, 0.28);
 
-  /* Status colors â€” color carries meaning, not decoration */
+  /* Status colors — color carries meaning, not decoration */
   --status-open:    #a8b0c0;
   --status-track:   #34d399;   /* green */
   --status-slip:    #f59e0b;   /* amber */
   --status-blocked: #f87171;   /* red */
   --status-done:    #4b5668;
 
-  /* Category accent palette â€” muted, not rainbow */
+  /* Category accent palette — muted, not rainbow */
   --cat-amber:   #f59e0b;
   --cat-green:   #34d399;
   --cat-orange:  #fb923c;
@@ -52,7 +52,7 @@
   font-feature-settings: "cv11", "ss01";
 }
 
-/* â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Reset ─────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0;
@@ -69,7 +69,7 @@ textarea { resize: vertical; min-height: 76px; }
 h1, h2, h3, p { margin: 0; }
 p { line-height: 1.55; }
 
-/* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Layout ────────────────────────────────────────────────────────────── */
 .app-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -126,7 +126,7 @@ h3 {
 .main-content { padding-top: 4px; }
 .screen.stack { display: grid; gap: 16px; }
 
-/* â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Cards ─────────────────────────────────────────────────────────────── */
 .card,
 .hero-card,
 .mission-card,
@@ -159,7 +159,7 @@ h3 {
 .hero-copy p:last-child { color: var(--text-secondary); margin-top: 8px; }
 .hero-icon { color: var(--accent); opacity: 0.7; }
 
-/* â”€â”€ Section layout helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Section layout helpers ───────────────────────────────────────────── */
 .section-header, .mission-detail-top, .thought-topline, .mission-footer {
   display: flex;
   align-items: flex-start;
@@ -176,7 +176,7 @@ h3 {
 }
 .mini-header h3 { color: var(--text); }
 
-/* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Buttons ───────────────────────────────────────────────────────────── */
 .primary-button,
 .secondary-button,
 .text-button,
@@ -235,7 +235,7 @@ h3 {
   flex-shrink: 0;
 }
 
-/* â”€â”€ Form elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Form elements ─────────────────────────────────────────────────────── */
 .field { display: grid; gap: 6px; }
 .field > span, .field-label {
   color: var(--text-secondary);
@@ -275,7 +275,7 @@ input:focus, textarea:focus, select:focus {
 .today-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .two-column { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-/* â”€â”€ Today Slot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Today Slot ────────────────────────────────────────────────────────── */
 .today-slot { display: grid; gap: 6px; }
 .today-slot-header {
   display: flex;
@@ -299,7 +299,7 @@ input:focus, textarea:focus, select:focus {
 .promote-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
 .linked-slot { border-color: var(--accent-border) !important; }
 
-/* â”€â”€ Promote Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Promote Modal ─────────────────────────────────────────────────────── */
 .promote-modal { display: grid; gap: 16px; padding-top: 4px; }
 .promote-group { display: grid; gap: 6px; }
 .promote-group-label {
@@ -329,7 +329,7 @@ input:focus, textarea:focus, select:focus {
 }
 .promote-item span { font-size: 0.9rem; line-height: 1.4; }
 
-/* â”€â”€ Energy toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Energy toggle ─────────────────────────────────────────────────────── */
 .energy-toggle {
   display: flex;
   gap: 6px;
@@ -371,7 +371,7 @@ input:focus, textarea:focus, select:focus {
 }
 .energy-btn:hover:not(.active) { border-color: var(--line-strong); color: var(--text); }
 
-/* â”€â”€ Missions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Missions ──────────────────────────────────────────────────────────── */
 .mission-list { display: grid; gap: 10px; }
 .mission-list.detailed { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -411,7 +411,7 @@ input:focus, textarea:focus, select:focus {
 .mission-detail-card textarea { min-height: 76px; }
 .mission-footer { margin-top: 4px; }
 
-/* â”€â”€ Pills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Pills ─────────────────────────────────────────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -426,7 +426,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.05);
 }
 
-/* Status-driven pill tones â€” color = meaning */
+/* Status-driven pill tones — color = meaning */
 .pill-green   { background: rgba(52,211,153,0.12); color: #6ee7b7; border-color: rgba(52,211,153,0.2); }
 .pill-amber,
 .pill-yellow  { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.22); }
@@ -440,7 +440,7 @@ input:focus, textarea:focus, select:focus {
 .pill-slate   { background: rgba(148,163,184,0.08); color: #94a3b8; border-color: rgba(148,163,184,0.15); }
 .pill-default { background: rgba(255,255,255,0.04); color: var(--text-secondary); }
 
-/* â”€â”€ Compact list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Compact list ──────────────────────────────────────────────────────── */
 .compact-list, .thought-list { display: grid; gap: 8px; }
 .compact-item {
   border: 1px solid var(--line);
@@ -468,7 +468,7 @@ input:focus, textarea:focus, select:focus {
 .done-item span { text-decoration: line-through; }
 .check-done { color: var(--status-track); }
 
-/* â”€â”€ Staleness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Staleness ─────────────────────────────────────────────────────────── */
 .stale-tag {
   display: inline-flex;
   align-items: center;
@@ -496,7 +496,7 @@ input:focus, textarea:focus, select:focus {
   font-weight: 700;
 }
 
-/* â”€â”€ Noise bridge â€” Noise â†’ Action feature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Noise bridge — Noise → Action feature ────────────────────────────── */
 .noise-bridge {
   background: rgba(245,158,11,0.07);
   border: 1px solid rgba(245,158,11,0.18);
@@ -524,7 +524,7 @@ input:focus, textarea:focus, select:focus {
 }
 .convert-action-btn:hover { opacity: 0.8; }
 
-/* â”€â”€ Tier navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Tier navigation ───────────────────────────────────────────────────── */
 .tier-nav { display: grid; gap: 8px; }
 
 .tier-group {
@@ -608,7 +608,7 @@ input:focus, textarea:focus, select:focus {
 .chip-active-blue    { background: rgba(96,165,250,0.14)  !important; border-color: rgba(96,165,250,0.3)  !important; color: var(--cat-blue)    !important; }
 .category-chip small { opacity: 0.7; font-size: 0.72rem; }
 
-/* â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Search ────────────────────────────────────────────────────────────── */
 .search-bar {
   display: flex;
   gap: 10px;
@@ -622,7 +622,7 @@ input:focus, textarea:focus, select:focus {
 .search-bar input { border: 0; background: transparent; padding-left: 0; }
 .search-bar:focus-within { border-color: var(--accent-border); }
 
-/* â”€â”€ Category detail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Category detail ───────────────────────────────────────────────────── */
 .category-title { display: flex; gap: 12px; align-items: flex-start; }
 .icon-badge {
   width: 40px;
@@ -646,7 +646,7 @@ input:focus, textarea:focus, select:focus {
 .icon-red    { background: rgba(248,113,113,0.14); color: var(--cat-red); }
 .icon-blue   { background: rgba(96,165,250,0.14); color: var(--cat-blue); }
 
-/* â”€â”€ Thought cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Thought cards ─────────────────────────────────────────────────────── */
 .thought-card { padding: 15px; display: grid; gap: 12px; }
 .thought-topline { align-items: flex-start; }
 .thought-labels { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -688,7 +688,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.07);
 }
 
-/* â”€â”€ Category hint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Category hint ─────────────────────────────────────────────────────── */
 .category-hint {
   display: flex;
   gap: 11px;
@@ -710,7 +710,7 @@ input:focus, textarea:focus, select:focus {
 .hint-red    { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); }
 .hint-slate  { background: rgba(148,163,184,0.06); border-color: rgba(148,163,184,0.15); }
 
-/* â”€â”€ Stats grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Stats grid ────────────────────────────────────────────────────────── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -737,13 +737,13 @@ input:focus, textarea:focus, select:focus {
 .stat-closed-row svg { flex-shrink: 0; }
 .stat-closed-row span { font-size: 0.66rem; font-weight: 700; }
 
-/* â”€â”€ Review card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Review card ───────────────────────────────────────────────────────── */
 .review-card { padding: 14px; display: grid; gap: 8px; }
 .review-card details { color: var(--text-secondary); font-size: 0.875rem; }
 .review-card summary { cursor: pointer; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .review-card details p { margin: 6px 0; }
 
-/* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Empty state ───────────────────────────────────────────────────────── */
 .empty-state {
   border: 1px dashed rgba(255,255,255,0.08);
   border-radius: var(--radius-sm);
@@ -757,7 +757,7 @@ input:focus, textarea:focus, select:focus {
 .empty-state h3 { color: var(--text); font-size: 0.95rem; }
 .empty-state p { font-size: 0.82rem; }
 
-/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Modal ─────────────────────────────────────────────────────────────── */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -785,7 +785,7 @@ input:focus, textarea:focus, select:focus {
   margin-bottom: 16px;
 }
 
-/* â”€â”€ Bottom nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bottom nav ────────────────────────────────────────────────────────── */
 .bottom-nav {
   position: fixed;
   z-index: 20;
@@ -830,13 +830,13 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav button.active.nav-orange { color: var(--cat-orange);  background: rgba(251,146,60,0.14); }
 .bottom-nav button:hover:not(.active) { color: var(--text); }
 
-/* â”€â”€ Noise card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Noise card ────────────────────────────────────────────────────────── */
 .noise-card { border-color: rgba(248,113,113,0.15); }
 
-/* â”€â”€ Inbox triage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Inbox triage ──────────────────────────────────────────────────────── */
 .inbox-triage { border-color: var(--accent-border); }
 
-/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .mission-list.detailed { grid-template-columns: 1fr; }
   .two-column, .form-grid, .today-grid { grid-template-columns: 1fr; }
@@ -859,7 +859,7 @@ input:focus, textarea:focus, select:focus {
   .energy-btn { padding: 5px 8px; font-size: 0.72rem; }
 }
 
-/* â”€â”€ Thought card labeled sections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Thought card labeled sections ────────────────────────────────────── */
 .thought-item-header {
   display: flex;
   align-items: center;
@@ -906,7 +906,7 @@ input:focus, textarea:focus, select:focus {
   margin: 0;
 }
 
-/* â”€â”€ Sub-tab switcher (Progress page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sub-tab switcher (Progress page) ─────────────────────────────────── */
 .subtab-row {
   display: flex;
   gap: 8px;
@@ -931,7 +931,7 @@ input:focus, textarea:focus, select:focus {
   color: var(--accent);
 }
 
-/* â”€â”€ Accomplishments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Accomplishments ───────────────────────────────────────────────────── */
 .accomplish-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1041,14 +1041,14 @@ input:focus, textarea:focus, select:focus {
 /* stack helper for subtab content */
 .stack { display: grid; gap: 16px; }
 
-/* â”€â”€ Responsive additions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Responsive additions ─────────────────────────────────────────────── */
 @media (max-width: 520px) {
   .accomplish-summary { grid-template-columns: repeat(3, 1fr); }
   .subtab-row { width: 100%; }
   .subtab-btn { flex: 1; justify-content: center; }
 }
 
-/* â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Loading screen ────────────────────────────────────────────────────── */
 .loading-screen {
   min-height: 100vh;
   display: grid;
@@ -1066,7 +1066,7 @@ input:focus, textarea:focus, select:focus {
   50% { opacity: 0.5; transform: scale(0.92); }
 }
 
-/* â”€â”€ Close the Day button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Close the Day button ──────────────────────────────────────────────── */
 .close-day-btn {
   width: 100%;
   display: flex;
@@ -1087,7 +1087,7 @@ input:focus, textarea:focus, select:focus {
 }
 .close-day-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
-/* â”€â”€ Close Day Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Close Day Modal ───────────────────────────────────────────────────── */
 .closeday-modal { display: grid; gap: 20px; }
 
 .closeday-step { display: grid; gap: 16px; }
@@ -1231,7 +1231,7 @@ input:focus, textarea:focus, select:focus {
   line-height: 1.6;
 }
 
-/* â”€â”€ Accomplishments â€” edit/revert â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Accomplishments — edit/revert ────────────────────────────────────── */
 .accomplish-item-editable {
   justify-content: space-between;
   align-items: flex-start;
@@ -1262,7 +1262,7 @@ input:focus, textarea:focus, select:focus {
 .accomplish-action-btn:hover { border-color: var(--line-strong); color: var(--text); background: rgba(255,255,255,0.09); }
 .revert-btn:hover { border-color: rgba(245,158,11,0.3); color: var(--accent); background: var(--accent-dim); }
 
-/* â”€â”€ Fix 1: Next Actions task row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 1: Next Actions task row ──────────────────────────────────────── */
 .task-action-row {
   display: flex;
   align-items: center;
@@ -1302,7 +1302,7 @@ input:focus, textarea:focus, select:focus {
 }
 .task-done-btn:hover { color: var(--status-track); background: rgba(52,211,153,0.08); }
 
-/* â”€â”€ Fix 5: Daily Quote â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 5: Daily Quote ────────────────────────────────────────────────── */
 .daily-quote-card {
   padding: 16px 18px;
   border-radius: var(--radius);
@@ -1350,7 +1350,7 @@ input:focus, textarea:focus, select:focus {
   margin: 0;
 }
 
-/* â”€â”€ Fix 3: Accomplishments collapsible day header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 3: Accomplishments collapsible day header ────────────────────── */
 .accomplish-day-toggle {
   width: 100%;
   display: flex;
@@ -1368,8 +1368,8 @@ input:focus, textarea:focus, select:focus {
 .accomplish-day-toggle:hover { opacity: 0.85; }
 .accomplish-cat-list { padding-top: 12px; }
 
-/* â”€â”€ Fix 6: Goals View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* â”€â”€ Goals page header with border box */
+/* ── Fix 6: Goals View ─────────────────────────────────────────────────── */
+/* ── Goals page header with border box */
 .goals-flat-header { display: grid; gap: 12px; }
 .goals-header-copy { flex: 1; }
 .goals-stat-strip {
@@ -1531,7 +1531,7 @@ input:focus, textarea:focus, select:focus {
 
 .goal-card-actions { display: grid; gap: 10px; }
 
-/* â”€â”€ Priority signal â€” mission card + edit toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Priority signal — mission card + edit toggle ─────────────────────── */
 .roadmap-signal-row {
   display: flex;
   align-items: center;
@@ -1563,7 +1563,7 @@ input:focus, textarea:focus, select:focus {
 .signal-active-purple { background: rgba(167,139,250,0.15); color: #a78bfa; border-color: rgba(167,139,250,0.4); opacity: 1; }
 .signal-active-slate  { background: rgba(148,163,184,0.15); color: #94a3b8; border-color: rgba(148,163,184,0.3); opacity: 1; }
 
-/* â”€â”€ Fix 1: Today mission cards â€” life area background tints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 1: Today mission cards — life area background tints ─────────── */
 .mission-card-area-work        { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.18); }
 .mission-card-area-school      { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); }
 .mission-card-area-money       { background: rgba(96,165,250,0.07); border-color: rgba(96,165,250,0.18); }
@@ -1574,7 +1574,7 @@ input:focus, textarea:focus, select:focus {
 .mission-card-area-appprojects { background: rgba(251,191,36,0.07); border-color: rgba(251,191,36,0.18); }
 .mission-card-area-future      { background: rgba(148,163,184,0.07); border-color: rgba(148,163,184,0.18); }
 
-/* â”€â”€ Fix 1: Next Actions â€” colored category icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 1: Next Actions — colored category icon ──────────────────────── */
 .task-cat-icon-green   { color: var(--cat-green); }
 .task-cat-icon-amber   { color: var(--cat-amber); }
 .task-cat-icon-orange  { color: var(--cat-orange); }
@@ -1587,12 +1587,12 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-red     { color: var(--cat-red); }
 .task-cat-icon-yellow  { color: var(--cat-yellow); }
 
-/* â”€â”€ Fix 5: Tier icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Fix 5: Tier icons ─────────────────────────────────────────────────── */
 .tier-icon-tier-act   { color: var(--accent); }
 .tier-icon-tier-think { color: #a78bfa; }
 .tier-icon-tier-hold  { color: var(--text-muted); }
 
-/* â”€â”€ Weekly Review stat card tints + colored icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Weekly Review stat card tints + colored icons ────────────────────── */
 .stat-card-amber   { background: rgba(245,158,11,0.07)  !important; border-color: rgba(245,158,11,0.18)  !important; }
 .stat-card-green   { background: rgba(52,211,153,0.07)  !important; border-color: rgba(52,211,153,0.18)  !important; }
 .stat-card-orange  { background: rgba(251,146,60,0.07)  !important; border-color: rgba(251,146,60,0.18)  !important; }
@@ -1617,7 +1617,7 @@ input:focus, textarea:focus, select:focus {
 .stat-icon-red     { color: var(--cat-red); }
 .stat-icon-blue    { color: var(--cat-blue); }
 
-/* â”€â”€ Goal linked item as clickable button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Goal linked item as clickable button ─────────────────────────────── */
 .goal-linked-btn {
   width: 100%;
   text-align: left;
@@ -1631,7 +1631,7 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255,255,255,0.06);
 }
 
-/* â”€â”€ Rose token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Rose token ────────────────────────────────────────────────────────── */
 :root { --cat-rose: #fb7185; }
 
 .pill-rose    { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
@@ -1643,7 +1643,7 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-rose { color: var(--cat-rose); }
 .mission-card-area-health { background: rgba(251,113,133,0.07); border-color: rgba(251,113,133,0.18); }
 
-/* â”€â”€ Nav active colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Nav active colors ─────────────────────────────────────────────────── */
 .bottom-nav button.active.nav-amber  { color: var(--cat-amber);  background: rgba(245,158,11,0.14); }
 .bottom-nav button.active.nav-gray   { color: #cbd5e1;           background: rgba(148,163,184,0.14); }
 .bottom-nav button.active.nav-purple { color: var(--cat-purple); background: rgba(167,139,250,0.14); }
@@ -1651,13 +1651,13 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav button.active.nav-cyan   { color: #22d3ee;           background: rgba(34,211,238,0.14); }
 .bottom-nav button.active.nav-green  { color: var(--cat-green);  background: rgba(52,211,153,0.14); }
 
-/* â”€â”€ Area pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Area pill colors ──────────────────────────────────────────────────── */
 .pill-rose { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
 
-/* â”€â”€ Energy pill colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* Low=slate, Medium=yellow, High=rose â€” already covered by existing pill-slate/yellow/rose */
+/* ── Energy pill colors ────────────────────────────────────────────────── */
+/* Low=slate, Medium=yellow, High=rose — already covered by existing pill-slate/yellow/rose */
 
-/* â”€â”€ Accomplish move-to-day row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Accomplish move-to-day row ────────────────────────────────────────── */
 .accomplish-move-row {
   display: flex;
   align-items: center;
@@ -1670,7 +1670,7 @@ input:focus, textarea:focus, select:focus {
 }
 .accomplish-item-editable:hover .accomplish-item-actions { opacity: 1; }
 
-/* â”€â”€ BlakeOS Command upgrade: ring, strip, and Today cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── BlakeOS Command upgrade: ring, strip, and Today cards ────────────── */
 .hero-command-layout {
   align-items: stretch;
 }
@@ -2026,7 +2026,7 @@ input:focus, textarea:focus, select:focus {
 }
 .linked-slot-card textarea { border-color: var(--accent-border) !important; }
 
-/* â”€â”€ Progress psychology: accomplishments as identity evidence â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Progress psychology: accomplishments as identity evidence ───────── */
 .accomplishments-page { gap: 14px; }
 .accomplishment-hero-card {
   display: flex;
@@ -2221,7 +2221,7 @@ input:focus, textarea:focus, select:focus {
   .accomplishment-hero-card { padding: 18px; min-height: 180px; }
 }
 
-/* â”€â”€ Manage Goals Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Manage Goals Modal ─────────────────────────────────────────────────── */
 .manage-goals-modal { display: grid; gap: 14px; }
 .manage-goals-list { display: grid; gap: 8px; max-height: 60vh; overflow-y: auto; }
 .manage-goal-item {
@@ -2264,7 +2264,7 @@ input:focus, textarea:focus, select:focus {
   border-top: 1px solid var(--line);
 }
 
-/* â”€â”€ Behavioral Command Cards + softer cyberpunk accent pass â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Behavioral Command Cards + softer cyberpunk accent pass ───────────── */
 :root {
   --accent: #ff5a3d;
   --accent-dim: rgba(255, 90, 61, 0.115);
@@ -2392,7 +2392,7 @@ body {
   .today-command-label-row { font-size: 0.74rem; }
 }
 
-/* â”€â”€â”€ Plan Tab v2 â€” Triage Layer + Agenda Rail + Mission Control â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Plan Tab v2 — Triage Layer + Agenda Rail + Mission Control ────────── */
 .spin { animation: plan-spin 1s linear infinite; }
 @keyframes plan-spin { to { transform: rotate(360deg); } }
 
@@ -2529,7 +2529,7 @@ body {
 }
 .date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
 
-/* â”€â”€ Mission priority signal â€” shown on active-mission ThoughtCards â”€â”€â”€â”€ */
+/* ── Mission priority signal — shown on active-mission ThoughtCards ──── */
 .mission-signal-row {
   display: flex;
   flex-wrap: wrap;
@@ -2641,7 +2641,7 @@ body {
 /* Full-width primary button (used in empty roadmap state) */
 .primary-button.full-width { width: 100%; justify-content: center; }
 
-/* â•â•â• FEATURE: Commitment Pressure â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══ FEATURE: Commitment Pressure ═══════════════════════════════════════ */
 .commitment-pressure {
   border-radius: var(--radius);
   padding: 14px 16px;
@@ -2699,7 +2699,7 @@ body {
 }
 .commitment-clear-btn:hover { color: #6ee7b7; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.1); }
 
-/* â•â•â• FEATURE: Tomorrow Preload â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══ FEATURE: Tomorrow Preload ═══════════════════════════════════════════ */
 .preload-grid { display: grid; gap: 10px; }
 .preload-field {
   border-radius: var(--radius-sm);
@@ -2722,7 +2722,7 @@ body {
 .preload-field-amber   .preload-field-label { color: var(--cat-amber); }
 .preload-field-blue    .preload-field-label { color: var(--cat-blue); }
 
-/* â•â•â• FEATURE: Execute Mode â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══ FEATURE: Execute Mode ═══════════════════════════════════════════════ */
 .today-command-execute {
   color: var(--accent);
   border-color: rgba(255,90,61,0.3);
@@ -2928,147 +2928,183 @@ body {
   .execute-duration-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ═══ Roadmap hierarchy: Life Direction > Goal > Mission > Action ════════ */
+.direction-group {
+  border: 1px solid rgba(255,90,61,0.16);
+  border-radius: 18px;
+  background: rgba(20,26,36,0.92);
+  overflow: hidden;
+}
+.direction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: linear-gradient(90deg, rgba(255,90,61,0.07), rgba(255,255,255,0.015));
+}
+.direction-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+}
+.direction-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.direction-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.direction-body {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+}
 
-/* â”€â”€ Capture hierarchy hub â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.capture-hub { max-width: 760px; margin: 0 auto; width: 100%; }
-.capture-page-heading { display: grid; gap: 3px; }
-.capture-page-heading h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 850; }
-.capture-page-heading .muted { color: var(--text-secondary); font-size: 0.88rem; }
+.goal-node-toggle { cursor: pointer; }
 
+.mission-node-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.mission-node {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+  overflow: hidden;
+}
+.mission-node-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.mission-node-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.mission-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mission-node-actions {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.mission-node-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mission-node-action:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.06); }
+.mission-node-action span:first-of-type { flex: 1; }
+
+/* ═══ Capture page — tabbed hub ═══════════════════════════════════════════ */
 .capture-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 5px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(255,255,255,0.03);
   border: 1px solid var(--line);
 }
 .capture-tab {
-  border: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-width: 0;
-  padding: 10px 4px;
-  border-radius: 12px;
-  background: transparent;
+  gap: 4px;
+  padding: 11px 4px;
+  border-radius: 13px;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 800;
   color: var(--text-muted);
-  font-size: 0.66rem;
-  font-weight: 850;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  transition: color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+  letter-spacing: 0.03em;
+  background: transparent;
+  border: none;
+  transition: all 0.15s;
 }
-.capture-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.035); }
-.capture-tab.active { transform: translateY(-1px); }
-.capture-tab.active-thought { background: rgba(255,90,61,0.14); color: #ff6b4d; }
-.capture-tab.active-mission { background: rgba(255,176,32,0.14); color: #ffb020; }
-.capture-tab.active-goal { background: rgba(96,165,250,0.14); color: #60a5fa; }
+.capture-tab:hover { color: var(--text-secondary); }
+.capture-tab.active-thought   { background: var(--accent-dim); color: var(--accent); }
+.capture-tab.active-mission   { background: rgba(255,176,32,0.14); color: #ffb020; }
+.capture-tab.active-goal      { background: rgba(96,165,250,0.14); color: #60a5fa; }
 .capture-tab.active-direction { background: rgba(167,139,250,0.14); color: #a78bfa; }
-.capture-tab-icon { flex-shrink: 0; }
 
-.capture-form-stage { animation: captureFormIn 0.18s ease-out; }
-@keyframes captureFormIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.capture-level-card {
-  position: relative;
-  overflow: hidden;
-  padding: 18px;
-  background: var(--bg-card);
-}
-.capture-level-card::after {
-  content: "";
-  position: absolute;
-  top: -80px;
-  right: -70px;
-  width: 170px;
-  height: 170px;
-  border-radius: 50%;
-  filter: blur(8px);
-  pointer-events: none;
-  opacity: 0.55;
-}
-.capture-level-card > * { position: relative; z-index: 1; }
-.capture-level-thought { border-color: rgba(255,90,61,0.18); }
-.capture-level-thought::after { background: rgba(255,90,61,0.08); }
-.capture-level-mission { border-color: rgba(255,176,32,0.2); }
-.capture-level-mission::after { background: rgba(255,176,32,0.09); }
-.capture-level-goal { border-color: rgba(96,165,250,0.2); }
-.capture-level-goal::after { background: rgba(96,165,250,0.09); }
-.capture-level-direction { border-color: rgba(167,139,250,0.2); }
-.capture-level-direction::after { background: rgba(167,139,250,0.09); }
-
-.capture-type-header {
+.capture-form-type-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 2px;
+  gap: 11px;
+  margin-bottom: 4px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
 }
-.capture-type-icon {
+.capture-form-type-icon {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.capture-type-icon-thought { color: #ff6b4d; background: rgba(255,90,61,0.14); }
-.capture-type-icon-mission { color: #ffb020; background: rgba(255,176,32,0.14); }
-.capture-type-icon-goal { color: #60a5fa; background: rgba(96,165,250,0.14); }
-.capture-type-icon-direction { color: #a78bfa; background: rgba(167,139,250,0.14); }
-.capture-type-title { font-size: 0.95rem; font-weight: 850; color: var(--text); }
-.capture-type-sub { margin-top: 1px; font-size: 0.74rem; color: var(--text-muted); }
-.capture-optional { font-weight: 500; opacity: 0.55; text-transform: none; letter-spacing: 0; }
-
-.capture-signal-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
-.capture-signal-chip {
-  padding: 7px 11px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 750;
-  border: 1px solid var(--line-strong);
-  background: rgba(255,255,255,0.04);
-  color: var(--text-muted);
-  transition: all 0.15s ease;
-}
-.capture-signal-chip:hover { color: var(--text-secondary); background: rgba(255,255,255,0.07); }
-.capture-signal-active-rose { color: #fb7185; background: rgba(251,113,133,0.14); border-color: rgba(251,113,133,0.32); }
-.capture-signal-active-purple { color: #a78bfa; background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.32); }
-.capture-signal-active-slate { color: #cbd5e1; background: rgba(148,163,184,0.14); border-color: rgba(148,163,184,0.28); }
-
-.capture-submit {
-  width: 100%;
-  padding: 13px 18px;
-  border-radius: 999px;
-  border: 0;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  color: #0c0f14;
-  font-size: 0.84rem;
-  font-weight: 850;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
 }
-.capture-submit:hover { opacity: 0.88; transform: translateY(-1px); }
-.capture-submit-thought { background: linear-gradient(135deg, #ff7a2f, #ff5a3d); }
-.capture-submit-mission { background: linear-gradient(135deg, #ffc94d, #ffb020); }
-.capture-submit-goal { background: linear-gradient(135deg, #93c5fd, #60a5fa); }
-.capture-submit-direction { background: linear-gradient(135deg, #c4b5fd, #a78bfa); }
-.capture-compact { border: 0; box-shadow: none; padding: 0; background: transparent; }
-.capture-compact::after { display: none; }
+.icon-mission-bg   { background: rgba(255,176,32,0.14); color: #ffb020; }
+.icon-goal-bg      { background: rgba(96,165,250,0.14); color: #60a5fa; }
+.icon-direction-bg { background: rgba(167,139,250,0.14); color: #a78bfa; }
+.capture-form-type-header strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.capture-form-type-header p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.capture-card-mission   { border-color: rgba(255,176,32,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(255,176,32,0.055), transparent 40%), var(--bg-card) !important; }
+.capture-card-goal      { border-color: rgba(96,165,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(96,165,250,0.055), transparent 40%), var(--bg-card) !important; }
+.capture-card-direction { border-color: rgba(167,139,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(167,139,250,0.055), transparent 40%), var(--bg-card) !important; }
+
+.capture-submit-mission   { background: linear-gradient(135deg, #ffc94d, #ffb020) !important; color: #0c0f14 !important; }
+.capture-submit-goal      { background: linear-gradient(135deg, #93c5fd, #60a5fa) !important; color: #0c0f14 !important; }
+.capture-submit-direction { background: linear-gradient(135deg, #c4b5fd, #a78bfa) !important; color: #0c0f14 !important; }
 
 @media (max-width: 520px) {
-  .capture-tabs { gap: 4px; padding: 4px; }
-  .capture-tab { padding: 9px 2px; font-size: 0.59rem; letter-spacing: 0.02em; }
-  .capture-level-card { padding: 15px; }
-  .capture-type-sub { font-size: 0.69rem; }
+  .capture-tab { font-size: 0.6rem; padding: 9px 2px; }
+  .capture-form-type-icon { width: 32px; height: 32px; border-radius: 10px; }
 }
