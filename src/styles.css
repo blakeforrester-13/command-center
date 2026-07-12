@@ -3108,3 +3108,142 @@ body {
   .capture-tab { font-size: 0.6rem; padding: 9px 2px; }
   .capture-form-type-icon { width: 32px; height: 32px; border-radius: 10px; }
 }
+
+/* ═══ Momentum Trajectory card ═══════════════════════════════════════════ */
+.trajectory-card {
+  border-color: rgba(255,90,61,0.18);
+  background: radial-gradient(circle at 88% 0%, rgba(255,90,61,0.07), transparent 40%), var(--bg-card);
+}
+.traj-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.range-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.range-chip {
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.range-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+
+.traj-chart-wrap { position: relative; }
+.traj-callout {
+  position: absolute;
+  top: -12px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #0c0f14;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.traj-callout::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 50%; transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--accent);
+}
+.ghost-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 4px;
+}
+.ghost-swatch { width: 14px; height: 0; border-top: 2px dashed #606880; }
+.real-swatch { width: 14px; height: 2px; background: var(--accent); border-radius: 2px; }
+
+.streak-strip { display: flex; gap: 3px; margin: 12px 0 4px; }
+.streak-dot {
+  flex: 1;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+.streak-on { background: var(--accent); color: #0c0f14; }
+.streak-off { background: rgba(255,255,255,0.06); }
+
+.traj-axis-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-top: 4px;
+  padding: 0 2px;
+}
+
+.goal-split-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.goal-split-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 10px; }
+.goal-split-bar { display: flex; height: 16px; border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.goal-split-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.goal-split-item { display: flex; flex-direction: column; gap: 3px; }
+.goal-split-item .dot-row { display: flex; align-items: center; gap: 6px; }
+.goal-split-item .dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.goal-split-name { font-size: 0.72rem; font-weight: 700; color: var(--text); }
+.goal-split-count { font-size: 0.66rem; color: var(--text-muted); font-weight: 600; margin-left: 15px; }
+
+/* ═══ Compact mountain hero (moved below trajectory, closing statement) ══ */
+.mountain-hero-compact {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(245,158,11,0.2);
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(to top, rgba(10,13,18,0.97) 0%, rgba(10,13,18,0.75) 45%, rgba(10,13,18,0.15) 80%, rgba(10,13,18,0) 100%),
+    linear-gradient(to right, rgba(10,13,18,0.6) 0%, rgba(10,13,18,0.15) 45%, rgba(10,13,18,0) 75%),
+    url('/mountain-hero.webp') top center/cover no-repeat;
+  box-shadow: var(--shadow);
+}
+.mountain-tagline { position: relative; z-index: 1; }
+.mountain-title { font-size: 1.05rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1.2; color: #fff; margin: 0; }
+.mountain-stats-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.mountain-stat { display: flex; flex-direction: column; gap: 1px; }
+.mountain-stat-value { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.03em; color: #fff; }
+.mountain-stat-value.tone-fire  { color: #fca5a5; }
+.mountain-stat-value.tone-blue  { color: #93c5fd; }
+.mountain-stat-value.tone-amber { color: #ffb020; }
+.mountain-stat-value.tone-green { color: #6ee7b7; }
+.mountain-stat-label {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.65);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 520px) {
+  .traj-callout { font-size: 0.62rem; padding: 3px 7px; }
+  .goal-split-legend { grid-template-columns: repeat(2, 1fr); }
+  .mountain-hero-compact { min-height: 170px; padding: 14px; }
+  .mountain-stat-value { font-size: 1.15rem; }
+}
