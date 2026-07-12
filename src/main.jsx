@@ -170,7 +170,6 @@ function dbToThought(row) {
     nextAction: row.next_action || '', notes: row.notes || '',
     dueDate: row.due_date || '', energy: row.energy || 'Medium',
     pinned: row.pinned || false, relatedMissionId: row.related_mission_id || '',
-    goalId: row.goal_id || '',
     decisionOptions: row.decision_options || '', waitingOn: row.waiting_on || '',
     truth: row.truth || '', exaggeration: row.exaggeration || '',
     prioritySignals: row.priority_signals ? row.priority_signals.split(',').filter(Boolean) : [],
@@ -184,14 +183,12 @@ function thoughtToDb(t) {
     next_action: t.nextAction || '', notes: t.notes || '',
     due_date: t.dueDate || '', energy: t.energy || 'Medium',
     pinned: t.pinned || false, related_mission_id: t.relatedMissionId || '',
-    goal_id: t.goalId || '',
     decision_options: t.decisionOptions || '', waiting_on: t.waitingOn || '',
     truth: t.truth || '', exaggeration: t.exaggeration || '',
     priority_signals: (t.prioritySignals && t.prioritySignals.length) ? t.prioritySignals.join(',') : null,
   };
 }
-// ─── Life Direction (top of hierarchy — timeless, never "done") ───────────
-function dbToLifeDirection(row) {
+function dbToMission(row) {
   return {
     id: row.id, title: row.title, why: row.why || '',
     weeklyGoal: row.weekly_goal || '', nextAction: row.next_action || '',
@@ -199,31 +196,12 @@ function dbToLifeDirection(row) {
     createdAt: row.created_at, targetDate: row.target_date || '',
   };
 }
-function lifeDirectionToDb(m) {
+function missionToDb(m) {
   return {
     id: m.id, title: m.title, why: m.why || '',
     weekly_goal: m.weeklyGoal || '', next_action: m.nextAction || '',
     status: m.status || 'Open', area: m.area || 'Personal',
     created_at: m.createdAt, target_date: m.targetDate || null,
-  };
-}
-// ─── Goal (completable — belongs to a Life Direction) ─────────────────────
-function dbToGoal(row) {
-  return {
-    id: row.id, title: row.title, why: row.why || '',
-    weeklyGoal: row.weekly_goal || '', nextAction: row.next_action || '',
-    status: row.status || 'Open', area: row.area || 'Personal',
-    createdAt: row.created_at, targetDate: row.target_date || '',
-    lifeDirectionId: row.life_direction_id || '',
-  };
-}
-function goalToDb(g) {
-  return {
-    id: g.id, title: g.title, why: g.why || '',
-    weekly_goal: g.weeklyGoal || '', next_action: g.nextAction || '',
-    status: g.status || 'Open', area: g.area || 'Personal',
-    created_at: g.createdAt, target_date: g.targetDate || null,
-    life_direction_id: g.lifeDirectionId || '',
   };
 }
 const DEFAULT_SLOT_TEXT = {
@@ -388,8 +366,7 @@ function DailyQuote() {
 // ─── App ───────────────────────────────────────────────────────────────────
 function App() {
   const [thoughts, setThoughts] = useState([]);
-  const [lifeDirections, setLifeDirections] = useState([]);
-  const [goals, setGoals] = useState([]);
+  const [missions, setMissions] = useState([]);
   const [today, setToday] = useState(null);
   const [yesterdayFocus, setYesterdayFocus] = useState(null);
   const [todayKey] = useState(() => getLocalTodayKey());
@@ -430,17 +407,15 @@ function App() {
   useEffect(() => {
     async function loadAll() {
       const yesterdayKey = addDaysToKey(todayKey, -1);
-      const [thoughtsRes, lifeDirRes, goalsRes, focusRes, reviewsRes, milestonesRes] = await Promise.all([
+      const [thoughtsRes, missionsRes, focusRes, reviewsRes, milestonesRes] = await Promise.all([
         supabase.from('thoughts').select('*').order('created_at', { ascending: false }),
-        supabase.from('life_directions').select('*').order('created_at', { ascending: false }),
-        supabase.from('goals').select('*').order('created_at', { ascending: false }),
+        supabase.from('missions').select('*').order('created_at', { ascending: false }),
         supabase.from('daily_focus').select('*').in('day_key', [todayKey, yesterdayKey]),
         supabase.from('reviews').select('*').order('created_at', { ascending: false }),
         supabase.from('milestones').select('*').order('week_start', { ascending: true }),
       ]);
       if (thoughtsRes.data) setThoughts(thoughtsRes.data.map(dbToThought));
-      if (lifeDirRes.data) setLifeDirections(lifeDirRes.data.map(dbToLifeDirection));
-      if (goalsRes.data) setGoals(goalsRes.data.map(dbToGoal));
+      if (missionsRes.data) setMissions(missionsRes.data.map(dbToMission));
       const focusRows = focusRes.data || [];
       const todayRow = focusRows.find((r) => r.day_key === todayKey);
       const yesterdayRow = focusRows.find((r) => r.day_key === yesterdayKey);
@@ -462,13 +437,13 @@ function App() {
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
   const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
 
-  const pinnedGoals = useMemo(() => {
+  const pinnedMissions = useMemo(() => {
     if (pinnedGoalIds.length > 0) {
-      const pinned = pinnedGoalIds.map((id) => goals.find((m) => m.id === id)).filter(Boolean);
+      const pinned = pinnedGoalIds.map((id) => missions.find((m) => m.id === id)).filter(Boolean);
       if (pinned.length > 0) return pinned.slice(0, 3);
     }
-    return goals.slice(0, 3);
-  }, [goals, pinnedGoalIds]);
+    return missions.slice(0, 3);
+  }, [missions, pinnedGoalIds]);
 
   const filteredThoughts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -514,9 +489,8 @@ function App() {
       nextAction: input.nextAction || '', notes: input.notes || '',
       dueDate: input.dueDate || '', energy: input.energy || 'Medium',
       pinned: false, relatedMissionId: input.relatedMissionId || '',
-      goalId: input.goalId || '',
       decisionOptions: '', waitingOn: '', truth: '', exaggeration: '',
-      prioritySignals: [],
+      prioritySignals: input.prioritySignals || [],
     };
     if (!thought.text) return;
     setThoughts((prev) => [thought, ...prev]);
@@ -538,40 +512,30 @@ function App() {
   }
 
   // ── Missions ──
-  // ── Life Directions (top of hierarchy) ──
-  async function updateLifeDirection(id, patch) {
-    setLifeDirections((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
-    const updated = lifeDirections.find((m) => m.id === id);
-    if (!updated) return;
-    const merged = { ...updated, ...patch };
-    await supabase.from('life_directions').update(lifeDirectionToDb(merged)).eq('id', id);
-  }
-
-  // ── Goals (completable, belong to a Life Direction) ──
-  async function addGoal(input) {
-    const goal = {
+  async function addMission(input) {
+    const mission = {
       id: crypto.randomUUID(), title: input.title.trim(),
       why: input.why || '', weeklyGoal: input.weeklyGoal || '',
       nextAction: input.nextAction || '', status: input.status || 'Open',
       area: input.area || 'Personal', createdAt: new Date().toISOString(),
-      targetDate: input.targetDate || '', lifeDirectionId: input.lifeDirectionId || '',
+      targetDate: input.targetDate || '',
     };
-    if (!goal.title) return;
-    setGoals((prev) => [goal, ...prev]);
-    await supabase.from('goals').insert(goalToDb(goal));
+    if (!mission.title) return;
+    setMissions((prev) => [mission, ...prev]);
+    await supabase.from('missions').insert(missionToDb(mission));
   }
 
-  async function updateGoal(id, patch) {
-    setGoals((prev) => prev.map((g) => g.id === id ? { ...g, ...patch } : g));
-    const updated = goals.find((g) => g.id === id);
+  async function updateMission(id, patch) {
+    setMissions((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
+    const updated = missions.find((m) => m.id === id);
     if (!updated) return;
     const merged = { ...updated, ...patch };
-    await supabase.from('goals').update(goalToDb(merged)).eq('id', id);
+    await supabase.from('missions').update(missionToDb(merged)).eq('id', id);
   }
 
-  async function deleteGoal(id) {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-    await supabase.from('goals').delete().eq('id', id);
+  async function deleteMission(id) {
+    setMissions((prev) => prev.filter((m) => m.id !== id));
+    await supabase.from('missions').delete().eq('id', id);
   }
 
   // ── Reviews ──
@@ -679,15 +643,8 @@ function App() {
     if (!linkedId) return { supports: null, energy: null, why: null };
     const t = thoughts.find((x) => x.id === linkedId);
     if (!t) return { supports: null, energy: null, why: null };
-    let supports = null;
-    if (t.category === 'active-missions' && t.goalId) {
-      const goal = goals.find((g) => g.id === t.goalId);
-      supports = goal ? goal.title : null;
-    } else if (t.relatedMissionId) {
-      const mission = thoughts.find((m) => m.id === t.relatedMissionId && m.category === 'active-missions');
-      supports = mission ? mission.text : null;
-    }
-    return { supports: supports || t.area, energy: t.energy || null, why: t.notes || t.nextAction || null };
+    const mission = t.relatedMissionId ? missions.find((m) => m.id === t.relatedMissionId) : null;
+    return { supports: mission ? mission.title : t.area, energy: t.energy || null, why: t.notes || t.nextAction || null };
   }
 
   function startExecuteSession(slotId, durationSec) {
@@ -768,7 +725,7 @@ function App() {
 
   const slotsSet = today ? [today.mainMissionText, today.bodyWin, today.lifeWinText, today.avoiding].filter((v) => v && v.trim() && v.trim().length > 20).length : 0;
   const commandScore = Math.max(5, Math.min(100,
-    Math.round((slotsSet * 14) + (goals.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
+    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
 
@@ -783,7 +740,7 @@ function App() {
         </div>
         <DailyCommandStrip
           state={commandState}
-          goals={goals.length}
+          missions={missions.length}
           actions={openTasks.length}
           loops={openLoops.length}
           noise={noiseItems.length}
@@ -795,7 +752,7 @@ function App() {
       <main className="main-content">
         {activeTab === 'today' && today && (
           <TodayView
-            today={today} updateToday={updateToday} goals={pinnedGoals} allGoals={goals}
+            today={today} updateToday={updateToday} missions={pinnedMissions} allMissions={missions}
             openTasks={openTasks} openLoops={openLoops} noiseItems={noiseItems}
             activeThoughts={activeThoughts} doneThoughts={doneThoughts}
             energyFilter={energyFilter} setEnergyFilter={setEnergyFilter}
@@ -811,7 +768,7 @@ function App() {
             onExecute={(slotId) => setPendingExecuteSlot(slotId)}
           />
         )}
-        {activeTab === 'capture' && <CaptureView addThought={addThought} goals={goals} activeMissions={activeMissionItems} setActiveTab={setActiveTab} />}
+        {activeTab === 'capture' && <CaptureView addThought={addThought} addMission={addMission} missions={missions} />}
         {activeTab === 'sort' && (
           <SortView
             thoughts={activeThoughts} unsorted={unsorted}
@@ -824,9 +781,8 @@ function App() {
         {activeTab === 'plan' && (
           <PlanView
             openTasks={openTasks} openLoops={openLoops}
-            lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissionItems}
-            milestones={milestones} today={today}
-            updateThought={updateThought} updateGoal={updateGoal} updateLifeDirection={updateLifeDirection}
+            missions={missions} milestones={milestones} today={today}
+            updateThought={updateThought} updateMission={updateMission}
             setMilestone={setMilestone} toggleMilestone={toggleMilestone}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             promoteToToday={promoteToToday}
@@ -859,12 +815,12 @@ function App() {
 
       {modal?.type === 'quick-capture' && (
         <Modal title="Quick Capture" onClose={() => setModal(null)}>
-          <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissionItems} compact />
+          <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} missions={missions} compact />
         </Modal>
       )}
       {modal?.type === 'edit-thought' && (
         <Modal title="Edit Item" onClose={() => setModal(null)}>
-          <ThoughtEditForm thought={modal.thought} goals={goals} activeMissions={activeMissionItems} updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }} />
+          <ThoughtEditForm thought={modal.thought} missions={missions} updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }} />
         </Modal>
       )}
       {modal?.type === 'promote' && (
@@ -883,28 +839,17 @@ function App() {
         <Modal title="Close the Day" onClose={() => setModal(null)}>
           <CloseDayModal
             thoughts={thoughts}
-            activeMissions={activeMissionItems}
+            missions={missions}
             onClose={() => setModal(null)}
             saveTomorrowPreload={saveTomorrowPreload}
           />
         </Modal>
       )}
       {modal?.type === 'goal-form' && (
-        <Modal title={modal.goal ? 'Edit Goal' : 'New Goal'} onClose={() => setModal(null)}>
+        <Modal title={modal.mission ? 'Edit Goal' : 'New Goal'} onClose={() => setModal(null)}>
           <GoalFormModal
-            goal={modal.goal}
-            defaultLifeDirectionId={modal.lifeDirectionId}
-            lifeDirections={lifeDirections}
-            addGoal={addGoal} updateGoal={updateGoal} deleteGoal={deleteGoal}
-            onClose={() => setModal(null)}
-          />
-        </Modal>
-      )}
-      {modal?.type === 'life-direction-form' && (
-        <Modal title="Edit Life Direction" onClose={() => setModal(null)}>
-          <LifeDirectionFormModal
-            lifeDirection={modal.lifeDirection}
-            updateLifeDirection={updateLifeDirection}
+            mission={modal.mission}
+            addMission={addMission} updateMission={updateMission} deleteMission={deleteMission}
             onClose={() => setModal(null)}
           />
         </Modal>
@@ -912,7 +857,7 @@ function App() {
       {modal?.type === 'manage-goals' && (
         <Modal title="Pin Goals to Today" onClose={() => setModal(null)}>
           <ManageGoalsModal
-            goals={goals}
+            missions={missions}
             pinnedGoalIds={pinnedGoalIds}
             onSave={(ids) => { savePinnedGoals(ids); setModal(null); }}
             onClose={() => setModal(null)}
@@ -953,7 +898,7 @@ function App() {
 }
 
 // ─── Today View ────────────────────────────────────────────────────────────
-function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals, yesterdayFocus, clearYesterdayCommitment, onExecute }) {
+function TodayView({ today, updateToday, missions, allMissions, openTasks, openLoops, noiseItems, activeThoughts, doneThoughts, energyFilter, setEnergyFilter, energyFilteredTasks, setActiveTab, setSelectedCategory, setModal, updateThought, promoteToToday, completeSlot, goToGoal, onManageGoals, yesterdayFocus, clearYesterdayCommitment, onExecute }) {
   const defaultSlots = {
     mainMissionText: 'Choose 1-2 things that need single-pointed attention.',
     bodyWin: 'Choose 1-2 things that protect energy, body, or stability.',
@@ -1003,7 +948,7 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
   const slotsSet = slotConfigs.filter((slot) => isMeaningful(slot.value, slot.fallback)).length;
   const clearedToday = (doneThoughts || []).filter((t) => getDayKey(t.completedAt || t.createdAt) === getLocalTodayKey()).length;
   const commandScore = Math.max(5, Math.min(100,
-    Math.round((slotsSet * 14) + (goals.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
+    Math.round((slotsSet * 14) + (missions.length ? 12 : 0) + Math.min(openTasks.length, 3) * 4 + 20 - Math.min(openLoops.length * 5, 20) - Math.min(noiseItems.length * 5, 10))
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
 
@@ -1061,7 +1006,7 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
         <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
       </div>
       <div className="mission-list">
-        {goals.slice(0, 3).map((m) => {
+        {missions.slice(0, 3).map((m) => {
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
           return (
@@ -1084,7 +1029,7 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
             </button>
           );
         })}
-        {goals.length === 0 && <EmptyState title="No goals yet" text="Go to Roadmap to set your top priorities." />}
+        {missions.length === 0 && <EmptyState title="No goals yet" text="Go to Goals to set your top priorities." />}
       </div>
       <div className="card">
         <div className="section-header">
@@ -1221,7 +1166,7 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount,
   );
 }
 
-function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, setSelectedCategory }) {
+function DailyCommandStrip({ state, missions, actions, loops, noise, setActiveTab, setSelectedCategory }) {
   const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
   const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
@@ -1235,7 +1180,7 @@ function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, 
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} goal{goals === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{missions} goal{missions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
@@ -1538,8 +1483,8 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks,
 }
 
 // ─── Manage Goals Modal ────────────────────────────────────────────────────
-function ManageGoalsModal({ goals, pinnedGoalIds, onSave, onClose }) {
-  const [selected, setSelected] = useState(pinnedGoalIds.length > 0 ? pinnedGoalIds : goals.slice(0, 3).map((m) => m.id));
+function ManageGoalsModal({ missions, pinnedGoalIds, onSave, onClose }) {
+  const [selected, setSelected] = useState(pinnedGoalIds.length > 0 ? pinnedGoalIds : missions.slice(0, 3).map((m) => m.id));
 
   function toggle(id) {
     setSelected((prev) => {
@@ -1553,7 +1498,7 @@ function ManageGoalsModal({ goals, pinnedGoalIds, onSave, onClose }) {
     <div className="manage-goals-modal">
       <p className="muted small">Choose up to 3 goals to pin to your Today view. Tap to toggle.</p>
       <div className="manage-goals-list">
-        {goals.map((m) => {
+        {missions.map((m) => {
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
           const isSelected = selected.includes(m.id);
@@ -1595,7 +1540,7 @@ const CLOSE_DAY_QUESTIONS = [
   { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
 ];
 
-function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload }) {
+function CloseDayModal({ thoughts, missions, onClose, saveTomorrowPreload }) {
   const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary' | 'preload'
   const [gutCall, setGutCall] = useState('');
   const [answers, setAnswers] = useState({});
@@ -1608,7 +1553,7 @@ function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload 
 
   const todayDone = thoughts.filter((t) => t.status === 'Done' && getDayKey(t.completedAt || t.createdAt) === todayKey);
   const todayActive = thoughts.filter((t) => t.status !== 'Done' && getDayKey(t.createdAt) === todayKey);
-  const missionsTouched = (activeMissions || []).filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
+  const missionsTouched = missions.filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
 
   const score = Object.values(answers).filter(Boolean).length;
 
@@ -1630,7 +1575,7 @@ function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload 
     else lines.push('  • Nothing marked done today');
     lines.push('');
     lines.push('🎯 Missions Touched:');
-    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  • ${m.text}`));
+    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  • ${m.title}`));
     else lines.push('  • None directly linked');
     lines.push('');
     lines.push('💭 New Thoughts Captured Today:');
@@ -1753,28 +1698,100 @@ function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload 
 }
 
 // ─── Capture ───────────────────────────────────────────────────────────────
-function CaptureView({ addThought, goals, activeMissions, setActiveTab }) {
+const CAPTURE_TABS = [
+  { id: 'thought', label: 'Thought', icon: Brain, tone: 'thought' },
+  { id: 'mission', label: 'Mission', icon: Target, tone: 'mission' },
+  { id: 'goal', label: 'Goal', icon: Flag, tone: 'goal' },
+  { id: 'direction', label: 'Direction', icon: Compass, tone: 'direction' },
+];
+
+function CaptureView({ addThought, addMission, missions }) {
+  const [captureType, setCaptureType] = useState('thought');
+  const [directions, setDirections] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('blakeos-life-directions') || '[]'); }
+    catch { return []; }
+  });
+
+  function saveDirection(direction) {
+    const next = [{ id: crypto.randomUUID(), ...direction, createdAt: new Date().toISOString() }, ...directions];
+    setDirections(next);
+    localStorage.setItem('blakeos-life-directions', JSON.stringify(next));
+  }
+
   return (
-    <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Capture</h2><p className="muted">Get it out of your head. Sort later.</p></div></div>
-      <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissions} />
+    <section className="screen stack capture-hub">
+      <div className="capture-page-heading">
+        <p className="eyebrow">BlakeOS</p>
+        <h2>Capture</h2>
+        <p className="muted">Get it out of your head — at whatever level it actually lives.</p>
+      </div>
+
+      <div className="capture-tabs" role="tablist" aria-label="Capture type">
+        {CAPTURE_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const active = captureType === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={`capture-tab ${active ? `active active-${tab.tone}` : ''}`}
+              onClick={() => setCaptureType(tab.id)}
+            >
+              <Icon className="capture-tab-icon" size={17} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="capture-form-stage" key={captureType}>
+        {captureType === 'thought' && (
+          <CaptureForm addThought={addThought} missions={missions} />
+        )}
+        {captureType === 'mission' && (
+          <MissionCaptureForm addThought={addThought} missions={missions} />
+        )}
+        {captureType === 'goal' && (
+          <GoalCaptureForm addMission={addMission} directions={directions} />
+        )}
+        {captureType === 'direction' && (
+          <DirectionCaptureForm saveDirection={saveDirection} />
+        )}
+      </div>
     </section>
   );
 }
 
-function CaptureForm({ addThought, goals, activeMissions, compact = false }) {
-  const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '', goalId: '' });
+function CaptureTypeHeader({ icon: Icon, tone, title, subtitle }) {
+  return (
+    <div className="capture-type-header">
+      <div className={`capture-type-icon capture-type-icon-${tone}`}><Icon size={18} /></div>
+      <div>
+        <div className="capture-type-title">{title}</div>
+        <div className="capture-type-sub">{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+function CaptureForm({ addThought, missions, compact = false }) {
+  const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
+  const [saved, setSaved] = useState(false);
   const selected = form.category ? getCategory(form.category) : null;
-  const isMission = form.category === 'active-missions';
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
   function submit(e) {
     e.preventDefault();
     if (!form.text.trim()) return;
     addThought(form);
-    setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '', goalId: '' });
+    setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '' });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
   }
   return (
-    <form className="capture-form card" onSubmit={submit}>
+    <form className={`capture-form card capture-level-card capture-level-thought ${compact ? 'capture-compact' : ''}`} onSubmit={submit}>
+      {!compact && <CaptureTypeHeader icon={Brain} tone="thought" title="Capture a Thought" subtitle="Task, problem, decision, worry — sort it later" />}
       <Field label="What is on your mind?">
         <textarea className="big-input" placeholder="Dump the thought here. Sorting can happen after." value={form.text} onChange={(e) => set('text', e.target.value)} autoFocus={compact} />
       </Field>
@@ -1803,23 +1820,109 @@ function CaptureForm({ addThought, goals, activeMissions, compact = false }) {
         <Field label="Due / Follow-up Date"><input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} /></Field>
         <Field label="Energy Required"><select value={form.energy} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
       </div>
-      {isMission ? (
-        <Field label="Related Goal">
-          <select value={form.goalId} onChange={(e) => set('goalId', e.target.value)}>
-            <option value="">None</option>
-            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-          </select>
-        </Field>
-      ) : (
-        <Field label="Related Mission">
-          <select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}>
-            <option value="">None</option>
-            {activeMissions.map((m) => <option key={m.id} value={m.id}>{m.text}</option>)}
-          </select>
-        </Field>
-      )}
+      <Field label="Related Goal">
+        <select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}>
+          <option value="">None</option>
+          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+        </select>
+      </Field>
       <Field label="Notes"><textarea placeholder="Context, why it matters, anything you don't want to forget." value={form.notes} onChange={(e) => set('notes', e.target.value)} /></Field>
-      <button className="primary-button" type="submit"><Save size={17} /> Save to Command Center</button>
+      <button className="capture-submit capture-submit-thought" type="submit"><Save size={17} /> {saved ? 'Thought Saved' : 'Save Thought'}</button>
+    </form>
+  );
+}
+
+function MissionCaptureForm({ addThought, missions }) {
+  const [form, setForm] = useState({ text: '', area: 'App/Projects', relatedMissionId: '', prioritySignals: [] });
+  const [saved, setSaved] = useState(false);
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function toggleSignal(id) {
+    setForm((prev) => ({
+      ...prev,
+      prioritySignals: prev.prioritySignals.includes(id)
+        ? prev.prioritySignals.filter((signal) => signal !== id)
+        : [...prev.prioritySignals, id],
+    }));
+  }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.text.trim()) return;
+    addThought({ ...form, category: 'active-missions', status: 'Open', energy: 'High', nextAction: '', notes: '', dueDate: '' });
+    setForm({ text: '', area: 'App/Projects', relatedMissionId: '', prioritySignals: [] });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+  return (
+    <form className="capture-form card capture-level-card capture-level-mission" onSubmit={submit}>
+      <CaptureTypeHeader icon={Target} tone="mission" title="New Mission" subtitle="Active priority — capped at 3 in Command" />
+      <Field label="Mission"><input placeholder="Get Command Center to 100%" value={form.text} onChange={(e) => set('text', e.target.value)} /></Field>
+      <div className="form-grid">
+        <Field label="Life Area"><select value={form.area} onChange={(e) => set('area', e.target.value)}>{lifeAreas.map((a) => <option key={a}>{a}</option>)}</select></Field>
+        <Field label="Related Goal"><select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}><option value="">None</option>{missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}</select></Field>
+      </div>
+      <div className="field">
+        <span>Priority Signal <span className="capture-optional">(optional)</span></span>
+        <div className="capture-signal-row">
+          {PRIORITY_SIGNALS.map((signal) => {
+            const active = form.prioritySignals.includes(signal.id);
+            return <button key={signal.id} type="button" className={`capture-signal-chip ${active ? `capture-signal-active-${signal.tone}` : ''}`} onClick={() => toggleSignal(signal.id)}>{signal.icon} {signal.label}</button>;
+          })}
+        </div>
+      </div>
+      <button className="capture-submit capture-submit-mission" type="submit"><Save size={17} /> {saved ? 'Mission Saved' : 'Save Mission'}</button>
+    </form>
+  );
+}
+
+function GoalCaptureForm({ addMission, directions }) {
+  const [form, setForm] = useState({ title: '', direction: directions[0]?.title || '', targetDate: '', why: '' });
+  const [saved, setSaved] = useState(false);
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    addMission({ title: form.title, why: form.why, weeklyGoal: form.direction, nextAction: '', status: 'Open', area: 'Future', targetDate: form.targetDate });
+    setForm({ title: '', direction: directions[0]?.title || '', targetDate: '', why: '' });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+  return (
+    <form className="capture-form card capture-level-card capture-level-goal" onSubmit={submit}>
+      <CaptureTypeHeader icon={Flag} tone="goal" title="New Goal" subtitle="Completable — has a real end state" />
+      <Field label="Goal"><input placeholder="Paragon Repricing Tool" value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
+      <div className="form-grid">
+        <Field label="Life Direction">
+          <select value={form.direction} onChange={(e) => set('direction', e.target.value)}>
+            <option value="">None yet</option>
+            {directions.map((direction) => <option key={direction.id} value={direction.title}>{direction.title}</option>)}
+          </select>
+        </Field>
+        <Field label="Target Date"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
+      </div>
+      <Field label="Why it matters"><textarea placeholder="Building a real tool for work..." value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <button className="capture-submit capture-submit-goal" type="submit"><Save size={17} /> {saved ? 'Goal Saved' : 'Save Goal'}</button>
+    </form>
+  );
+}
+
+function DirectionCaptureForm({ saveDirection }) {
+  const [form, setForm] = useState({ title: '', why: '' });
+  const [saved, setSaved] = useState(false);
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    saveDirection({ title: form.title.trim(), why: form.why.trim() });
+    setForm({ title: '', why: '' });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  }
+  return (
+    <form className="capture-form card capture-level-card capture-level-direction" onSubmit={submit}>
+      <CaptureTypeHeader icon={Compass} tone="direction" title="New Life Direction" subtitle="Timeless — never done, rarely added" />
+      <Field label="Direction"><input placeholder="Build Real World Value" value={form.title} onChange={(e) => set('title', e.target.value)} /></Field>
+      <Field label="Why it matters"><textarea placeholder="What does this direction actually mean to you?" value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <button className="capture-submit capture-submit-direction" type="submit"><Save size={17} /> {saved ? 'Direction Saved' : 'Save Direction'}</button>
     </form>
   );
 }
@@ -1980,9 +2083,8 @@ function ConversionButtons({ thought, convertThought }) {
   );
 }
 
-function ThoughtEditForm({ thought, goals, activeMissions, updateThought }) {
+function ThoughtEditForm({ thought, missions, updateThought }) {
   const [form, setForm] = useState({ ...thought, prioritySignals: thought.prioritySignals || [] });
-  const isMission = form.category === 'active-missions';
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
   function toggleSignal(id) {
     setForm((prev) => {
@@ -2009,21 +2111,12 @@ function ThoughtEditForm({ thought, goals, activeMissions, updateThought }) {
         <Field label="Status"><select value={form.status || 'Open'} onChange={(e) => set('status', e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></Field>
       </div>
       <Field label="Energy Required"><select value={form.energy || 'Medium'} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
-      {isMission ? (
-        <Field label="Related Goal">
-          <select value={form.goalId || ''} onChange={(e) => set('goalId', e.target.value)}>
-            <option value="">None</option>
-            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-          </select>
-        </Field>
-      ) : (
-        <Field label="Related Mission">
-          <select value={form.relatedMissionId || ''} onChange={(e) => set('relatedMissionId', e.target.value)}>
-            <option value="">None</option>
-            {activeMissions.map((m) => <option key={m.id} value={m.id}>{m.text}</option>)}
-          </select>
-        </Field>
-      )}
+      <Field label="Related Goal">
+        <select value={form.relatedMissionId || ''} onChange={(e) => set('relatedMissionId', e.target.value)}>
+          <option value="">None</option>
+          {missions.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
+        </select>
+      </Field>
       {form.category === 'active-missions' && (
         <div className="field">
           <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(select any that apply)</span></span>
@@ -2296,10 +2389,10 @@ function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCate
   );
 }
 
-// ─── Plan View — Triage Layer + Agenda Rail + Nested Roadmap ───────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+// ─── Plan View — Triage Layer + Agenda Rail + Mission Control ──────────────
+function PlanView({ openTasks, openLoops, missions, milestones, today, updateThought, updateMission, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
-  const [expandedGoalId, setExpandedGoalId] = useState('');
+  const [selectedGoalId, setSelectedGoalId] = useState('');
   const [triage, setTriage] = useState(null);
   const [triageLoading, setTriageLoading] = useState(false);
   const [triageError, setTriageError] = useState('');
@@ -2328,11 +2421,15 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
   // Jump from Today's goal links straight into that goal's war room
   useEffect(() => {
     if (highlightGoalId) {
-      setExpandedGoalId(highlightGoalId);
+      setSelectedGoalId(highlightGoalId);
       setSubTab('roadmap');
       setHighlightGoalId('');
     }
   }, [highlightGoalId, setHighlightGoalId]);
+
+  useEffect(() => {
+    if (!selectedGoalId && missions.length) setSelectedGoalId(missions[0].id);
+  }, [missions, selectedGoalId]);
 
   async function runTriage() {
     setTriageLoading(true);
@@ -2342,9 +2439,9 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
       const payload = {
         todayKey,
         focus: today ? { main: today.mainMissionText, avoiding: today.avoiding } : null,
-        missions: goals.map((g) => ({
-          id: g.id, title: g.title, area: g.area, status: g.status,
-          targetDate: g.targetDate || null, weeklyGoal: g.weeklyGoal || '',
+        missions: missions.map((m) => ({
+          id: m.id, title: m.title, area: m.area, status: m.status,
+          targetDate: m.targetDate || null, weeklyGoal: m.weeklyGoal || '',
         })),
         items: allPlanItems.map((t) => ({
           id: t.id, text: t.text, category: t.category, area: t.area,
@@ -2393,12 +2490,11 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
       )}
       {subTab === 'roadmap' && (
         <RoadmapView
-          lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissions}
-          items={allPlanItems} milestones={milestones} todayKey={todayKey}
-          updateGoal={updateGoal} updateLifeDirection={updateLifeDirection} updateThought={updateThought}
+          missions={missions} items={allPlanItems} milestones={milestones} todayKey={todayKey}
+          updateMission={updateMission} updateThought={updateThought}
           setMilestone={setMilestone} toggleMilestone={toggleMilestone}
           rankById={rankById} blockerById={blockerById}
-          expandedGoalId={expandedGoalId} setExpandedGoalId={setExpandedGoalId}
+          selectedGoalId={selectedGoalId} setSelectedGoalId={setSelectedGoalId}
           setModal={setModal}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
         />
@@ -2683,105 +2779,30 @@ function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMi
   );
 }
 
-function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones, todayKey, updateGoal, updateLifeDirection, updateThought, setMilestone, toggleMilestone, rankById, blockerById, expandedGoalId, setExpandedGoalId, setModal, setActiveTab, setSelectedCategory }) {
-  const [openDirections, setOpenDirections] = useState(() => {
-    const initial = {};
-    if (lifeDirections[0]) initial[lifeDirections[0].id] = true;
-    return initial;
-  });
-  const [openGoals, setOpenGoals] = useState({});
-  const [openMissions, setOpenMissions] = useState({});
+function RoadmapView({ missions, items, milestones, todayKey, updateMission, updateThought, setMilestone, toggleMilestone, rankById, blockerById, selectedGoalId, setSelectedGoalId, setModal, setActiveTab, setSelectedCategory }) {
+  const goal = missions.find((m) => m.id === selectedGoalId) || missions[0];
 
-  useEffect(() => {
-    if (expandedGoalId) {
-      const g = goals.find((x) => x.id === expandedGoalId);
-      if (g) {
-        setOpenDirections((prev) => ({ ...prev, [g.lifeDirectionId]: true }));
-        setOpenGoals((prev) => ({ ...prev, [g.id]: true }));
-      }
-      setExpandedGoalId('');
-    }
-  }, [expandedGoalId, goals, setExpandedGoalId]);
-
-  function toggleDirection(id) { setOpenDirections((p) => ({ ...p, [id]: !p[id] })); }
-  function toggleGoalOpen(id) { setOpenGoals((p) => ({ ...p, [id]: !p[id] })); }
-  function toggleMissionOpen(id) { setOpenMissions((p) => ({ ...p, [id]: !p[id] })); }
-
-  function goToItem(item) {
-    setSelectedCategory(item.category);
-    setActiveTab('sort');
-  }
-
-  if (!lifeDirections.length) {
+  if (!missions.length) {
     return (
       <div className="card">
-        <EmptyState title="No life directions yet" text="Life Directions are the top of your hierarchy — timeless, never completed. Add one in Supabase to get started." />
+        <EmptyState title="No goals yet" text="Create your first goal to start building a roadmap." />
+        <button className="primary-button full-width" onClick={() => setModal({ type: 'goal-form', mission: null })}>
+          <Plus size={16} /> New Goal
+        </button>
       </div>
     );
   }
 
-  return (
-    <div className="stack">
-      {lifeDirections.map((dir) => {
-        const dirGoals = goals.filter((g) => g.lifeDirectionId === dir.id);
-        const isOpen = !!openDirections[dir.id];
-        return (
-          <div key={dir.id} className="direction-group">
-            <div className="direction-header" onClick={() => toggleDirection(dir.id)}>
-              <div className="direction-header-left">
-                <Compass size={16} />
-                <div>
-                  <span className="direction-title">{dir.title}</span>
-                  <span className="direction-sub">{dirGoals.length} goal{dirGoals.length === 1 ? '' : 's'}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="icon-only-btn" title="Edit life direction" onClick={(e) => { e.stopPropagation(); setModal({ type: 'life-direction-form', lifeDirection: dir }); }}>
-                  <Edit3 size={14} />
-                </span>
-                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </div>
-            </div>
-            {isOpen && (
-              <div className="direction-body">
-                {dirGoals.length === 0 && (
-                  <p className="muted small" style={{ padding: '8px 4px' }}>No goals yet under this direction.</p>
-                )}
-                {dirGoals.map((goal) => (
-                  <GoalNode
-                    key={goal.id} goal={goal} activeMissions={activeMissions} items={items} milestones={milestones}
-                    todayKey={todayKey} updateGoal={updateGoal} updateThought={updateThought}
-                    setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-                    rankById={rankById} blockerById={blockerById}
-                    isOpen={!!openGoals[goal.id]} onToggle={() => toggleGoalOpen(goal.id)}
-                    openMissions={openMissions} toggleMissionOpen={toggleMissionOpen}
-                    goToItem={goToItem} setModal={setModal}
-                  />
-                ))}
-                <button className="goal-chip goal-chip-new" onClick={() => setModal({ type: 'goal-form', goal: null, lifeDirectionId: dir.id })}>
-                  <Plus size={13} /> New Goal
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, rankById, blockerById, isOpen, onToggle, openMissions, toggleMissionOpen, goToItem, setModal }) {
   const meta = getAreaMeta(goal.area);
   const GIcon = meta.icon;
-  const goalMissions = activeMissions.filter((m) => m.goalId === goal.id);
-  const missionIds = goalMissions.map((m) => m.id);
-  const linked = items.filter((t) => missionIds.includes(t.relatedMissionId));
+  const linked = items.filter((t) => t.relatedMissionId === goal.id);
   const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
   const blockedCount = linked.filter((t) => blockerById[t.id]).length;
   const currentWeek = weekStartKey(todayKey);
   const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
   const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
 
+  // Ladder: from earliest milestone week (or current week) through target week, capped at 16 weeks
   let weeks = [];
   if (goal.targetDate) {
     const targetWeek = weekStartKey(goal.targetDate);
@@ -2795,6 +2816,11 @@ function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoa
   const currentIdx = weeks.indexOf(currentWeek);
   const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
 
+  function goToItem(item) {
+    setSelectedCategory(item.category);
+    setActiveTab('sort');
+  }
+
   function renderWeekTask(item) {
     const blockNote = blockerById[item.id];
     const rank = rankById[item.id];
@@ -2806,7 +2832,7 @@ function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoa
           </button>
           {rank && <span className="plan-rank">{rank.rank}</span>}
           <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
+          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).replace('Today', 'Today').split(',')[0]}</Pill>}
         </div>
         {blockNote && (
           <div className="triage-line triage-line-block">
@@ -2821,186 +2847,151 @@ function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoa
   const undated = linked.filter((t) => !t.dueDate);
 
   return (
-    <div className={`card roadmap-hq goal-node roadmap-tint-${meta.color}`}>
-      <div className="roadmap-head goal-node-toggle" onClick={onToggle}>
-        <div className="roadmap-title">
-          <GIcon size={17} className={`stat-icon-${meta.color}`} />
-          <h3>{goal.title}</h3>
-        </div>
-        <div className="roadmap-head-actions">
-          {daysLeft !== null ? (
-            <Pill tone={countdownTone}>{daysLeft < 0 ? `${Math.abs(daysLeft)}d past` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}</Pill>
-          ) : (
-            <Pill tone="slate">No target</Pill>
-          )}
-          <span className="icon-only-btn" title="Edit goal" onClick={(e) => { e.stopPropagation(); setModal({ type: 'goal-form', goal }); }}>
-            <Edit3 size={15} />
-          </span>
-          {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </div>
+    <div className="stack">
+      <div className="goal-picker">
+        {missions.map((m) => {
+          const mMeta = getAreaMeta(m.area);
+          const MIcon = mMeta.icon;
+          return (
+            <button
+              key={m.id}
+              className={`goal-chip ${m.id === goal.id ? 'active' : ''}`}
+              onClick={() => setSelectedGoalId(m.id)}
+            >
+              <MIcon size={13} /> {m.title}
+            </button>
+          );
+        })}
+        <button className="goal-chip goal-chip-new" onClick={() => setModal({ type: 'goal-form', mission: null })}>
+          <Plus size={13} /> New Goal
+        </button>
       </div>
 
-      {isOpen && (
-        <>
-          {goal.why && <p className="roadmap-why">{goal.why}</p>}
-          <p className="roadmap-sub">
-            {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
-            {' · '}{goalMissions.length} mission{goalMissions.length === 1 ? '' : 's'}
-            {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
-          </p>
-
-          {!goal.targetDate && (
-            <div className="roadmap-target-prompt">
-              <label className="roadmap-target-label">Set a target date to build the week-by-week ladder</label>
-              <input
-                type="date" className="date-chip-input roadmap-target-input"
-                value=""
-                onChange={(e) => updateGoal(goal.id, { targetDate: e.target.value })}
-              />
-            </div>
-          )}
-
-          {goal.targetDate && weeks.length > 0 && (
-            <>
-              <div className="roadmap-progress">
-                <div className="prog-track"><div className="prog-fill" style={{ width: `${progressPct}%` }} /></div>
-                <div className="prog-labels">
-                  <span>{dayShortLabel(todayKey, todayKey)}</span>
-                  <span>{currentIdx >= 0 ? `Week ${currentIdx + 1} of ${weeks.length}` : `${weeks.length} weeks`}</span>
-                  <span>{formatDate(goal.targetDate + 'T00:00:00')}</span>
-                </div>
-              </div>
-
-              <div className="roadmap-ladder">
-                {weeks.map((wk, i) => {
-                  const ms = goalMilestones.find((m) => m.weekStart === wk) || null;
-                  const weekTasks = linked.filter((t) => t.dueDate && weekStartKey(t.dueDate) === wk);
-                  const isNow = wk === currentWeek;
-                  const isPast = wk < currentWeek;
-                  return (
-                    <div key={wk} className={`roadmap-week ${isNow ? 'now' : ''} ${ms?.done ? 'done' : ''} ${isPast && !ms?.done ? 'past' : ''}`}>
-                      <div className="roadmap-week-dot" />
-                      <div className="roadmap-week-head">
-                        <span className="roadmap-week-label">Week {i + 1} · {weekRangeLabel(wk)}{isNow ? ' · Now' : ''}</span>
-                        {ms?.done && <Pill tone="green" className="plan-pill">Done</Pill>}
-                        {!ms?.done && weekTasks.length > 0 && <span className="plan-day-load">{weekTasks.length} item{weekTasks.length === 1 ? '' : 's'}</span>}
-                      </div>
-                      <MilestoneSlot
-                        missionId={goal.id} weekStart={wk} milestone={ms}
-                        setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-                      />
-                      {weekTasks.length > 0 && (
-                        <div className="roadmap-week-tasks">
-                          {weekTasks.map(renderWeekTask)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {undated.length > 0 && (
-            <div className="roadmap-undated">
-              <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
-              {undated.map((item) => (
-                <div key={item.id} className="plan-task roadmap-task">
-                  <div className="plan-task-row">
-                    <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-                      <CircleDashed size={15} />
-                    </button>
-                    <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-                    <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mission-node-list">
-            <p className="triage-section-label" style={{ marginTop: 6 }}><Target size={13} /> Missions under this goal</p>
-            {goalMissions.length === 0 && (
-              <p className="muted small">No active missions point at this goal yet. Set "Related Goal" when editing a Mission in Command.</p>
+      <div className={`card roadmap-hq roadmap-tint-${meta.color}`}>
+        <div className="roadmap-head">
+          <div className="roadmap-title">
+            <GIcon size={17} className={`stat-icon-${meta.color}`} />
+            <h3>{goal.title}</h3>
+          </div>
+          <div className="roadmap-head-actions">
+            {daysLeft !== null ? (
+              <Pill tone={countdownTone}>{daysLeft < 0 ? `${Math.abs(daysLeft)}d past` : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}</Pill>
+            ) : (
+              <Pill tone="slate">No target</Pill>
             )}
-            {goalMissions.map((mission) => (
-              <MissionNode
-                key={mission.id} mission={mission} items={items}
-                isOpen={!!openMissions[mission.id]} onToggle={() => toggleMissionOpen(mission.id)}
-                goToItem={goToItem}
-              />
+            <button className="icon-only-btn" title="Edit goal" onClick={() => setModal({ type: 'goal-form', mission: goal })}>
+              <Edit3 size={15} />
+            </button>
+          </div>
+        </div>
+        {goal.why && <p className="roadmap-why">{goal.why}</p>}
+        <p className="roadmap-sub">
+          {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
+          {' · '}{linked.length} open item{linked.length === 1 ? '' : 's'}
+          {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
+        </p>
+
+        {!goal.targetDate && (
+          <div className="roadmap-target-prompt">
+            <label className="roadmap-target-label">Set a target date to build the week-by-week ladder</label>
+            <input
+              type="date" className="date-chip-input roadmap-target-input"
+              value=""
+              onChange={(e) => updateMission(goal.id, { targetDate: e.target.value })}
+            />
+          </div>
+        )}
+
+        {goal.targetDate && weeks.length > 0 && (
+          <>
+            <div className="roadmap-progress">
+              <div className="prog-track"><div className="prog-fill" style={{ width: `${progressPct}%` }} /></div>
+              <div className="prog-labels">
+                <span>{dayShortLabel(todayKey, todayKey)}</span>
+                <span>{currentIdx >= 0 ? `Week ${currentIdx + 1} of ${weeks.length}` : `${weeks.length} weeks`}</span>
+                <span>{formatDate(goal.targetDate + 'T00:00:00')}</span>
+              </div>
+            </div>
+
+            <div className="roadmap-ladder">
+              {weeks.map((wk, i) => {
+                const ms = goalMilestones.find((m) => m.weekStart === wk) || null;
+                const weekTasks = linked.filter((t) => t.dueDate && weekStartKey(t.dueDate) === wk);
+                const isNow = wk === currentWeek;
+                const isPast = wk < currentWeek;
+                return (
+                  <div key={wk} className={`roadmap-week ${isNow ? 'now' : ''} ${ms?.done ? 'done' : ''} ${isPast && !ms?.done ? 'past' : ''}`}>
+                    <div className="roadmap-week-dot" />
+                    <div className="roadmap-week-head">
+                      <span className="roadmap-week-label">Week {i + 1} · {weekRangeLabel(wk)}{isNow ? ' · Now' : ''}</span>
+                      {ms?.done && <Pill tone="green" className="plan-pill">Done</Pill>}
+                      {!ms?.done && weekTasks.length > 0 && <span className="plan-day-load">{weekTasks.length} item{weekTasks.length === 1 ? '' : 's'}</span>}
+                    </div>
+                    <MilestoneSlot
+                      missionId={goal.id} weekStart={wk} milestone={ms}
+                      setMilestone={setMilestone} toggleMilestone={toggleMilestone}
+                    />
+                    {weekTasks.length > 0 && (
+                      <div className="roadmap-week-tasks">
+                        {weekTasks.map(renderWeekTask)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {undated.length > 0 && (
+          <div className="roadmap-undated">
+            <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
+            {undated.map((item) => (
+              <div key={item.id} className="plan-task roadmap-task">
+                <div className="plan-task-row">
+                  <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+                    <CircleDashed size={15} />
+                  </button>
+                  <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+                  <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
+                </div>
+              </div>
             ))}
           </div>
-        </>
-      )}
+        )}
+
+        {linked.length === 0 && (
+          <p className="muted small">No open items linked to this goal yet. Link items in Sort (set their related goal) and they'll appear on the ladder by due date.</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function MissionNode({ mission, items, isOpen, onToggle, goToItem }) {
-  const actions = items.filter((t) => t.relatedMissionId === mission.id);
-  const signals = (mission.prioritySignals || []).map((sid) => PRIORITY_SIGNALS.find((s) => s.id === sid)).filter(Boolean);
-  const statusTone = mission.status === 'On Track' ? 'green' : mission.status === 'Slipping' || mission.status === 'Blocked' ? 'red' : 'default';
-  return (
-    <div className="mission-node">
-      <button className="mission-node-header" onClick={onToggle}>
-        <span className="mission-node-title">{mission.text}</span>
-        <div className="mission-node-meta">
-          {signals.map((s) => <Pill key={s.id} tone={s.tone} className="plan-pill">{s.icon}</Pill>)}
-          <Pill tone={statusTone} className="plan-pill">{mission.status}</Pill>
-          <span className="plan-day-load">{actions.length} item{actions.length === 1 ? '' : 's'}</span>
-          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </div>
-      </button>
-      {isOpen && (
-        <div className="mission-node-actions">
-          {actions.length ? actions.map((item) => {
-            const cat = getCategory(item.category);
-            return (
-              <button key={item.id} className="mission-node-action" onClick={() => goToItem(item)}>
-                <cat.icon size={13} className={`task-cat-icon-${cat.color}`} />
-                <span>{item.text}</span>
-                <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
-              </button>
-            );
-          }) : <p className="muted small" style={{ padding: '6px 4px' }}>Nothing linked yet.</p>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GoalFormModal({ goal, defaultLifeDirectionId, lifeDirections, addGoal, updateGoal, deleteGoal, onClose }) {
+function GoalFormModal({ mission, addMission, updateMission, deleteMission, onClose }) {
   const [form, setForm] = useState({
-    title: goal?.title || '',
-    why: goal?.why || '',
-    area: goal?.area || 'Personal',
-    targetDate: goal?.targetDate || '',
-    status: goal?.status || 'Open',
-    lifeDirectionId: goal?.lifeDirectionId || defaultLifeDirectionId || (lifeDirections[0]?.id || ''),
+    title: mission?.title || '',
+    why: mission?.why || '',
+    area: mission?.area || 'Personal',
+    targetDate: mission?.targetDate || '',
+    status: mission?.status || 'Open',
   });
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
   function submit() {
     if (!form.title.trim()) return;
-    if (goal) updateGoal(goal.id, form);
-    else addGoal(form);
+    if (mission) updateMission(mission.id, form);
+    else addMission(form);
     onClose();
   }
   function handleDelete() {
-    if (window.confirm(`Delete goal "${goal.title}"? Its weekly milestones will be deleted too. Missions and linked items stay in place.`)) {
-      deleteGoal(goal.id);
+    if (window.confirm(`Delete goal "${mission.title}"? Its weekly milestones will be deleted too. Linked items stay in Sort.`)) {
+      deleteMission(mission.id);
       onClose();
     }
   }
   return (
     <div className="capture-form">
       <Field label="Goal"><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Paragon Repricing Tool" /></Field>
-      <Field label="Life Direction">
-        <select value={form.lifeDirectionId} onChange={(e) => set('lifeDirectionId', e.target.value)}>
-          <option value="">None</option>
-          {lifeDirections.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-        </select>
-      </Field>
       <Field label="Why it matters"><textarea value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
       <Field label="Life area">
         <select value={form.area} onChange={(e) => set('area', e.target.value)}>
@@ -3013,27 +3004,10 @@ function GoalFormModal({ goal, defaultLifeDirectionId, lifeDirections, addGoal, 
           {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </Field>
-      <button className="primary-button" onClick={submit}><Save size={16} /> {goal ? 'Save Goal' : 'Create Goal'}</button>
-      {goal && (
+      <button className="primary-button" onClick={submit}><Save size={16} /> {mission ? 'Save Goal' : 'Create Goal'}</button>
+      {mission && (
         <button className="danger-button" onClick={handleDelete}><Trash2 size={15} /> Delete goal</button>
       )}
-    </div>
-  );
-}
-
-function LifeDirectionFormModal({ lifeDirection, updateLifeDirection, onClose }) {
-  const [form, setForm] = useState({ title: lifeDirection?.title || '', why: lifeDirection?.why || '' });
-  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
-  function submit() {
-    if (!form.title.trim()) return;
-    updateLifeDirection(lifeDirection.id, form);
-    onClose();
-  }
-  return (
-    <div className="capture-form">
-      <Field label="Life Direction"><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Build Real World Value" /></Field>
-      <Field label="Why it matters"><textarea value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
-      <button className="primary-button" onClick={submit}><Save size={16} /> Save</button>
     </div>
   );
 }
