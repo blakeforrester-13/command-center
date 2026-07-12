@@ -376,11 +376,8 @@ function DailyQuote() {
   const quote = getDailyQuote();
   return (
     <div className="daily-quote-card">
-      <span className="daily-quote-mark">"</span>
-      <div className="daily-quote-body">
-        <p className="daily-quote-text">{quote.text}</p>
-        <p className="daily-quote-author">— {quote.author}</p>
-      </div>
+      <p className="daily-quote-text">&ldquo;{quote.text}&rdquo;</p>
+      <p className="daily-quote-author">— {quote.author}</p>
     </div>
   );
 }
@@ -787,7 +784,7 @@ function App() {
       <header className="topbar topbar-with-strip">
         <div className="topbar-title-row">
           <div><p className="eyebrow">BlakeOS</p><h1>Command Center</h1></div>
-          <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
+          <button className="primary-button compact" onClick={() => setActiveTab('capture')}>
             <Plus size={17} /><span>Capture</span>
           </button>
         </div>
@@ -1252,10 +1249,10 @@ function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, 
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} goal{goals === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} Action{actions === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} Loop{loops === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} Noise</span></button>
       <div className={`command-strip-item command-strip-load ${loadColor}`}><Zap size={15} /><span>{load} load</span></div>
     </div>
   );
@@ -1323,7 +1320,7 @@ function CommitmentPressure({ yesterdayFocus, clearYesterdayCommitment }) {
     <div className="commitment-pressure commitment-open">
       <div className="commitment-header">
         <AlertCircle size={16} />
-        <strong>Carryover Commitments</strong>
+        <strong>Unfinished Commitments</strong>
       </div>
       <p className="commitment-sub">Yesterday you committed to:</p>
       <div className="commitment-list">
@@ -2068,15 +2065,22 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'amber';
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
-      <div className="thought-topline">
-        <div className="thought-labels">
-          <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
-          <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
-          {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
-          {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
-          {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
+      <div className="thought-title-row">
+        <div className="thought-title-block">
+          <div className="thought-item-header">
+            {index != null && <span className="thought-number">{index}</span>}
+            <span className="thought-item-label">{itemLabel}</span>
+          </div>
+          <h3>{thought.text}</h3>
         </div>
         {!compact && <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })}><Flag size={16} className={thought.pinned ? 'filled-flag' : ''} /></button>}
+      </div>
+      <div className="thought-labels-row">
+        <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
+        <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
+        {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
+        {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
+        {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
       </div>
       {thought.category === 'active-missions' && thought.prioritySignals && thought.prioritySignals.length > 0 && (
         <div className="mission-signal-row">
@@ -2088,11 +2092,6 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
         </div>
       )}
       <div className="thought-main">
-        <div className="thought-item-header">
-          {index != null && <span className="thought-number">{index}</span>}
-          <span className="thought-item-label">{itemLabel}</span>
-        </div>
-        <h3>{thought.text}</h3>
         {thought.nextAction && <div className="thought-section"><span className="thought-section-label">Next Physical Step</span><p className="next-action"><ArrowRight size={15} /> {thought.nextAction}</p></div>}
         {thought.notes && <div className="thought-section"><span className="thought-section-label">Notes</span><p className="thought-section-text">{thought.notes}</p></div>}
         {thought.truth && <div className="thought-section"><span className="thought-section-label">Grounded Truth</span><p className="thought-section-text">{thought.truth}</p></div>}
