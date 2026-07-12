@@ -376,11 +376,8 @@ function DailyQuote() {
   const quote = getDailyQuote();
   return (
     <div className="daily-quote-card">
-      <span className="daily-quote-mark">"</span>
-      <div className="daily-quote-body">
-        <p className="daily-quote-text">{quote.text}</p>
-        <p className="daily-quote-author">— {quote.author}</p>
-      </div>
+      <p className="daily-quote-text">&ldquo;{quote.text}&rdquo;</p>
+      <p className="daily-quote-author">— {quote.author}</p>
     </div>
   );
 }
@@ -787,7 +784,7 @@ function App() {
       <header className="topbar topbar-with-strip">
         <div className="topbar-title-row">
           <div><p className="eyebrow">BlakeOS</p><h1>Command Center</h1></div>
-          <button className="primary-button compact" onClick={() => setModal({ type: 'quick-capture' })}>
+          <button className="primary-button compact" onClick={() => setActiveTab('capture')}>
             <Plus size={17} /><span>Capture</span>
           </button>
         </div>
@@ -853,6 +850,7 @@ function App() {
         {activeTab === 'progress' && (
           <ProgressView
             doneThoughts={doneThoughts} activeThoughts={activeThoughts}
+            allThoughts={thoughts} goals={goals} lifeDirections={lifeDirections}
             reviews={reviews} saveReview={saveReview}
             subTab={progressSubTab} setSubTab={setProgressSubTab}
             goToCategory={goToCategory}
@@ -1251,10 +1249,10 @@ function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, 
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} goal{goals === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} action{actions === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} loop{loops === 1 ? '' : 's'}</span></button>
-      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} noise</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} Action{actions === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} Loop{loops === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} Noise</span></button>
       <div className={`command-strip-item command-strip-load ${loadColor}`}><Zap size={15} /><span>{load} load</span></div>
     </div>
   );
@@ -1322,7 +1320,7 @@ function CommitmentPressure({ yesterdayFocus, clearYesterdayCommitment }) {
     <div className="commitment-pressure commitment-open">
       <div className="commitment-header">
         <AlertCircle size={16} />
-        <strong>Carryover Commitments</strong>
+        <strong>Unfinished Commitments</strong>
       </div>
       <p className="commitment-sub">Yesterday you committed to:</p>
       <div className="commitment-list">
@@ -2067,15 +2065,22 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'amber';
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
-      <div className="thought-topline">
-        <div className="thought-labels">
-          <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
-          <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
-          {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
-          {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
-          {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
+      <div className="thought-title-row">
+        <div className="thought-title-block">
+          <div className="thought-item-header">
+            {index != null && <span className="thought-number">{index}</span>}
+            <span className="thought-item-label">{itemLabel}</span>
+          </div>
+          <h3>{thought.text}</h3>
         </div>
         {!compact && <button className="icon-button" onClick={() => updateThought(thought.id, { pinned: !thought.pinned })}><Flag size={16} className={thought.pinned ? 'filled-flag' : ''} /></button>}
+      </div>
+      <div className="thought-labels-row">
+        <Pill tone={category.color}><CIcon size={13} /> {category.short}</Pill>
+        <Pill tone={areaMeta.color}><AreaIcon size={13} /> {thought.area}</Pill>
+        {thought.dueDate && <Pill tone="default"><CalendarDays size={13} /> {formatDate(thought.dueDate)}</Pill>}
+        {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
+        {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
       </div>
       {thought.category === 'active-missions' && thought.prioritySignals && thought.prioritySignals.length > 0 && (
         <div className="mission-signal-row">
@@ -2087,11 +2092,6 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
         </div>
       )}
       <div className="thought-main">
-        <div className="thought-item-header">
-          {index != null && <span className="thought-number">{index}</span>}
-          <span className="thought-item-label">{itemLabel}</span>
-        </div>
-        <h3>{thought.text}</h3>
         {thought.nextAction && <div className="thought-section"><span className="thought-section-label">Next Physical Step</span><p className="next-action"><ArrowRight size={15} /> {thought.nextAction}</p></div>}
         {thought.notes && <div className="thought-section"><span className="thought-section-label">Notes</span><p className="thought-section-text">{thought.notes}</p></div>}
         {thought.truth && <div className="thought-section"><span className="thought-section-label">Grounded Truth</span><p className="thought-section-text">{thought.truth}</p></div>}
@@ -2210,7 +2210,7 @@ const goalAreaColors = {
   'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
 };
 
-function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
+function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
   return (
     <section className="screen stack">
       <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
@@ -2218,13 +2218,26 @@ function ProgressView({ doneThoughts, activeThoughts, reviews, saveReview, subTa
         <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
         <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
       </div>
-      {subTab === 'accomplishments' && <AccomplishmentsTab doneThoughts={doneThoughts} updateThought={updateThought} setModal={setModal} />}
+      {subTab === 'accomplishments' && (
+        <AccomplishmentsTab
+          doneThoughts={doneThoughts} allThoughts={allThoughts} goals={goals} lifeDirections={lifeDirections}
+          updateThought={updateThought} setModal={setModal}
+        />
+      )}
       {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
     </section>
   );
 }
 
-function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
+const TRAJECTORY_PALETTE = ['amber', 'green', 'purple', 'blue', 'pink', 'teal'];
+
+function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, updateThought, setModal }) {
+  const [expandedDays, setExpandedDays] = useState({});
+  const [range, setRange] = useState(14);
+  function toggleDay(key) { setExpandedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
+
+  const todayKey = getLocalTodayKey();
+
   const byDay = useMemo(() => {
     const map = {};
     doneThoughts.forEach((t) => {
@@ -2232,21 +2245,92 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
       if (!map[key]) map[key] = [];
       map[key].push(t);
     });
-    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+    return map;
   }, [doneThoughts]);
 
-  // Days collapsed by default; user can expand
-  const [expandedDays, setExpandedDays] = useState({});
-  function toggleDay(key) { setExpandedDays((prev) => ({ ...prev, [key]: !prev[key] })); }
+  const byDayList = useMemo(() => Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0])), [byDay]);
 
-  const thisWeekCount = useMemo(() => {
-    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= cutoff).length;
-  }, [doneThoughts]);
+  const missionById = useMemo(() => {
+    const map = {};
+    (allThoughts || []).filter((t) => t.category === 'active-missions').forEach((m) => { map[m.id] = m; });
+    return map;
+  }, [allThoughts]);
+  const goalById = useMemo(() => {
+    const map = {};
+    (goals || []).forEach((g) => { map[g.id] = g; });
+    return map;
+  }, [goals]);
 
-  const previousDayCount = byDay[1] ? byDay[1][1].length : 0;
-  const proofDays = byDay.length;
-  const latestProof = byDay[0] ? byDay[0][1].length : 0;
+  function getLifeDirectionId(t) {
+    let goalId = '';
+    if (t.category === 'active-missions') goalId = t.goalId;
+    else if (t.relatedMissionId && missionById[t.relatedMissionId]) goalId = missionById[t.relatedMissionId].goalId;
+    const goal = goalId ? goalById[goalId] : null;
+    return goal ? goal.lifeDirectionId : '';
+  }
+
+  // Last 30 days of daily counts, oldest first
+  const dailyCounts30 = useMemo(() => {
+    const arr = [];
+    for (let i = 29; i >= 0; i--) {
+      const key = addDaysToKey(todayKey, -i);
+      arr.push({ key, count: (byDay[key] || []).length });
+    }
+    return arr;
+  }, [byDay, todayKey]);
+
+  const rangeData = dailyCounts30.slice(30 - range);
+  const total30 = dailyCounts30.reduce((s, d) => s + d.count, 0);
+  const avg30 = total30 / 30;
+  const last7 = dailyCounts30.slice(23);
+  const total7 = last7.reduce((s, d) => s + d.count, 0);
+  const avg7 = total7 / 7;
+  const statusKey = avg30 === 0 ? 'ontrack' : avg7 > avg30 * 1.1 ? 'ahead' : avg7 < avg30 * 0.9 ? 'behind' : 'ontrack';
+  const statusMeta = {
+    ahead: { label: 'Ahead of pace', tone: 'green' },
+    ontrack: { label: 'On Track', tone: 'amber' },
+    behind: { label: 'Behind pace', tone: 'red' },
+  }[statusKey];
+
+  let currentStreak = 0;
+  for (let i = dailyCounts30.length - 1; i >= 0; i--) {
+    if (dailyCounts30[i].count > 0) currentStreak++;
+    else break;
+  }
+  const streak14 = dailyCounts30.slice(16);
+
+  const previousDayCount = dailyCounts30[28] ? dailyCounts30[28].count : 0;
+
+  // Chart geometry
+  const chartW = 660, chartH = 120;
+  const maxVal = Math.max(1, ...rangeData.map((d) => d.count));
+  function yFor(v) { return chartH - 18 - (v / maxVal) * (chartH - 36); }
+  function xFor(i) { return rangeData.length > 1 ? (i / (rangeData.length - 1)) * chartW : chartW / 2; }
+  const linePoints = rangeData.map((d, i) => `${xFor(i).toFixed(1)},${yFor(d.count).toFixed(1)}`).join(' L ');
+  const linePath = `M ${linePoints}`;
+  const avgY = yFor(avg30);
+  const avgPath = `M 0,${avgY.toFixed(1)} L ${chartW},${avgY.toFixed(1)}`;
+  const fillPath = `M ${linePoints} L ${chartW},${avgY.toFixed(1)} L 0,${avgY.toFixed(1)} Z`;
+  const lastX = xFor(rangeData.length - 1);
+  const lastY = yFor(rangeData[rangeData.length - 1].count);
+  const calloutLeftPct = Math.min(80, (lastX / chartW) * 100);
+
+  // Breakdown by Life Direction over the selected range
+  const breakdown = useMemo(() => {
+    const counts = {};
+    rangeData.forEach((d) => {
+      (byDay[d.key] || []).forEach((t) => {
+        const dirId = getLifeDirectionId(t) || 'unlinked';
+        counts[dirId] = (counts[dirId] || 0) + 1;
+      });
+    });
+    const rows = (lifeDirections || []).map((dir, i) => ({
+      id: dir.id, title: dir.title, count: counts[dir.id] || 0, color: TRAJECTORY_PALETTE[i % TRAJECTORY_PALETTE.length],
+    })).filter((r) => r.count > 0);
+    if (counts.unlinked > 0) rows.push({ id: 'unlinked', title: 'Unlinked', count: counts.unlinked, color: 'slate' });
+    const total = rows.reduce((s, r) => s + r.count, 0);
+    return { rows, total };
+  }, [rangeData, byDay, lifeDirections, missionById, goalById]);
 
   if (doneThoughts.length === 0) {
     return (
@@ -2255,43 +2339,93 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
       </div>
     );
   }
+
   return (
     <div className="stack accomplishments-page">
-      <div className="accomplishment-hero-card">
-        <div className="accomplishment-hero-copy">
-          <p className="eyebrow">Identity Evidence</p>
-          <h2>Proof You<br /><span className="hero-accent">Kept Your Word.</span></h2>
-          <p>Every action completed is evidence.<br />Not motivation. Not intention. Proof.</p>
+
+      <div className="card trajectory-card">
+        <div className="traj-header">
+          <div>
+            <p className="eyebrow">Identity Evidence</p>
+            <h2>Momentum Trajectory</h2>
+          </div>
+          <Pill tone={statusMeta.tone}>◆ {statusMeta.label}</Pill>
         </div>
-        <div className="hero-stat-row">
-          <div className="accomplish-stat identity-stat identity-stat--fire">
-            <div className="identity-stat-icon identity-stat-icon--fire"><Flame size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{previousDayCount}</strong>
-              <span>Yesterday</span>
+
+        <div className="range-row">
+          {[7, 14, 30].map((r) => (
+            <button key={r} className={`range-chip ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}D</button>
+          ))}
+        </div>
+
+        <div className="traj-chart-wrap">
+          <svg width="100%" height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="none">
+            <line x1="0" y1={chartH * 0.25} x2={chartW} y2={chartH * 0.25} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            <line x1="0" y1={chartH * 0.55} x2={chartW} y2={chartH * 0.55} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            <line x1="0" y1={chartH * 0.85} x2={chartW} y2={chartH * 0.85} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+            <path d={avgPath} fill="none" stroke="#606880" strokeWidth="1.5" strokeDasharray="5,4" />
+            <path d={fillPath} fill="#34d399" opacity="0.12" />
+            <path d={linePath} fill="none" stroke="#ff5a3d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            {rangeData.map((d, i) => (
+              i === rangeData.length - 1 ? null :
+              <circle key={d.key} cx={xFor(i)} cy={yFor(d.count)} r="3" fill="#0c0f14" stroke="#ff5a3d" strokeWidth="2" />
+            ))}
+            {currentStreak >= 3 ? (
+              <>
+                <circle cx={lastX} cy={lastY} r="6" fill="#ff5a3d" />
+                <circle cx={lastX} cy={lastY} r="10" fill="none" stroke="#ff5a3d" strokeWidth="1.5" opacity="0.4" />
+              </>
+            ) : (
+              <circle cx={lastX} cy={lastY} r="4" fill="#ff5a3d" />
+            )}
+          </svg>
+          {currentStreak >= 3 && (
+            <div className="traj-callout" style={{ left: `${calloutLeftPct}%` }}>🔥 {currentStreak}-day streak</div>
+          )}
+        </div>
+        <div className="ghost-legend">
+          <span className="real-swatch"></span><span>Your pace</span>
+          <span style={{ width: 8 }}></span>
+          <span className="ghost-swatch"></span><span>Your 30-day average</span>
+        </div>
+
+        <div className="streak-strip">
+          {streak14.map((d) => (
+            <div key={d.key} className={`streak-dot ${d.count > 0 ? 'streak-on' : 'streak-off'}`}>{d.count > 0 ? '✓' : ''}</div>
+          ))}
+        </div>
+        <div className="traj-axis-labels"><span>14 days ago</span><span>7 days ago</span><span>Today</span></div>
+
+        {breakdown.rows.length > 0 && (
+          <div className="goal-split-wrap">
+            <div className="goal-split-label">This range, by life direction</div>
+            <div className="goal-split-bar">
+              {breakdown.rows.map((row) => (
+                <div key={row.id} style={{ width: `${(row.count / breakdown.total) * 100}%`, background: `var(--cat-${row.color})` }} />
+              ))}
+            </div>
+            <div className="goal-split-legend">
+              {breakdown.rows.map((row) => (
+                <div key={row.id} className="goal-split-item">
+                  <div className="dot-row"><span className="dot" style={{ background: `var(--cat-${row.color})` }}></span><span className="goal-split-name">{row.title}</span></div>
+                  <span className="goal-split-count">{row.count} completion{row.count === 1 ? '' : 's'}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="accomplish-stat identity-stat identity-stat--calendar">
-            <div className="identity-stat-icon identity-stat-icon--calendar"><CalendarDays size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{thisWeekCount}</strong>
-              <span>This Week</span>
-            </div>
-          </div>
-          <div className="accomplish-stat identity-stat identity-stat--target">
-            <div className="identity-stat-icon identity-stat-icon--target"><Target size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{doneThoughts.length}</strong>
-              <span>Total</span>
-            </div>
-          </div>
-          <div className="accomplish-stat identity-stat identity-stat--green">
-            <div className="identity-stat-icon identity-stat-icon--green"><Star size={22} /></div>
-            <div className="identity-stat-body">
-              <strong>{proofDays}</strong>
-              <span>Days Strong</span>
-            </div>
-          </div>
+        )}
+      </div>
+
+      <div className="mountain-hero-compact">
+        <div className="mountain-tagline">
+          <p className="eyebrow" style={{ marginBottom: 2 }}>Identity Evidence</p>
+          <h3 className="mountain-title">Proof You <span className="hero-accent">Kept Your Word.</span></h3>
+        </div>
+        <div className="mountain-stats-row">
+          <div className="mountain-stat"><span className="mountain-stat-value tone-fire">{previousDayCount}</span><span className="mountain-stat-label">Yesterday</span></div>
+          <div className="mountain-stat"><span className="mountain-stat-value tone-blue">{total7}</span><span className="mountain-stat-label">This Week</span></div>
+          <div className="mountain-stat"><span className="mountain-stat-value tone-amber">{doneThoughts.length}</span><span className="mountain-stat-label">Total</span></div>
+          <div className="mountain-stat"><span className="mountain-stat-value tone-green">{currentStreak}</span><span className="mountain-stat-label">Days Strong</span></div>
         </div>
       </div>
 
@@ -2299,7 +2433,7 @@ function AccomplishmentsTab({ doneThoughts, updateThought, setModal }) {
         <div><p className="eyebrow">Your Track Record</p><h2>Day by Day</h2><p className="muted">Every completed item, organized by the day you closed it.</p></div>
       </div>
 
-      {byDay.map(([dayKey, items]) => {
+      {byDayList.map(([dayKey, items]) => {
         const byCat = {};
         const isExpanded = expandedDays[dayKey];
         items.forEach((t) => { const cid = t.category || 'unsorted'; if (!byCat[cid]) byCat[cid] = []; byCat[cid].push(t); });
