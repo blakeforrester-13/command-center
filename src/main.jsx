@@ -516,7 +516,7 @@ function App() {
       pinned: false, relatedMissionId: input.relatedMissionId || '',
       goalId: input.goalId || '',
       decisionOptions: '', waitingOn: '', truth: '', exaggeration: '',
-      prioritySignals: [],
+      prioritySignals: input.prioritySignals || [],
     };
     if (!thought.text) return;
     setThoughts((prev) => [thought, ...prev]);
@@ -537,8 +537,18 @@ function App() {
     await supabase.from('thoughts').delete().eq('id', id);
   }
 
-  // ── Missions ──
   // ── Life Directions (top of hierarchy) ──
+  async function addLifeDirection(input) {
+    const dir = {
+      id: crypto.randomUUID(), title: input.title.trim(),
+      why: input.why || '', weeklyGoal: '', nextAction: '',
+      status: 'Open', area: 'Personal', createdAt: new Date().toISOString(), targetDate: '',
+    };
+    if (!dir.title) return;
+    setLifeDirections((prev) => [dir, ...prev]);
+    await supabase.from('life_directions').insert(lifeDirectionToDb(dir));
+  }
+
   async function updateLifeDirection(id, patch) {
     setLifeDirections((prev) => prev.map((m) => m.id === id ? { ...m, ...patch } : m));
     const updated = lifeDirections.find((m) => m.id === id);
@@ -811,7 +821,13 @@ function App() {
             onExecute={(slotId) => setPendingExecuteSlot(slotId)}
           />
         )}
-        {activeTab === 'capture' && <CaptureView addThought={addThought} goals={goals} activeMissions={activeMissionItems} setActiveTab={setActiveTab} />}
+        {activeTab === 'capture' && (
+          <CaptureView
+            addThought={addThought} addGoal={addGoal} addLifeDirection={addLifeDirection}
+            goals={goals} activeMissions={activeMissionItems} lifeDirections={lifeDirections}
+            setActiveTab={setActiveTab}
+          />
+        )}
         {activeTab === 'sort' && (
           <SortView
             thoughts={activeThoughts} unsorted={unsorted}
@@ -1753,12 +1769,144 @@ function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload 
 }
 
 // ─── Capture ───────────────────────────────────────────────────────────────
-function CaptureView({ addThought, goals, activeMissions, setActiveTab }) {
+const CAPTURE_TABS = [
+  { id: 'thought', label: 'Thought', icon: Brain, tone: 'thought' },
+  { id: 'mission', label: 'Mission', icon: Target, tone: 'mission' },
+  { id: 'goal', label: 'Goal', icon: Flag, tone: 'goal' },
+  { id: 'direction', label: 'Direction', icon: Compass, tone: 'direction' },
+];
+
+function CaptureView({ addThought, addGoal, addLifeDirection, goals, activeMissions, lifeDirections, setActiveTab }) {
+  const [tab, setTab] = useState('thought');
   return (
     <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Capture</h2><p className="muted">Get it out of your head. Sort later.</p></div></div>
-      <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissions} />
+      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Capture</h2><p className="muted">Get it out of your head — at whatever level it actually lives.</p></div></div>
+      <div className="capture-tabs">
+        {CAPTURE_TABS.map((t) => {
+          const TIcon = t.icon;
+          const active = tab === t.id;
+          return (
+            <button key={t.id} className={`capture-tab ${active ? `active-${t.tone}` : ''}`} onClick={() => setTab(t.id)}>
+              <TIcon size={16} /><span>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      {tab === 'thought' && (
+        <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissions} />
+      )}
+      {tab === 'mission' && (
+        <MissionCaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} />
+      )}
+      {tab === 'goal' && (
+        <GoalCaptureForm addGoal={(input) => { addGoal(input); setActiveTab('plan'); }} lifeDirections={lifeDirections} />
+      )}
+      {tab === 'direction' && (
+        <LifeDirectionCaptureForm addLifeDirection={(input) => { addLifeDirection(input); setActiveTab('plan'); }} />
+      )}
     </section>
+  );
+}
+
+function MissionCaptureForm({ addThought, goals }) {
+  const [form, setForm] = useState({ text: '', area: 'Personal', goalId: '', prioritySignals: [] });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function toggleSignal(id) {
+    setForm((prev) => {
+      const has = prev.prioritySignals.includes(id);
+      return { ...prev, prioritySignals: has ? prev.prioritySignals.filter((x) => x !== id) : [...prev.prioritySignals, id] };
+    });
+  }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.text.trim()) return;
+    addThought({ ...form, category: 'active-missions' });
+    setForm({ text: '', area: 'Personal', goalId: '', prioritySignals: [] });
+  }
+  return (
+    <form className="capture-form card capture-card-mission" onSubmit={submit}>
+      <div className="capture-form-type-header">
+        <div className="capture-form-type-icon icon-mission-bg"><Target size={18} /></div>
+        <div><strong>New Mission</strong><p>Active priority — capped at 3 in Command</p></div>
+      </div>
+      <Field label="Mission"><input placeholder="Get Command Center to 100%" value={form.text} onChange={(e) => set('text', e.target.value)} autoFocus /></Field>
+      <div className="form-grid">
+        <Field label="Life Area"><select value={form.area} onChange={(e) => set('area', e.target.value)}>{lifeAreas.map((a) => <option key={a}>{a}</option>)}</select></Field>
+        <Field label="Related Goal">
+          <select value={form.goalId} onChange={(e) => set('goalId', e.target.value)}>
+            <option value="">None</option>
+            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="field">
+        <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional — select any)</span></span>
+        <div className="goal-signal-toggles">
+          {PRIORITY_SIGNALS.map((s) => {
+            const active = form.prioritySignals.includes(s.id);
+            return (
+              <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
+                {s.icon} {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <button className="primary-button capture-submit-mission" type="submit"><Save size={17} /> Save Mission</button>
+    </form>
+  );
+}
+
+function GoalCaptureForm({ addGoal, lifeDirections }) {
+  const [form, setForm] = useState({ title: '', lifeDirectionId: lifeDirections[0]?.id || '', targetDate: '', why: '' });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    addGoal(form);
+    setForm({ title: '', lifeDirectionId: lifeDirections[0]?.id || '', targetDate: '', why: '' });
+  }
+  return (
+    <form className="capture-form card capture-card-goal" onSubmit={submit}>
+      <div className="capture-form-type-header">
+        <div className="capture-form-type-icon icon-goal-bg"><Flag size={18} /></div>
+        <div><strong>New Goal</strong><p>Completable — has a real end state</p></div>
+      </div>
+      <Field label="Goal"><input placeholder="Paragon Repricing Tool" value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus /></Field>
+      <div className="form-grid">
+        <Field label="Life Direction">
+          <select value={form.lifeDirectionId} onChange={(e) => set('lifeDirectionId', e.target.value)}>
+            <option value="">None</option>
+            {lifeDirections.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+          </select>
+        </Field>
+        <Field label="Target Date"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
+      </div>
+      <Field label="Why it matters"><textarea placeholder="Building tool for work to help increase efficiency..." value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <button className="primary-button capture-submit-goal" type="submit"><Save size={17} /> Save Goal</button>
+    </form>
+  );
+}
+
+function LifeDirectionCaptureForm({ addLifeDirection }) {
+  const [form, setForm] = useState({ title: '', why: '' });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    addLifeDirection(form);
+    setForm({ title: '', why: '' });
+  }
+  return (
+    <form className="capture-form card capture-card-direction" onSubmit={submit}>
+      <div className="capture-form-type-header">
+        <div className="capture-form-type-icon icon-direction-bg"><Compass size={18} /></div>
+        <div><strong>New Life Direction</strong><p>Timeless — never "done," rarely added</p></div>
+      </div>
+      <Field label="Direction"><input placeholder="Build Real World Value" value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus /></Field>
+      <Field label="Why it matters"><textarea placeholder="What does this direction actually mean to you..." value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <button className="primary-button capture-submit-direction" type="submit"><Save size={17} /> Save Direction</button>
+    </form>
   );
 }
 
