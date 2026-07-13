@@ -2400,7 +2400,7 @@ function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDi
           updateThought={updateThought} setModal={setModal}
         />
       )}
-      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} reviews={reviews} saveReview={saveReview} goToCategory={goToCategory} />}
+      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} goals={goals} reviews={reviews} saveReview={saveReview} />}
     </section>
   );
 }
@@ -2693,62 +2693,154 @@ function AccomplishItem({ t, updateThought, setModal }) {
   );
 }
 
-function ReviewTab({ activeThoughts, doneThoughts, reviews, saveReview, goToCategory }) {
+function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview }) {
   const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
+  const [expandedReviewId, setExpandedReviewId] = useState(null);
   function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
-  function submit(e) { e.preventDefault(); saveReview(review); setReview({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' }); }
+  function submit(e) {
+    e.preventDefault();
+    saveReview(review);
+    setReview({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
+  }
+
   const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const counts = categories.map((c) => ({
-    ...c,
-    count: activeThoughts.filter((t) => t.category === c.id).length,
-    staleCount: activeThoughts.filter((t) => t.category === c.id && stalenessLabel(getDaysOld(t.createdAt), c.id)?.urgent).length,
-    closedCount: doneThoughts.filter((t) => t.category === c.id && new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length,
-  }));
+  const closedThisWeek = doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length;
+
+  const staleItems = useMemo(() =>
+    activeThoughts
+      .filter((t) => t.category && stalenessLabel(getDaysOld(t.createdAt), t.category)?.urgent)
+      .map((t) => ({ ...t, days: getDaysOld(t.createdAt) }))
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 6),
+  [activeThoughts]);
+
+  const missionById = useMemo(() => {
+    const map = {};
+    activeThoughts.forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    doneThoughts.forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    return map;
+  }, [activeThoughts, doneThoughts]);
+
+  const unlinkedCount = useMemo(() =>
+    activeThoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '').length,
+  [activeThoughts, missionById]);
+
+  const goalProgressItems = useMemo(() => {
+    const openGoals = (goals || []).filter((g) => g.status !== 'Done');
+    return openGoals.map((g) => {
+      const linked = activeThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t, missionById) === g.id);
+      const doneLinked = doneThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t, missionById) === g.id);
+      const total = linked.length + doneLinked.length;
+      const pct = total > 0 ? Math.round((doneLinked.length / total) * 100) : 0;
+      const doneThisWeek = doneLinked.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length;
+      return { goal: g, pct, doneThisWeek, total };
+    }).filter((item) => item.total > 0);
+  }, [goals, activeThoughts, doneThoughts, missionById, weekCutoff]);
+
+  const GOAL_COLORS = ['blue', 'purple', 'green', 'amber', 'teal', 'pink'];
+
   return (
     <div className="stack">
-      <div className="card">
-        <div className="mini-header"><h3>What's in each category</h3></div>
-        <div className="stats-grid">
-          {counts.map((item) => {
-            const SIcon = item.icon;
-            return (
-              <button key={item.id} className={`stat-card stat-card-btn stat-card-${item.color}`} onClick={() => goToCategory(item.id)}>
-                <SIcon size={16} className={`stat-icon-${item.color}`} /><strong>{item.count}</strong><span>{item.short}</span>
-                {item.staleCount > 0 && <span className="stat-stale">{item.staleCount} stale</span>}
-                <div className="stat-closed-row"><CheckCircle2 size={11} /><span>{item.closedCount} closed this wk</span></div>
-              </button>
-            );
-          })}
+      <div>
+        <p className="review-section-label"><TrendingUp size={13} /> This week at a glance</p>
+        <div className="review-signal-grid">
+          <div className="review-signal-card tone-green">
+            <span className="review-signal-label">Closed</span>
+            <strong className="review-signal-val">{closedThisWeek}</strong>
+            <span className="review-signal-sub">items done this week</span>
+          </div>
+          <div className={`review-signal-card ${staleItems.length > 0 ? 'tone-amber' : 'tone-neutral'}`}>
+            <span className="review-signal-label">Stale</span>
+            <strong className="review-signal-val">{staleItems.length}</strong>
+            <span className="review-signal-sub">items past their prime</span>
+          </div>
+          <div className={`review-signal-card ${unlinkedCount > 0 ? 'tone-red' : 'tone-neutral'}`}>
+            <span className="review-signal-label">Unlinked</span>
+            <strong className="review-signal-val">{unlinkedCount}</strong>
+            <span className="review-signal-sub">sorted, no goal</span>
+          </div>
         </div>
-        <p className="muted small" style={{ marginTop: 10 }}>Tap any category to jump to it in Sort. Closed counts items completed in the last 7 days.</p>
       </div>
-      <form className="card capture-form" onSubmit={submit}>
-        <div className="mini-header"><RefreshCw size={18} /><h3>Sunday Life Reset</h3></div>
-        <Field label="What improved this week?"><textarea value={review.improved} onChange={(e) => set('improved', e.target.value)} /></Field>
-        <Field label="What did I avoid?"><textarea value={review.avoided} onChange={(e) => set('avoided', e.target.value)} /></Field>
-        <Field label="What actually mattered?"><textarea value={review.mattered} onChange={(e) => set('mattered', e.target.value)} /></Field>
-        <Field label="What kept stressing me out?"><textarea value={review.stress} onChange={(e) => set('stress', e.target.value)} /></Field>
-        <Field label="Next week's 3 priorities"><textarea value={review.nextWeek} onChange={(e) => set('nextWeek', e.target.value)} placeholder={"1. ...\n2. ...\n3. ..."} /></Field>
-        <button className="primary-button" type="submit"><Save size={17} /> Save Weekly Review</button>
+      {staleItems.length > 0 && (
+        <div className="card review-attn-card">
+          <div className="mini-header"><AlertCircle size={16} style={{ color: 'var(--cat-amber)' }} /><h3>Needs attention</h3><span className="review-attn-sub">Stale and overdue</span></div>
+          <div className="review-stale-list">
+            {staleItems.map((t) => {
+              const cat = getCategory(t.category);
+              const urgent = t.days >= 14;
+              return (
+                <div key={t.id} className="review-stale-item">
+                  <span className={`review-stale-badge ${urgent ? 'badge-danger' : 'badge-warn'}`}>{t.days}d</span>
+                  <span className="review-stale-text">{t.text}</span>
+                  <span className="review-stale-cat">{cat.short}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {goalProgressItems.length > 0 && (
+        <div className="card">
+          <div className="mini-header"><Target size={16} style={{ color: '#60a5fa' }} /><h3>Goal progress</h3><span className="review-attn-sub">Actions done ÷ total</span></div>
+          <div className="review-goal-list">
+            {goalProgressItems.map(({ goal, pct, doneThisWeek }, i) => {
+              const color = GOAL_COLORS[i % GOAL_COLORS.length];
+              return (
+                <div key={goal.id} className="review-goal-item">
+                  <span className="review-goal-title">{goal.title}</span>
+                  <div className="review-goal-track">
+                    <div className={`review-goal-fill fill-${color}`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="review-goal-pct">{pct}%</span>
+                  {doneThisWeek > 0 && (
+                    <span className="review-goal-delta"><TrendingUp size={11} /> +{doneThisWeek} this wk</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <form className="card review-reset-card" onSubmit={submit}>
+        <div className="mini-header"><RefreshCw size={16} style={{ color: '#60a5fa' }} /><h3>Sunday Life Reset</h3></div>
+        <Field label="What improved this week?"><textarea value={review.improved} onChange={(e) => set('improved', e.target.value)} placeholder="What actually got better — work, habits, relationships, or your head?" /></Field>
+        <Field label="What did I avoid?"><textarea value={review.avoided} onChange={(e) => set('avoided', e.target.value)} placeholder="The thing you kept skipping. Name it." /></Field>
+        <Field label="What actually mattered?"><textarea value={review.mattered} onChange={(e) => set('mattered', e.target.value)} placeholder="Strip away the noise — what moved the needle or fed you?" /></Field>
+        <Field label="What kept stressing me out?"><textarea value={review.stress} onChange={(e) => set('stress', e.target.value)} placeholder="Recurring anxiety, unresolved tension, or dread." /></Field>
+        <Field label="Next week's 3 priorities"><textarea value={review.nextWeek} onChange={(e) => set('nextWeek', e.target.value)} placeholder={"1. \n2. \n3. "} style={{ minHeight: 80 }} /></Field>
+        <button className="primary-button" type="submit"><Save size={17} /> Save weekly reset</button>
       </form>
       <div className="card">
-        <div className="mini-header"><Clock3 size={18} /><h3>Past Reviews</h3></div>
+        <div className="mini-header"><Clock3 size={16} /><h3>Past resets</h3></div>
         {reviews.length ? (
-          <div className="thought-list">
-            {reviews.map((item) => (
-              <article className="review-card" key={item.id}>
-                <p className="eyebrow">{formatDate(item.createdAt)}</p>
-                <h3>Next Week's 3</h3><p>{item.nextWeek || 'No priorities written.'}</p>
-                <details><summary>Open full review</summary>
-                  <p><strong>Improved:</strong> {item.improved}</p>
-                  <p><strong>Avoided:</strong> {item.avoided}</p>
-                  <p><strong>Mattered:</strong> {item.mattered}</p>
-                  <p><strong>Stress:</strong> {item.stress}</p>
-                </details>
-              </article>
-            ))}
+          <div className="review-past-list">
+            {reviews.map((item) => {
+              const isExpanded = expandedReviewId === item.id;
+              return (
+                <div key={item.id} className="review-past-item">
+                  <span className="review-past-date">{formatDate(item.createdAt)}</span>
+                  {item.nextWeek && (
+                    <div className="review-past-next">
+                      <span className="review-past-next-label">Next week's 3</span>
+                      <p>{item.nextWeek}</p>
+                    </div>
+                  )}
+                  <button className="text-button review-past-expand" onClick={() => setExpandedReviewId(isExpanded ? null : item.id)}>
+                    {isExpanded ? 'Collapse' : 'Open full reset \u2192'}
+                  </button>
+                  {isExpanded && (
+                    <div className="review-past-full">
+                      {item.improved && <><span className="review-past-field-label">Improved</span><p>{item.improved}</p></>}
+                      {item.avoided && <><span className="review-past-field-label">Avoided</span><p>{item.avoided}</p></>}
+                      {item.mattered && <><span className="review-past-field-label">Mattered</span><p>{item.mattered}</p></>}
+                      {item.stress && <><span className="review-past-field-label">Stress</span><p>{item.stress}</p></>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ) : <EmptyState title="No reviews yet" text="Save your first weekly reset to start building clarity over time." />}
+        ) : <EmptyState title="No resets yet" text="Save your first weekly reset to start building clarity over time." />}
       </div>
     </div>
   );
