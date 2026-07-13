@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronRight, ArrowUpCircle, TrendingUp, Trophy,
   MoonStar, RotateCcw, Copy, Check, Mountain, Flame, Lightbulb, PauseCircle,
   Briefcase, GraduationCap, Heart, User, Code, Telescope,
-  Crosshair, Activity, Star,
+  Crosshair, Activity, Star, Quote, Link as LinkIcon,
 } from 'lucide-react';
 import './styles.css';
 
@@ -396,6 +396,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('today');
   const [progressSubTab, setProgressSubTab] = useState('accomplishments');
   const [selectedCategory, setSelectedCategory] = useState('active-missions');
+  const [commandGoalFilter, setCommandGoalFilter] = useState(''); // '' = All goals; goal.id = filtered. Session-only by design.
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(null);
   const [energyFilter, setEnergyFilter] = useState('');
@@ -827,7 +828,8 @@ function App() {
         )}
         {activeTab === 'sort' && (
           <SortView
-            thoughts={activeThoughts} unsorted={unsorted}
+            thoughts={activeThoughts} unsorted={unsorted} doneThoughts={doneThoughts} goals={goals}
+            goalFilter={commandGoalFilter} setGoalFilter={setCommandGoalFilter}
             selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
             query={query} setQuery={setQuery} filteredThoughts={filteredThoughts}
             updateThought={updateThought} deleteThought={deleteThought}
@@ -930,6 +932,15 @@ function App() {
             pinnedGoalIds={pinnedGoalIds}
             onSave={(ids) => { savePinnedGoals(ids); setModal(null); }}
             onClose={() => setModal(null)}
+          />
+        </Modal>
+      )}
+      {modal?.type === 'edit-goal' && modal.goal && (
+        <Modal title="Edit Goal" onClose={() => setModal(null)}>
+          <GoalEditForm
+            goal={modal.goal}
+            lifeDirections={lifeDirections}
+            updateGoal={(id, patch) => { updateGoal(id, patch); setModal(null); }}
           />
         </Modal>
       )}
@@ -1886,6 +1897,33 @@ function GoalCaptureForm({ addGoal, lifeDirections }) {
   );
 }
 
+function GoalEditForm({ goal, lifeDirections, updateGoal }) {
+  const [form, setForm] = useState({ title: goal.title || '', lifeDirectionId: goal.lifeDirectionId || '', targetDate: goal.targetDate || '', why: goal.why || '', status: goal.status || 'Open' });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function submit(e) { e.preventDefault(); if (!form.title.trim()) return; updateGoal(goal.id, form); }
+  return (
+    <form className="capture-form" onSubmit={submit}>
+      <Field label="Goal"><input value={form.title} onChange={(e) => set('title', e.target.value)} autoFocus /></Field>
+      <div className="form-grid">
+        <Field label="Life Direction">
+          <select value={form.lifeDirectionId} onChange={(e) => set('lifeDirectionId', e.target.value)}>
+            <option value="">None</option>
+            {lifeDirections.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+          </select>
+        </Field>
+        <Field label="Status">
+          <select value={form.status} onChange={(e) => set('status', e.target.value)}>
+            {['Open', 'On Track', 'Slipping', 'Done'].map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </Field>
+      </div>
+      <Field label="Target Date"><input type="date" value={form.targetDate} onChange={(e) => set('targetDate', e.target.value)} /></Field>
+      <Field label="Why it matters"><textarea placeholder="What does achieving this mean to you?" value={form.why} onChange={(e) => set('why', e.target.value)} /></Field>
+      <button className="primary-button" type="submit"><Save size={17} /> Save Changes</button>
+    </form>
+  );
+}
+
 function LifeDirectionCaptureForm({ addLifeDirection }) {
   const [form, setForm] = useState({ title: '', why: '' });
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
@@ -1971,9 +2009,67 @@ function CaptureForm({ addThought, goals, activeMissions, compact = false }) {
 }
 
 // ─── Sort View ─────────────────────────────────────────────────────────────
-function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
+// Resolve which goal a thought serves: missions link directly via goalId,
+// everything else resolves through its related mission. '' = unlinked.
+function resolveThoughtGoalId(t, missionById) {
+  if (t.category === 'active-missions') return t.goalId || '';
+  if (t.relatedMissionId && missionById[t.relatedMissionId]) return missionById[t.relatedMissionId].goalId || '';
+  return '';
+}
+
+function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter, setGoalFilter, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
   const [collapsedTiers, setCollapsedTiers] = useState({});
   function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
+
+  // Mission lookup spans active + done missions so completed missions still resolve linkage
+  const missionById = useMemo(() => {
+    const map = {};
+    [...thoughts, ...(doneThoughts || [])].forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    return map;
+  }, [thoughts, doneThoughts]);
+
+  const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done'), [goals]);
+
+  // Per-goal stats: open item count + progress (done ÷ total linked actions)
+  const goalStats = useMemo(() => {
+    const stats = {};
+    openGoals.forEach((g) => { stats[g.id] = { open: 0, actionsDone: 0, actionsTotal: 0 }; });
+    thoughts.forEach((t) => {
+      const gid = resolveThoughtGoalId(t, missionById);
+      if (gid && stats[gid]) {
+        stats[gid].open += 1;
+        if (t.category === 'next-actions') stats[gid].actionsTotal += 1;
+      }
+    });
+    (doneThoughts || []).forEach((t) => {
+      const gid = resolveThoughtGoalId(t, missionById);
+      if (gid && stats[gid] && t.category === 'next-actions') { stats[gid].actionsDone += 1; stats[gid].actionsTotal += 1; }
+    });
+    return stats;
+  }, [openGoals, thoughts, doneThoughts, missionById]);
+
+  // Apply goal filter to the sorted (categorized) working set
+  const goalScopedThoughts = useMemo(() => {
+    if (!goalFilter) return thoughts;
+    if (goalFilter === '__unlinked__') return thoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '');
+    return thoughts.filter((t) => resolveThoughtGoalId(t, missionById) === goalFilter);
+  }, [thoughts, goalFilter, missionById]);
+
+  const scopedFilteredThoughts = useMemo(() => {
+    if (!goalFilter) return filteredThoughts;
+    if (goalFilter === '__unlinked__') return filteredThoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '');
+    return filteredThoughts.filter((t) => resolveThoughtGoalId(t, missionById) === goalFilter);
+  }, [filteredThoughts, goalFilter, missionById]);
+
+  const isUnlinkedFilter = goalFilter === '__unlinked__';
+  const unlinkedCount = useMemo(() =>
+    thoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '').length,
+  [thoughts, missionById]);
+
+  const activeGoal = (!goalFilter || isUnlinkedFilter) ? null : openGoals.find((g) => g.id === goalFilter);
+
+  const tierScopeLabel = activeGoal ? activeGoal.title : isUnlinkedFilter ? 'Unlinked' : null;
+
   return (
     <section className="screen stack">
       <div className="section-header">
@@ -1988,6 +2084,13 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
           </div>
         </div>
       )}
+      {openGoals.length > 0 && (
+        <GoalCardGrid
+          goals={openGoals} goalStats={goalStats}
+          goalFilter={goalFilter} setGoalFilter={setGoalFilter}
+          unlinkedCount={unlinkedCount} setModal={setModal}
+        />
+      )}
       <div className="tier-nav">
         {categoryTiers.map((tier) => {
           const tierCats = categories.filter((c) => c.tier === tier.id);
@@ -1997,7 +2100,10 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
               <button className="tier-header" onClick={() => toggleTier(tier.id)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <tier.icon size={16} className={`tier-icon tier-icon-${tier.color}`} />
-                  <div><span className="tier-label">{tier.label}</span><span className="tier-desc">{tier.description}</span></div>
+                  <div>
+                    <span className="tier-label">{tier.label}</span>
+                    <span className="tier-desc">{tierScopeLabel ? `Scoped to ${tierScopeLabel}` : tier.description}</span>
+                  </div>
                 </div>
                 {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
               </button>
@@ -2005,8 +2111,8 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
                 <div className="tier-chips">
                   {tierCats.map((cat) => {
                     const CIcon = cat.icon;
-                    const count = thoughts.filter((t) => t.category === cat.id).length;
-                    const staleCt = thoughts.filter((t) => t.category === cat.id && stalenessLabel(getDaysOld(t.createdAt), cat.id)?.urgent).length;
+                    const count = goalScopedThoughts.filter((t) => t.category === cat.id).length;
+                    const staleCt = goalScopedThoughts.filter((t) => t.category === cat.id && stalenessLabel(getDaysOld(t.createdAt), cat.id)?.urgent).length;
                     return (
                       <button key={cat.id} className={`category-chip ${selectedCategory === cat.id ? `active chip-active-${cat.color}` : ''}`} onClick={() => setSelectedCategory(cat.id)}>
                         <CIcon size={16} /><span>{cat.short}</span><small>{count}</small>
@@ -2021,17 +2127,87 @@ function SortView({ thoughts, unsorted, selectedCategory, setSelectedCategory, q
         })}
       </div>
       <div className="search-bar"><Search size={18} /><input placeholder="Search this category..." value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-      <CategoryDetail category={getCategory(selectedCategory)} thoughts={filteredThoughts} updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal} />
+      <CategoryDetail
+        category={getCategory(selectedCategory)} thoughts={scopedFilteredThoughts}
+        updateThought={updateThought} deleteThought={deleteThought} convertThought={convertThought} setModal={setModal}
+        goalContext={activeGoal ? activeGoal.title : isUnlinkedFilter ? 'Unlinked' : null}
+      />
     </section>
   );
 }
 
-function CategoryDetail({ category, thoughts, updateThought, deleteThought, convertThought, setModal }) {
+function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCount, setModal, updateGoal }) {
+  const isUnlinked = goalFilter === '__unlinked__';
+  return (
+    <div>
+      <div className="goals-section-header">
+        <span className="goals-section-label"><Target size={13} /> Goals</span>
+        <button className="text-button small" onClick={() => setModal({ type: 'manage-goals' })}>Manage</button>
+      </div>
+      <div className="goals-card-grid">
+        {goals.map((g) => {
+          const stats = goalStats[g.id] || { open: 0, actionsDone: 0, actionsTotal: 0 };
+          const pct = stats.actionsTotal > 0 ? Math.round((stats.actionsDone / stats.actionsTotal) * 100) : 0;
+          const isActive = goalFilter === g.id;
+          return (
+            <button
+              key={g.id}
+              className={`goal-card ${isActive ? 'active' : ''}`}
+              onClick={() => setGoalFilter(isActive ? '' : g.id)}
+              title={stats.actionsTotal > 0 ? `${stats.actionsDone}/${stats.actionsTotal} actions done` : undefined}
+            >
+              <div className="goal-card-top">
+                <span className="goal-card-title">{g.title}</span>
+                <span className="goal-card-count">{stats.open}</span>
+              </div>
+              <div className="goal-progress-row">
+                <span className="goal-progress-track"><span className="goal-progress-fill" style={{ width: `${pct}%` }} /></span>
+                <span className="goal-progress-pct">{pct}%</span>
+              </div>
+            </button>
+          );
+        })}
+        <button
+          className={`goal-card unlinked-card ${isUnlinked ? 'active' : ''}`}
+          onClick={() => setGoalFilter(isUnlinked ? '' : '__unlinked__')}
+        >
+          <div className="goal-card-top">
+            <span className="goal-card-title"><LinkIcon size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: -1 }} />Unlinked</span>
+            <span className="goal-card-count">{unlinkedCount}</span>
+          </div>
+          <span className="goal-card-unlinked-sub">Sorted work serving no goal</span>
+        </button>
+      </div>
+      {goalFilter && goalFilter !== '__unlinked__' && (() => {
+        const g = goals.find((x) => x.id === goalFilter);
+        if (!g) return null;
+        return (
+          <div className="goal-context-band">
+            <Quote size={13} />
+            <span className="goal-context-why">{g.why || 'No why set yet.'}</span>
+            <div className="goal-context-actions">
+              <button className="text-button small" onClick={() => setModal({ type: 'edit-goal', goal: g })}><Edit3 size={13} /> Edit</button>
+            </div>
+          </div>
+        );
+      })()}
+      {isUnlinked && (
+        <div className="goal-context-band unlinked-band">
+          <Compass size={13} />
+          <span className="goal-context-why">These items are sorted but don't connect to any goal. Edit each one to link it to a mission.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryDetail({ category, thoughts, updateThought, deleteThought, convertThought, setModal, goalContext }) {
   const CIcon = category.icon;
   return (
     <div className="card category-detail">
       <div className="section-header">
         <div className="category-title"><IconBadge icon={CIcon} tone={category.color} /><div><h2>{category.label}</h2><p className="muted">{category.description}</p></div></div>
+        {goalContext && <Pill tone="blue"><Target size={13} /> {goalContext}</Pill>}
       </div>
       {thoughts.length ? (
         <div className="thought-list">
