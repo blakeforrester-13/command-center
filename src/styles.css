@@ -893,11 +893,173 @@ input:focus, textarea:focus, select:focus {
 .stat-closed-row svg { flex-shrink: 0; }
 .stat-closed-row span { font-size: 0.66rem; font-weight: 700; }
 
-/* ── Review card ───────────────────────────────────────────────────────── */
-.review-card { padding: 14px; display: grid; gap: 8px; }
-.review-card details { color: var(--text-secondary); font-size: 0.875rem; }
-.review-card summary { cursor: pointer; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-.review-card details p { margin: 6px 0; }
+
+/* ── Weekly Review tab ─────────────────────────────────────────────────── */
+.review-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-secondary);
+  margin-bottom: 9px;
+}
+.review-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.review-signal-card {
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  padding: 12px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.review-signal-card.tone-green { border-color: rgba(52,211,153,0.25); background: rgba(52,211,153,0.07); }
+.review-signal-card.tone-amber { border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.07); }
+.review-signal-card.tone-red   { border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.07); }
+.review-signal-card.tone-neutral { border-color: var(--line); background: var(--bg-card); }
+.review-signal-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+.review-signal-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+}
+.review-signal-card.tone-green .review-signal-val { color: #34d399; }
+.review-signal-card.tone-amber .review-signal-val { color: var(--accent); }
+.review-signal-card.tone-red   .review-signal-val { color: #f87171; }
+.review-signal-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Needs attention card */
+.review-attn-sub { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
+.review-stale-list { display: grid; gap: 6px; }
+.review-stale-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+}
+.review-stale-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+.review-stale-badge.badge-danger { background: rgba(248,113,113,0.15); color: #f87171; }
+.review-stale-badge.badge-warn   { background: rgba(245,158,11,0.15);  color: var(--accent); }
+.review-stale-text {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.review-stale-cat { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
+
+/* Goal progress */
+.review-goal-list { display: grid; gap: 8px; }
+.review-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+}
+.review-goal-title { flex: 1; font-size: 0.82rem; font-weight: 700; }
+.review-goal-track {
+  width: 80px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.review-goal-fill { height: 100%; border-radius: inherit; }
+.review-goal-fill.fill-blue   { background: #60a5fa; }
+.review-goal-fill.fill-purple { background: #a78bfa; }
+.review-goal-fill.fill-green  { background: #34d399; }
+.review-goal-fill.fill-amber  { background: var(--accent); }
+.review-goal-fill.fill-teal   { background: #2dd4bf; }
+.review-goal-fill.fill-pink   { background: #f472b6; }
+.review-goal-pct { font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; min-width: 30px; text-align: right; }
+.review-goal-delta {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+/* Reset form */
+.review-reset-card { border-color: rgba(96,165,250,0.2); }
+
+/* Past resets */
+.review-past-list { display: grid; gap: 0; }
+.review-past-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+}
+.review-past-item:last-child { border-bottom: none; padding-bottom: 0; }
+.review-past-date {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+.review-past-next-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.review-past-next p { font-size: 0.82rem; color: var(--text); white-space: pre-wrap; margin: 0; }
+.review-past-expand { font-size: 0.78rem; color: #60a5fa; padding: 0; }
+.review-past-full {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--line);
+}
+.review-past-field-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 800;
+  margin-bottom: 1px;
+}
+.review-past-full p { font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 4px; }
 
 /* ── Empty state ───────────────────────────────────────────────────────── */
 .empty-state {
