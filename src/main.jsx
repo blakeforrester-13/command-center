@@ -759,11 +759,6 @@ function App() {
     setExecuteSession(null);
   }
 
-  function goToCategory(catId) {
-    setSelectedCategory(catId);
-    setActiveTab('sort');
-  }
-
   const navItems = [
     { id: 'today',    label: 'Today',    icon: Home,       color: 'nav-amber'  },
     { id: 'capture',  label: 'Capture',  icon: Plus,       color: 'nav-gray'   },
@@ -830,6 +825,8 @@ function App() {
           <SortView
             thoughts={activeThoughts} unsorted={unsorted} doneThoughts={doneThoughts} goals={goals}
             goalFilter={commandGoalFilter} setGoalFilter={setCommandGoalFilter}
+            goToPlan={() => setActiveTab('plan')}
+            goToGoal={(id) => { setHighlightGoalId(id); setActiveTab('plan'); }}
             selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}
             query={query} setQuery={setQuery} filteredThoughts={filteredThoughts}
             updateThought={updateThought} deleteThought={deleteThought}
@@ -855,7 +852,7 @@ function App() {
             allThoughts={thoughts} goals={goals} lifeDirections={lifeDirections}
             reviews={reviews} saveReview={saveReview}
             subTab={progressSubTab} setSubTab={setProgressSubTab}
-            goToCategory={goToCategory}
+            goToUnlinked={() => { setCommandGoalFilter('__unlinked__'); setActiveTab('sort'); }}
             updateThought={updateThought} setModal={setModal}
           />
         )}
@@ -2017,7 +2014,7 @@ function resolveThoughtGoalId(t, missionById) {
   return '';
 }
 
-function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter, setGoalFilter, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
+function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoalFilter, setGoalFilter, goToPlan, goToGoal, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
   const [collapsedTiers, setCollapsedTiers] = useState({});
   function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
 
@@ -2029,6 +2026,10 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter, setGoal
   }, [thoughts, doneThoughts]);
 
   const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done'), [goals]);
+
+  // Guard against a stale filter: if the selected goal was completed or deleted,
+  // treat as unfiltered — never scope the board silently to an invisible goal.
+  const goalFilter = (rawGoalFilter === '__unlinked__' || openGoals.some((g) => g.id === rawGoalFilter)) ? rawGoalFilter : '';
 
   // Per-goal stats: open item count + progress (done ÷ total linked actions)
   const goalStats = useMemo(() => {
@@ -2089,6 +2090,7 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter, setGoal
           goals={openGoals} goalStats={goalStats}
           goalFilter={goalFilter} setGoalFilter={setGoalFilter}
           unlinkedCount={unlinkedCount} setModal={setModal}
+          goToPlan={goToPlan} goToGoal={goToGoal}
         />
       )}
       <div className="tier-nav">
@@ -2136,13 +2138,13 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter, setGoal
   );
 }
 
-function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCount, setModal, updateGoal }) {
+function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCount, setModal, goToPlan, goToGoal }) {
   const isUnlinked = goalFilter === '__unlinked__';
   return (
     <div>
       <div className="goals-section-header">
         <span className="goals-section-label"><Target size={13} /> Goals</span>
-        <button className="text-button small" onClick={() => setModal({ type: 'manage-goals' })}>Manage</button>
+        <button className="text-button small" onClick={goToPlan}>Manage</button>
       </div>
       <div className="goals-card-grid">
         {goals.map((g) => {
@@ -2187,6 +2189,7 @@ function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCou
             <span className="goal-context-why">{g.why || 'No why set yet.'}</span>
             <div className="goal-context-actions">
               <button className="text-button small" onClick={() => setModal({ type: 'edit-goal', goal: g })}><Edit3 size={13} /> Edit</button>
+              <button className="text-button small" onClick={() => goToGoal(g.id)}><Flag size={13} /> Plan</button>
             </div>
           </div>
         );
@@ -2386,7 +2389,7 @@ const goalAreaColors = {
   'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
 };
 
-function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToCategory, updateThought, setModal }) {
+function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToUnlinked, updateThought, setModal }) {
   return (
     <section className="screen stack">
       <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
@@ -2400,7 +2403,7 @@ function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDi
           updateThought={updateThought} setModal={setModal}
         />
       )}
-      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} goals={goals} reviews={reviews} saveReview={saveReview} />}
+      {subTab === 'review' && <ReviewTab activeThoughts={activeThoughts} doneThoughts={doneThoughts} goals={goals} reviews={reviews} saveReview={saveReview} setModal={setModal} goToUnlinked={goToUnlinked} />}
     </section>
   );
 }
@@ -2693,7 +2696,7 @@ function AccomplishItem({ t, updateThought, setModal }) {
   );
 }
 
-function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview }) {
+function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, setModal, goToUnlinked }) {
   const [review, setReview] = useState({ improved: '', avoided: '', mattered: '', stress: '', nextWeek: '' });
   const [expandedReviewId, setExpandedReviewId] = useState(null);
   function set(key, value) { setReview((prev) => ({ ...prev, [key]: value })); }
@@ -2706,13 +2709,13 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview })
   const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const closedThisWeek = doneThoughts.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length;
 
-  const staleItems = useMemo(() =>
+  const staleAll = useMemo(() =>
     activeThoughts
       .filter((t) => t.category && stalenessLabel(getDaysOld(t.createdAt), t.category)?.urgent)
       .map((t) => ({ ...t, days: getDaysOld(t.createdAt) }))
-      .sort((a, b) => b.days - a.days)
-      .slice(0, 6),
+      .sort((a, b) => b.days - a.days),
   [activeThoughts]);
+  const staleItems = staleAll.slice(0, 6);
 
   const missionById = useMemo(() => {
     const map = {};
@@ -2749,16 +2752,16 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview })
             <strong className="review-signal-val">{closedThisWeek}</strong>
             <span className="review-signal-sub">items done this week</span>
           </div>
-          <div className={`review-signal-card ${staleItems.length > 0 ? 'tone-amber' : 'tone-neutral'}`}>
+          <div className={`review-signal-card ${staleAll.length > 0 ? 'tone-amber' : 'tone-neutral'}`}>
             <span className="review-signal-label">Stale</span>
-            <strong className="review-signal-val">{staleItems.length}</strong>
+            <strong className="review-signal-val">{staleAll.length}</strong>
             <span className="review-signal-sub">items past their prime</span>
           </div>
-          <div className={`review-signal-card ${unlinkedCount > 0 ? 'tone-red' : 'tone-neutral'}`}>
+          <button className={`review-signal-card review-signal-btn ${unlinkedCount > 0 ? 'tone-red' : 'tone-neutral'}`} onClick={goToUnlinked}>
             <span className="review-signal-label">Unlinked</span>
             <strong className="review-signal-val">{unlinkedCount}</strong>
             <span className="review-signal-sub">sorted, no goal</span>
-          </div>
+          </button>
         </div>
       </div>
       {staleItems.length > 0 && (
@@ -2769,13 +2772,14 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview })
               const cat = getCategory(t.category);
               const urgent = t.days >= 14;
               return (
-                <div key={t.id} className="review-stale-item">
+                <button key={t.id} className="review-stale-item" onClick={() => setModal({ type: 'edit-thought', thought: t })}>
                   <span className={`review-stale-badge ${urgent ? 'badge-danger' : 'badge-warn'}`}>{t.days}d</span>
                   <span className="review-stale-text">{t.text}</span>
                   <span className="review-stale-cat">{cat.short}</span>
-                </div>
+                </button>
               );
             })}
+            {staleAll.length > 6 && <p className="muted small">+{staleAll.length - 6} more stale items in Command.</p>}
           </div>
         </div>
       )}
