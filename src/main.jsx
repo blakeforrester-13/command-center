@@ -2889,6 +2889,27 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
   );
 }
 
+function DateChips({ item, todayKey, updateThought }) {
+  const inputRef = React.useRef(null);
+  return (
+    <div className="date-chip-group">
+      <span className="date-chip-label">Reschedule</span>
+      <div className="date-chip-row">
+        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: todayKey })}>Today</button>
+        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: addDaysToKey(todayKey, 1) })}>Tmr</button>
+        <button className="date-chip date-chip-calendar" onClick={() => inputRef.current?.showPicker ? inputRef.current.showPicker() : inputRef.current?.focus()}>
+          <CalendarDays size={13} />
+        </button>
+        <input
+          ref={inputRef}
+          type="date" className="date-chip-input-hidden" value={item.dueDate || ''}
+          onChange={(e) => updateThought(item.id, { dueDate: e.target.value })}
+        />
+      </div>
+    </div>
+  );
+}
+
 function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, showChips }) {
   const [promoted, setPromoted] = useState(false);
   const cat = getCategory(item.category);
