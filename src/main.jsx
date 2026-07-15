@@ -40,7 +40,7 @@ const categories = [
   { id: 'next-actions', label: 'Next Actions', short: 'Actions', icon: CheckCircle2, color: 'green', tier: 'act-now', description: 'Small specific tasks you can actually do right now.', prompt: 'What is the next physical action?' },
   { id: 'problems', label: 'Problems to Solve', short: 'Problems', icon: HelpCircle, color: 'orange', tier: 'needs-thinking', description: 'Things that need thinking, planning, or breaking down before action.', prompt: 'What question needs to be solved?' },
   { id: 'decisions', label: 'Decisions', short: 'Decisions', icon: Compass, color: 'purple', tier: 'needs-thinking', description: 'Open choices that are draining attention until you close them.', prompt: 'What options are you choosing between?' },
-  { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: TimerReset, color: 'yellow', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
+  { id: 'waiting-on', label: 'Waiting On', short: 'Waiting', icon: TimerReset, color: 'cyan', tier: 'needs-thinking', description: 'Things blocked by another person, answer, event, payment, or deadline.', prompt: 'Who or what are you waiting on?' },
   { id: 'maintenance', label: 'Maintenance', short: 'Maintenance', icon: ShieldCheck, color: 'teal', tier: 'hold', description: 'The basic things that keep life stable: cleaning, hygiene, sleep, food, school basics.', prompt: 'What keeps this from becoming chaos?' },
   { id: 'relationships', label: 'Relationships', short: 'People', icon: Users, color: 'pink', tier: 'hold', description: 'Gabi, family, siblings, friends, work relationships, networking, and conversations.', prompt: 'Who does this involve and what would showing up well look like?' },
   { id: 'money-adult-life', label: 'Money / Adult Life', short: 'Adult Life', icon: DollarSign, color: 'blue', tier: 'hold', description: 'Money, forms, subscriptions, appointments, documents, car, school admin, and responsibilities.', prompt: 'What real-world responsibility needs clarity?' },
@@ -48,25 +48,27 @@ const categories = [
   { id: 'anxiety-noise', label: 'Anxiety / Noise', short: 'Noise', icon: Brain, color: 'red', tier: 'hold', description: 'Fear loops, repeated worries, vague pressure, and thoughts with no clear action yet.', prompt: 'Is there a real action here, or is this a repeated worry loop?' },
 ];
 
+// Life Areas are intentionally neutral — icon + text carry the meaning.
+// Color budget belongs to Category, Energy, and Priority Signals only.
 const lifeAreaMeta = {
-  'Work':         { color: 'amber',   icon: Briefcase },
-  'School':       { color: 'purple',  icon: GraduationCap },
-  'Money':        { color: 'blue',    icon: DollarSign },
-  'Health':       { color: 'rose',    icon: Heart },
-  'Relationships':{ color: 'pink',    icon: Users },
-  'Family':       { color: 'orange',  icon: Mountain },
-  'Personal':     { color: 'teal',    icon: User },
-  'App/Projects': { color: 'yellow',  icon: Code },
-  'Future':       { color: 'slate',   icon: Telescope },
+  'Work':         { color: 'slate', icon: Briefcase },
+  'School':       { color: 'slate', icon: GraduationCap },
+  'Money':        { color: 'slate', icon: DollarSign },
+  'Health':       { color: 'slate', icon: Heart },
+  'Relationships':{ color: 'slate', icon: Users },
+  'Family':       { color: 'slate', icon: Mountain },
+  'Personal':     { color: 'slate', icon: User },
+  'App/Projects': { color: 'slate', icon: Code },
+  'Future':       { color: 'slate', icon: Telescope },
 };
 function getAreaMeta(area) {
   return lifeAreaMeta[area] || { color: 'slate', icon: CircleDashed };
 }
 
 const PRIORITY_SIGNALS = [
-  { id: 'time-locked', label: 'Time-Locked', icon: '🔒', tone: 'rose' },
+  { id: 'time-locked', label: 'Time-Locked', icon: '🔒', tone: 'red' },
   { id: 'multiplier',  label: 'Multiplier',  icon: '✖️', tone: 'purple' },
-  { id: 'coast',       label: 'Coast',       icon: '⛵', tone: 'slate' },
+  { id: 'coast',       label: 'Coast',       icon: '⛵', tone: 'teal' },
 ];
 
 const SLOT_META = {
@@ -786,7 +788,7 @@ function App() {
         </div>
         <DailyCommandStrip
           state={commandState}
-          goals={goals.length}
+          goals={goals.filter((g) => g.status !== 'Done').length}
           actions={openTasks.length}
           loops={openLoops.length}
           noise={noiseItems.length}
@@ -837,11 +839,10 @@ function App() {
           <PlanView
             openTasks={openTasks} openLoops={openLoops}
             lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissionItems}
-            milestones={milestones} today={today}
+            milestones={milestones}
             updateThought={updateThought} updateGoal={updateGoal} updateLifeDirection={updateLifeDirection}
             setMilestone={setMilestone} toggleMilestone={toggleMilestone}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
-            promoteToToday={promoteToToday}
             highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
             setModal={setModal}
           />
@@ -2241,7 +2242,7 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
   const itemLabel = categoryItemLabel[thought.category] || 'Item';
   const areaMeta = getAreaMeta(thought.area);
   const AreaIcon = areaMeta.icon;
-  const energyTone = thought.energy === 'Low' ? 'slate' : thought.energy === 'High' ? 'rose' : 'amber';
+  const energyTone = thought.energy === 'Low' ? 'rose' : thought.energy === 'High' ? 'emerald' : 'yellow';
   return (
     <article className={`thought-card ${compact ? 'compact-card' : ''}`}>
       <div className="thought-title-row">
@@ -2380,15 +2381,7 @@ function ThoughtEditForm({ thought, goals, activeMissions, updateThought }) {
   );
 }
 
-// ─── Goals View ────────────────────────────────────────────────────────────
-const goalAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family', 'Personal', 'App/Projects', 'Future', 'Other'];
-const goalStatuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
-const goalAreaColors = {
-  'Work': 'amber', 'School': 'purple', 'Money': 'emerald', 'Health': 'green',
-  'Relationships': 'pink', 'Family': 'orange', 'Personal': 'teal',
-  'App/Projects': 'yellow', 'Future': 'slate', 'Other': 'slate',
-};
-
+// ─── Progress View ──────────────────────────────────────────────────────────
 function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToUnlinked, updateThought, setModal }) {
   return (
     <section className="screen stack">
@@ -2850,34 +2843,13 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
   );
 }
 
-// ─── Plan View — Triage Layer + Agenda Rail + Nested Roadmap ───────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+// ─── Plan View — Agenda Rail + Nested Roadmap ───────────────────────────────
+function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [expandedGoalId, setExpandedGoalId] = useState('');
-  const [triage, setTriage] = useState(null);
-  const [triageLoading, setTriageLoading] = useState(false);
-  const [triageError, setTriageError] = useState('');
-  const [appliedIds, setAppliedIds] = useState([]);
 
   const todayKey = getLocalTodayKey();
   const allPlanItems = useMemo(() => [...openTasks, ...openLoops], [openTasks, openLoops]);
-  const itemById = useMemo(() => {
-    const map = {};
-    allPlanItems.forEach((t) => { map[t.id] = t; });
-    return map;
-  }, [allPlanItems]);
-
-  // Triage annotations, keyed by item id — session-only, never persisted
-  const rankById = useMemo(() => {
-    const map = {};
-    (triage?.top3 || []).forEach((entry, i) => { map[entry.id] = { rank: i + 1, reason: entry.reason || '' }; });
-    return map;
-  }, [triage]);
-  const blockerById = useMemo(() => {
-    const map = {};
-    (triage?.blockers || []).forEach((entry) => { map[entry.id] = entry.note || ''; });
-    return map;
-  }, [triage]);
 
   // Jump from Today's goal links straight into that goal's war room
   useEffect(() => {
@@ -2888,51 +2860,8 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
     }
   }, [highlightGoalId, setHighlightGoalId]);
 
-  async function runTriage() {
-    setTriageLoading(true);
-    setTriageError('');
-    setAppliedIds([]);
-    try {
-      const payload = {
-        todayKey,
-        focus: today ? { main: today.mainMissionText, avoiding: today.avoiding } : null,
-        missions: goals.map((g) => ({
-          id: g.id, title: g.title, area: g.area, status: g.status,
-          targetDate: g.targetDate || null, weeklyGoal: g.weeklyGoal || '',
-        })),
-        items: allPlanItems.map((t) => ({
-          id: t.id, text: t.text, category: t.category, area: t.area,
-          energy: t.energy, dueDate: t.dueDate || null, status: t.status,
-          daysOld: getDaysOld(t.createdAt), missionId: t.relatedMissionId || null,
-          nextAction: t.nextAction || '', waitingOn: t.waitingOn || '',
-        })),
-      };
-      const res = await fetch('/api/triage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `Triage failed (${res.status})`);
-      setTriage(data);
-    } catch (err) {
-      setTriageError(err.message || 'Triage failed');
-    }
-    setTriageLoading(false);
-  }
-
-  function applyDate(id, date) {
-    updateThought(id, { dueDate: date });
-    setAppliedIds((prev) => [...prev, id]);
-  }
-
   return (
     <div className="stack">
-      <TriagePanel
-        triage={triage} loading={triageLoading} error={triageError}
-        runTriage={runTriage} itemById={itemById} todayKey={todayKey}
-        appliedIds={appliedIds} applyDate={applyDate}
-      />
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'week' ? 'active' : ''}`} onClick={() => setSubTab('week')}><CalendarDays size={15} /> This Week</button>
         <button className={`subtab-btn ${subTab === 'roadmap' ? 'active' : ''}`} onClick={() => setSubTab('roadmap')}><Flag size={15} /> Roadmap</button>
@@ -2940,8 +2869,7 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
       {subTab === 'week' && (
         <WeekView
           items={allPlanItems} openTasks={openTasks} todayKey={todayKey}
-          updateThought={updateThought} promoteToToday={promoteToToday}
-          rankById={rankById} blockerById={blockerById}
+          updateThought={updateThought}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
         />
       )}
@@ -2951,7 +2879,6 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
           items={allPlanItems} milestones={milestones} todayKey={todayKey}
           updateGoal={updateGoal} updateLifeDirection={updateLifeDirection} updateThought={updateThought}
           setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-          rankById={rankById} blockerById={blockerById}
           expandedGoalId={expandedGoalId} setExpandedGoalId={setExpandedGoalId}
           setModal={setModal}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
@@ -2961,142 +2888,30 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
   );
 }
 
-function TriagePanel({ triage, loading, error, runTriage, itemById, todayKey, appliedIds, applyDate }) {
-  return (
-    <div className="card triage-card">
-      <div className="mini-header triage-header">
-        <div className="triage-title"><Sparkles size={18} /><h3>Claude Triage</h3></div>
-        <button className="primary-button compact" onClick={runTriage} disabled={loading}>
-          {loading ? <RefreshCw size={16} className="spin" /> : <Zap size={16} />}
-          <span>{loading ? 'Reading the board…' : triage ? 'Re-run' : 'Run Triage'}</span>
-        </button>
-      </div>
-      {!triage && !loading && !error && (
-        <p className="muted small">Claude reads every open item, then marks the board below: top 3 ranked, blockers flagged, dates proposed. Nothing is saved until you approve it.</p>
-      )}
-      {error && (
-        <div className="triage-error">
-          <AlertCircle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
-      {triage && !loading && (
-        <div className="triage-result">
-          {triage.headline && <p className="triage-headline">{triage.headline}</p>}
-          <p className="muted small">Top 3 and blockers are marked directly on the board below.</p>
-
-          {Array.isArray(triage.schedule) && triage.schedule.length > 0 && (
-            <div className="triage-section">
-              <p className="triage-section-label"><CalendarDays size={14} /> Proposed dates</p>
-              {triage.schedule.map((entry) => {
-                const item = itemById[entry.id];
-                if (!item || !entry.date) return null;
-                const applied = appliedIds.includes(entry.id);
-                return (
-                  <div key={entry.id} className="triage-item">
-                    <div className="triage-item-body">
-                      <span>{item.text}</span>
-                      <p className="triage-reason">{dayShortLabel(entry.date, todayKey)}{entry.reason ? ` — ${entry.reason}` : ''}</p>
-                    </div>
-                    <button
-                      className={`triage-apply-btn ${applied ? 'applied' : ''}`}
-                      onClick={() => applyDate(entry.id, entry.date)}
-                      disabled={applied}
-                    >
-                      {applied ? <Check size={14} /> : <Plus size={14} />}
-                      {applied ? 'Set' : 'Apply'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {Array.isArray(triage.warnings) && triage.warnings.length > 0 && (
-            <div className="triage-section">
-              {triage.warnings.map((w, i) => (
-                <p key={i} className="triage-warning"><AlertCircle size={13} /> {w}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DateChips({ item, todayKey, updateThought }) {
-  const inputRef = React.useRef(null);
-  return (
-    <div className="date-chip-group">
-      <span className="date-chip-label">Reschedule</span>
-      <div className="date-chip-row">
-        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: todayKey })}>Today</button>
-        <button className="date-chip" onClick={() => updateThought(item.id, { dueDate: addDaysToKey(todayKey, 1) })}>Tmr</button>
-        <button className="date-chip date-chip-calendar" onClick={() => inputRef.current?.showPicker ? inputRef.current.showPicker() : inputRef.current?.focus()}>
-          <CalendarDays size={13} />
-        </button>
-        <input
-          ref={inputRef}
-          type="date" className="date-chip-input-hidden" value={item.dueDate || ''}
-          onChange={(e) => updateThought(item.id, { dueDate: e.target.value })}
-        />
-      </div>
-    </div>
-  );
-}
-
-function PlanTask({ item, todayKey, updateThought, promoteToToday, rankById, blockerById, goToItem, showChips }) {
-  const [promoted, setPromoted] = useState(false);
+function PlanTask({ item, todayKey, updateThought, goToItem, showChips }) {
   const cat = getCategory(item.category);
   const areaMeta = getAreaMeta(item.area);
   const AreaIcon = areaMeta.icon;
-  const energyTone = item.energy === 'Low' ? 'slate' : item.energy === 'High' ? 'rose' : 'amber';
-  const rank = rankById[item.id];
-  const blockNote = blockerById[item.id];
-  const isTop1 = rank?.rank === 1;
+  const energyTone = item.energy === 'Low' ? 'rose' : item.energy === 'High' ? 'emerald' : 'yellow';
   return (
-    <div className={`plan-task ${isTop1 ? 'plan-top1' : ''} ${blockNote ? 'plan-blocked' : ''}`}>
+    <div className="plan-task">
       <div className="plan-task-row">
         <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
           <CircleDashed size={16} />
         </button>
-        {rank && <span className="plan-rank">{rank.rank}</span>}
         <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
         {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
       </div>
-      {rank?.reason && (
-        <div className="triage-line">
-          <Sparkles size={12} className="triage-line-icon" />
-          <span><b>Why #{rank.rank}:</b> {rank.reason}</span>
-        </div>
-      )}
-      {blockNote && (
-        <div className="triage-line triage-line-block">
-          <AlertCircle size={12} className="triage-line-icon" />
-          <span><b>Blocker:</b> {blockNote}</span>
-        </div>
-      )}
       <div className="plan-task-meta">
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
         <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
         {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
-        {isTop1 && (
-          <button
-            className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
-            onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
-            disabled={promoted}
-          >
-            {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
-            {promoted ? 'On Today' : 'Make Main'}
-          </button>
-        )}
       </div>
     </div>
   );
 }
 
-function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, rankById, blockerById, setActiveTab, setSelectedCategory }) {
+function WeekView({ items, openTasks, todayKey, updateThought, setActiveTab, setSelectedCategory }) {
   const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysToKey(todayKey, i));
   const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey);
   const unscheduled = openTasks.filter((t) => !t.dueDate);
@@ -3118,8 +2933,7 @@ function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, r
     return (
       <PlanTask
         key={item.id} item={item} todayKey={todayKey}
-        updateThought={updateThought} promoteToToday={promoteToToday}
-        rankById={rankById} blockerById={blockerById}
+        updateThought={updateThought}
         goToItem={goToItem} showChips={showChips}
       />
     );
@@ -3237,10 +3051,10 @@ function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMi
   );
 }
 
-function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones, todayKey, updateGoal, updateLifeDirection, updateThought, setMilestone, toggleMilestone, rankById, blockerById, expandedGoalId, setExpandedGoalId, setModal, setActiveTab, setSelectedCategory }) {
+function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones, todayKey, updateGoal, updateLifeDirection, updateThought, setMilestone, toggleMilestone, expandedGoalId, setExpandedGoalId, setModal, setActiveTab, setSelectedCategory }) {
   const [openDirections, setOpenDirections] = useState(() => {
     const initial = {};
-    if (lifeDirections[0]) initial[lifeDirections[0].id] = true;
+    lifeDirections.forEach((d) => { initial[d.id] = true; });
     return initial;
   });
   const [openGoals, setOpenGoals] = useState({});
@@ -3306,7 +3120,6 @@ function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones,
                     key={goal.id} goal={goal} activeMissions={activeMissions} items={items} milestones={milestones}
                     todayKey={todayKey} updateGoal={updateGoal} updateThought={updateThought}
                     setMilestone={setMilestone} toggleMilestone={toggleMilestone}
-                    rankById={rankById} blockerById={blockerById}
                     isOpen={!!openGoals[goal.id]} onToggle={() => toggleGoalOpen(goal.id)}
                     openMissions={openMissions} toggleMissionOpen={toggleMissionOpen}
                     goToItem={goToItem} setModal={setModal}
@@ -3324,14 +3137,13 @@ function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones,
   );
 }
 
-function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, rankById, blockerById, isOpen, onToggle, openMissions, toggleMissionOpen, goToItem, setModal }) {
+function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, isOpen, onToggle, openMissions, toggleMissionOpen, goToItem, setModal }) {
   const meta = getAreaMeta(goal.area);
   const GIcon = meta.icon;
   const goalMissions = activeMissions.filter((m) => m.goalId === goal.id);
   const missionIds = goalMissions.map((m) => m.id);
   const linked = items.filter((t) => missionIds.includes(t.relatedMissionId));
   const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
-  const blockedCount = linked.filter((t) => blockerById[t.id]).length;
   const currentWeek = weekStartKey(todayKey);
   const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
   const countdownTone = daysLeft === null ? 'slate' : daysLeft < 0 ? 'red' : daysLeft <= 7 ? 'orange' : daysLeft <= 21 ? 'amber' : 'green';
@@ -3350,24 +3162,15 @@ function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoa
   const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
 
   function renderWeekTask(item) {
-    const blockNote = blockerById[item.id];
-    const rank = rankById[item.id];
     return (
-      <div key={item.id} className={`plan-task roadmap-task ${blockNote ? 'plan-blocked' : ''}`}>
+      <div key={item.id} className="plan-task roadmap-task">
         <div className="plan-task-row">
           <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
             <CircleDashed size={15} />
           </button>
-          {rank && <span className="plan-rank">{rank.rank}</span>}
           <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
           {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
         </div>
-        {blockNote && (
-          <div className="triage-line triage-line-block">
-            <AlertCircle size={12} className="triage-line-icon" />
-            <span><b>Blocker:</b> {blockNote}</span>
-          </div>
-        )}
       </div>
     );
   }
@@ -3400,7 +3203,7 @@ function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoa
           <p className="roadmap-sub">
             {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
             {' · '}{goalMissions.length} mission{goalMissions.length === 1 ? '' : 's'}
-            {blockedCount > 0 && <span className="roadmap-blocked-note"> · {blockedCount} blocked</span>}
+            
           </p>
 
           {!goal.targetDate && (
