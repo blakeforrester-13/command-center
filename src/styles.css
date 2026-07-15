@@ -941,6 +941,14 @@ input:focus, textarea:focus, select:focus {
 .review-signal-card.tone-amber .review-signal-val { color: var(--accent); }
 .review-signal-card.tone-red   .review-signal-val { color: #f87171; }
 .review-signal-sub { font-size: 0.72rem; color: var(--text-muted); }
+.review-signal-btn {
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.review-signal-btn:hover { border-color: rgba(248,113,113,0.45); }
+.review-signal-btn.tone-neutral:hover { border-color: var(--line-strong); }
 
 /* Needs attention card */
 .review-attn-sub { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
@@ -953,7 +961,13 @@ input:focus, textarea:focus, select:focus {
   border-radius: 10px;
   border: 1px solid var(--line);
   background: rgba(255,255,255,0.02);
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
+.review-stale-item:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.04); }
 .review-stale-badge {
   font-size: 0.7rem;
   font-weight: 800;
