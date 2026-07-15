@@ -839,10 +839,11 @@ function App() {
           <PlanView
             openTasks={openTasks} openLoops={openLoops}
             lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissionItems}
-            milestones={milestones}
+            milestones={milestones} today={today}
             updateThought={updateThought} updateGoal={updateGoal} updateLifeDirection={updateLifeDirection}
             setMilestone={setMilestone} toggleMilestone={toggleMilestone}
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
+            promoteToToday={promoteToToday}
             highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
             setModal={setModal}
           />
@@ -2844,7 +2845,7 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
 }
 
 // ─── Plan View — Agenda Rail + Nested Roadmap ───────────────────────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, highlightGoalId, setHighlightGoalId, setModal }) {
+function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [expandedGoalId, setExpandedGoalId] = useState('');
 
@@ -2869,7 +2870,7 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
       {subTab === 'week' && (
         <WeekView
           items={allPlanItems} openTasks={openTasks} todayKey={todayKey}
-          updateThought={updateThought}
+          updateThought={updateThought} promoteToToday={promoteToToday}
           setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
         />
       )}
@@ -2888,7 +2889,8 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions,
   );
 }
 
-function PlanTask({ item, todayKey, updateThought, goToItem, showChips }) {
+function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, showChips }) {
+  const [promoted, setPromoted] = useState(false);
   const cat = getCategory(item.category);
   const areaMeta = getAreaMeta(item.area);
   const AreaIcon = areaMeta.icon;
@@ -2906,12 +2908,20 @@ function PlanTask({ item, todayKey, updateThought, goToItem, showChips }) {
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
         <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
         {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
+        <button
+          className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
+          onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
+          disabled={promoted}
+        >
+          {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
+          {promoted ? 'On Today' : 'Make Main'}
+        </button>
       </div>
     </div>
   );
 }
 
-function WeekView({ items, openTasks, todayKey, updateThought, setActiveTab, setSelectedCategory }) {
+function WeekView({ items, openTasks, todayKey, updateThought, promoteToToday, setActiveTab, setSelectedCategory }) {
   const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysToKey(todayKey, i));
   const overdue = items.filter((t) => t.dueDate && t.dueDate < todayKey);
   const unscheduled = openTasks.filter((t) => !t.dueDate);
@@ -2933,7 +2943,7 @@ function WeekView({ items, openTasks, todayKey, updateThought, setActiveTab, set
     return (
       <PlanTask
         key={item.id} item={item} todayKey={todayKey}
-        updateThought={updateThought}
+        updateThought={updateThought} promoteToToday={promoteToToday}
         goToItem={goToItem} showChips={showChips}
       />
     );
