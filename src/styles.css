@@ -40,6 +40,7 @@
   --cat-slate:   #94a3b8;
   --cat-red:     #f87171;
   --cat-blue:    #60a5fa;
+  --cat-cyan:    #22d3ee;
 
   --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
   --shadow:     0 8px 32px rgba(0,0,0,0.4);
@@ -355,19 +356,19 @@ input:focus, textarea:focus, select:focus {
 }
 /* Per-level active colors */
 .energy-btn.active[data-level="Low"] {
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.3);
-  color: var(--cat-slate);
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.3);
+  color: #fda4af;
 }
 .energy-btn.active[data-level="Medium"] {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.3);
-  color: var(--cat-amber);
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: var(--cat-yellow);
 }
 .energy-btn.active[data-level="High"] {
-  background: rgba(52, 211, 153, 0.12);
-  border-color: rgba(52, 211, 153, 0.3);
-  color: var(--cat-green);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--cat-emerald);
 }
 .energy-btn:hover:not(.active) { border-color: var(--line-strong); color: var(--text); }
 
@@ -428,13 +429,15 @@ input:focus, textarea:focus, select:focus {
 
 /* Status-driven pill tones — color = meaning */
 .pill-green   { background: rgba(52,211,153,0.12); color: #6ee7b7; border-color: rgba(52,211,153,0.2); }
-.pill-amber,
-.pill-yellow  { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.22); }
+.pill-amber   { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.22); }
+.pill-yellow  { background: rgba(251,191,36,0.12); color: #fde68a; border-color: rgba(251,191,36,0.22); }
 .pill-red     { background: rgba(248,113,113,0.12); color: #fca5a5; border-color: rgba(248,113,113,0.2); }
 .pill-orange  { background: rgba(251,146,60,0.12); color: #fdba74; border-color: rgba(251,146,60,0.2); }
 .pill-purple  { background: rgba(167,139,250,0.12); color: #c4b5fd; border-color: rgba(167,139,250,0.2); }
 .pill-teal    { background: rgba(45,212,191,0.12); color: #5eead4; border-color: rgba(45,212,191,0.2); }
 .pill-pink    { background: rgba(244,114,182,0.12); color: #f9a8d4; border-color: rgba(244,114,182,0.2); }
+.pill-rose    { background: rgba(251,113,133,0.12); color: #fda4af; border-color: rgba(251,113,133,0.2); }
+.pill-cyan    { background: rgba(34,211,238,0.12); color: #67e8f9; border-color: rgba(34,211,238,0.2); }
 .pill-emerald { background: rgba(16,185,129,0.12); color: #6ee7b7; border-color: rgba(16,185,129,0.2); }
 .pill-blue    { background: rgba(96,165,250,0.12); color: #93c5fd; border-color: rgba(96,165,250,0.2); }
 .pill-slate   { background: rgba(148,163,184,0.08); color: #94a3b8; border-color: rgba(148,163,184,0.15); }
@@ -600,6 +603,7 @@ input:focus, textarea:focus, select:focus {
 .chip-active-orange  { background: rgba(251,146,60,0.14)  !important; border-color: rgba(251,146,60,0.3)  !important; color: var(--cat-orange)  !important; }
 .chip-active-purple  { background: rgba(167,139,250,0.14) !important; border-color: rgba(167,139,250,0.3) !important; color: var(--cat-purple)  !important; }
 .chip-active-yellow  { background: rgba(251,191,36,0.14)  !important; border-color: rgba(251,191,36,0.3)  !important; color: var(--cat-yellow)  !important; }
+.chip-active-cyan    { background: rgba(34,211,238,0.14)   !important; border-color: rgba(34,211,238,0.3)   !important; color: var(--cat-cyan)    !important; }
 .chip-active-teal    { background: rgba(45,212,191,0.14)  !important; border-color: rgba(45,212,191,0.3)  !important; color: var(--cat-teal)    !important; }
 .chip-active-pink    { background: rgba(244,114,182,0.14) !important; border-color: rgba(244,114,182,0.3) !important; color: var(--cat-pink)    !important; }
 .chip-active-emerald { background: rgba(16,185,129,0.14)  !important; border-color: rgba(16,185,129,0.3)  !important; color: var(--cat-emerald) !important; }
@@ -773,6 +777,7 @@ input:focus, textarea:focus, select:focus {
 .icon-orange { background: rgba(251,146,60,0.14); color: var(--cat-orange); }
 .icon-purple { background: rgba(167,139,250,0.14); color: var(--cat-purple); }
 .icon-yellow { background: rgba(251,191,36,0.14); color: var(--cat-yellow); }
+.icon-cyan   { background: rgba(34,211,238,0.14); color: var(--cat-cyan); }
 .icon-teal   { background: rgba(45,212,191,0.14); color: var(--cat-teal); }
 .icon-pink   { background: rgba(244,114,182,0.14); color: var(--cat-pink); }
 .icon-emerald{ background: rgba(16,185,129,0.14); color: var(--cat-emerald); }
@@ -1330,6 +1335,7 @@ input:focus, textarea:focus, select:focus {
 .cat-label-orange { color: var(--cat-orange); }
 .cat-label-purple { color: var(--cat-purple); }
 .cat-label-yellow { color: var(--cat-yellow); }
+.cat-label-cyan   { color: var(--cat-cyan); }
 .cat-label-teal   { color: var(--cat-teal); }
 .cat-label-pink   { color: var(--cat-pink); }
 .cat-label-emerald{ color: var(--cat-emerald); }
@@ -1918,6 +1924,7 @@ input:focus, textarea:focus, select:focus {
 .task-cat-icon-slate   { color: var(--cat-slate); }
 .task-cat-icon-red     { color: var(--cat-red); }
 .task-cat-icon-yellow  { color: var(--cat-yellow); }
+.task-cat-icon-cyan    { color: var(--cat-cyan); }
 
 /* ── Fix 5: Tier icons ─────────────────────────────────────────────────── */
 .tier-icon-tier-act   { color: var(--accent); }
@@ -1942,6 +1949,7 @@ input:focus, textarea:focus, select:focus {
 .stat-icon-orange  { color: var(--cat-orange); }
 .stat-icon-purple  { color: var(--cat-purple); }
 .stat-icon-yellow  { color: var(--cat-yellow); }
+.stat-icon-cyan    { color: var(--cat-cyan); }
 .stat-icon-teal    { color: var(--cat-teal); }
 .stat-icon-pink    { color: var(--cat-pink); }
 .stat-icon-emerald { color: var(--cat-emerald); }
@@ -3262,7 +3270,7 @@ body {
 
 /* ═══ Roadmap hierarchy: Life Direction > Goal > Mission > Action ════════ */
 .direction-group {
-  border: 1px solid rgba(255,90,61,0.16);
+  border: 1px solid var(--line-strong);
   border-radius: 18px;
   background: rgba(20,26,36,0.92);
   overflow: hidden;
@@ -3274,13 +3282,13 @@ body {
   gap: 12px;
   padding: 14px 16px;
   cursor: pointer;
-  background: linear-gradient(90deg, rgba(255,90,61,0.07), rgba(255,255,255,0.015));
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
 }
 .direction-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--accent);
+  color: var(--text-secondary);
 }
 .direction-title {
   display: block;
