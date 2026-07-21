@@ -2076,7 +2076,7 @@ function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCou
     <div>
       <div className="goals-section-header">
         <span className="goals-section-label"><Target size={13} /> Goals</span>
-        <button className="text-button small" onClick={goToPlan}>Manage</button>
+        <button className="text-button small" onClick={() => goalFilter && goalFilter !== '__unlinked__' ? goToGoal(goalFilter) : goToPlan()}>Manage</button>
       </div>
       <div className="goals-card-grid">
         {goals.map((g) => {
