@@ -2885,9 +2885,10 @@ body {
 
 /* Mission Control HQ */
 .roadmap-hq {
-  border: 1px solid rgba(251,146,60,0.3); border-radius: 18px;
-  background: linear-gradient(160deg, rgba(251,146,60,0.06), var(--bg-card) 40%);
+  border: 1px solid var(--line); border-radius: 18px;
+  background: var(--bg-card);
   display: grid; gap: 12px;
+  border-left-width: 3px;
 }
 .roadmap-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .roadmap-title { display: flex; align-items: center; gap: 8px; }
@@ -3269,6 +3270,7 @@ body {
   border-radius: 18px;
   background: rgba(20,26,36,0.92);
   overflow: hidden;
+  transition: border-color 0.2s;
 }
 .direction-header {
   display: flex;
@@ -3277,13 +3279,11 @@ body {
   gap: 12px;
   padding: 14px 16px;
   cursor: pointer;
-  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
 }
 .direction-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--text-secondary);
 }
 .direction-title {
   display: block;
