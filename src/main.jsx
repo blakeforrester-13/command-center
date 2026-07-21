@@ -2076,7 +2076,7 @@ function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCou
     <div>
       <div className="goals-section-header">
         <span className="goals-section-label"><Target size={13} /> Goals</span>
-        <button className="text-button small" onClick={goToPlan}>Manage</button>
+        <button className="text-button small" onClick={() => goalFilter && goalFilter !== '__unlinked__' ? goToGoal(goalFilter) : goToPlan()}>Manage</button>
       </div>
       <div className="goals-card-grid">
         {goals.map((g) => {
@@ -2321,6 +2321,27 @@ function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDi
 }
 
 const TRAJECTORY_PALETTE = ['amber', 'green', 'purple', 'blue', 'pink', 'teal'];
+
+// Direction accent colors by position — amber, blue, emerald
+const DIRECTION_PALETTE = [
+  { color: 'amber',   hex: '#f59e0b', border: 'rgba(245,158,11,0.32)',  bg: 'rgba(245,158,11,0.06)',  headerBg: 'rgba(245,158,11,0.11)', subColor: '#b45309', divider: 'rgba(245,158,11,0.14)' },
+  { color: 'blue',    hex: '#60a5fa', border: 'rgba(96,165,250,0.28)',   bg: 'rgba(96,165,250,0.05)',  headerBg: 'rgba(96,165,250,0.09)', subColor: '#3b82f6', divider: 'rgba(96,165,250,0.12)' },
+  { color: 'emerald', hex: '#34d399', border: 'rgba(52,211,153,0.26)',   bg: 'rgba(52,211,153,0.04)',  headerBg: 'rgba(52,211,153,0.09)', subColor: '#059669', divider: 'rgba(52,211,153,0.10)' },
+  { color: 'purple',  hex: '#a78bfa', border: 'rgba(167,139,250,0.28)',  bg: 'rgba(167,139,250,0.05)', headerBg: 'rgba(167,139,250,0.09)', subColor: '#7c3aed', divider: 'rgba(167,139,250,0.12)' },
+];
+
+// Map category → tier color tokens for roadmap thought rows
+const CAT_TIER_STYLE = {
+  'next-actions':    { rowBorder: 'rgba(245,158,11,0.22)', rowBg: 'rgba(245,158,11,0.07)', iconColor: '#d97706', badgeBg: 'rgba(245,158,11,0.15)', badgeColor: '#d97706' },
+  'problems':        { rowBorder: 'rgba(251,146,60,0.25)',  rowBg: 'rgba(251,146,60,0.07)', iconColor: '#f97316', badgeBg: 'rgba(251,146,60,0.15)', badgeColor: '#f97316' },
+  'decisions':       { rowBorder: 'rgba(167,139,250,0.25)', rowBg: 'rgba(167,139,250,0.07)', iconColor: '#a78bfa', badgeBg: 'rgba(167,139,250,0.15)', badgeColor: '#a78bfa' },
+  'waiting-on':      { rowBorder: 'rgba(251,191,36,0.22)',  rowBg: 'rgba(251,191,36,0.06)', iconColor: '#fbbf24', badgeBg: 'rgba(251,191,36,0.12)', badgeColor: '#d97706' },
+  'maintenance':     { rowBorder: 'rgba(45,212,191,0.22)',  rowBg: 'rgba(45,212,191,0.05)', iconColor: '#2dd4bf', badgeBg: 'rgba(45,212,191,0.12)', badgeColor: '#0d9488' },
+  'relationships':   { rowBorder: 'rgba(244,114,182,0.22)', rowBg: 'rgba(244,114,182,0.05)', iconColor: '#f472b6', badgeBg: 'rgba(244,114,182,0.12)', badgeColor: '#db2777' },
+  'money-adult-life':{ rowBorder: 'rgba(96,165,250,0.22)',  rowBg: 'rgba(96,165,250,0.05)', iconColor: '#60a5fa', badgeBg: 'rgba(96,165,250,0.12)', badgeColor: '#2563eb' },
+  'someday':         { rowBorder: 'rgba(148,163,184,0.2)',  rowBg: 'rgba(148,163,184,0.05)', iconColor: '#94a3b8', badgeBg: 'rgba(148,163,184,0.12)', badgeColor: '#94a3b8' },
+  'anxiety-noise':   { rowBorder: 'rgba(248,113,113,0.22)', rowBg: 'rgba(248,113,113,0.05)', iconColor: '#f87171', badgeBg: 'rgba(248,113,113,0.12)', badgeColor: '#ef4444' },
+};
 
 function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, updateThought, setModal }) {
   const [expandedDays, setExpandedDays] = useState({});
@@ -3022,17 +3043,18 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
 
   return (
     <div className="stack">
-      {lifeDirections.map((dir) => {
+      {lifeDirections.map((dir, dirIdx) => {
         const dirGoals = goals.filter((g) => g.lifeDirectionId === dir.id);
         const isOpen = !!openDirections[dir.id];
+        const dp = DIRECTION_PALETTE[dirIdx % DIRECTION_PALETTE.length];
         return (
-          <div key={dir.id} className="direction-group">
-            <div className="direction-header" onClick={() => toggleDirection(dir.id)}>
+          <div key={dir.id} className="direction-group" style={{ borderColor: dp.border, background: dp.bg }}>
+            <div className="direction-header" style={{ background: `linear-gradient(90deg, ${dp.headerBg}, ${dp.bg})` }} onClick={() => toggleDirection(dir.id)}>
               <div className="direction-header-left">
-                <Compass size={16} />
+                <Compass size={16} style={{ color: dp.hex }} />
                 <div>
                   <span className="direction-title">{dir.title}</span>
-                  <span className="direction-sub">{dirGoals.length} goal{dirGoals.length === 1 ? '' : 's'}</span>
+                  <span className="direction-sub" style={{ color: dp.subColor }}>{dirGoals.length} goal{dirGoals.length === 1 ? '' : 's'}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3043,13 +3065,14 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
               </div>
             </div>
             {isOpen && (
-              <div className="direction-body">
+              <div className="direction-body" style={{ borderTopColor: dp.divider }}>
                 {dirGoals.length === 0 && (
                   <p className="muted small" style={{ padding: '8px 4px' }}>No goals yet under this direction.</p>
                 )}
                 {dirGoals.map((goal) => (
                   <GoalNode
                     key={goal.id} goal={goal} items={items} milestones={milestones}
+                    dirPalette={dp}
                     todayKey={todayKey} updateGoal={updateGoal} updateThought={updateThought}
                     setMilestone={setMilestone} toggleMilestone={toggleMilestone}
                     isOpen={!!openGoals[goal.id]} onToggle={() => toggleGoalOpen(goal.id)}
@@ -3068,9 +3091,10 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
   );
 }
 
-function GoalNode({ goal, items, milestones, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, isOpen, onToggle, goToItem, setModal }) {
+function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, isOpen, onToggle, goToItem, setModal }) {
   const meta = getAreaMeta(goal.area);
   const GIcon = meta.icon;
+  const dp = dirPalette || DIRECTION_PALETTE[0];
   const linked = items.filter((t) => t.goalId === goal.id);
   const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
   const currentWeek = weekStartKey(todayKey);
@@ -3090,27 +3114,34 @@ function GoalNode({ goal, items, milestones, todayKey, updateGoal, updateThought
   const currentIdx = weeks.indexOf(currentWeek);
   const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
 
-  function renderWeekTask(item) {
+
+
+  const undated = linked.filter((t) => !t.dueDate);
+
+  function renderLinkedItem(item) {
+    const cat = getCategory(item.category);
+    const CatIcon = cat.icon;
+    const ts = CAT_TIER_STYLE[item.category] || CAT_TIER_STYLE['someday'];
     return (
-      <div key={item.id} className="plan-task roadmap-task">
-        <div className="plan-task-row">
-          <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-            <CircleDashed size={15} />
-          </button>
-          <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
-        </div>
+      <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', borderRadius: 11, border: `1px solid ${ts.rowBorder}`, background: ts.rowBg }}>
+        <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ts.iconColor, display: 'flex', flexShrink: 0 }} title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+          <CircleDashed size={15} />
+        </button>
+        <button style={{ flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontSize: '0.86rem', color: 'var(--text)', fontFamily: 'inherit' }} onClick={() => goToItem(item)}>{item.text}</button>
+        {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.badgeBg, color: ts.badgeColor, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <CatIcon size={11} />
+          {cat.short}
+        </span>
       </div>
     );
   }
 
-  const undated = linked.filter((t) => !t.dueDate);
-
   return (
-    <div className={`card roadmap-hq goal-node roadmap-tint-${meta.color}`}>
+    <div className="card roadmap-hq goal-node" style={{ borderLeftColor: dp.hex, borderLeftWidth: 3 }}>
       <div className="roadmap-head goal-node-toggle" onClick={onToggle}>
         <div className="roadmap-title">
-          <GIcon size={17} className={`stat-icon-${meta.color}`} />
+          <GIcon size={17} style={{ color: dp.hex }} />
           <h3>{goal.title}</h3>
         </div>
         <div className="roadmap-head-actions">
@@ -3176,8 +3207,8 @@ function GoalNode({ goal, items, milestones, todayKey, updateGoal, updateThought
                         setMilestone={setMilestone} toggleMilestone={toggleMilestone}
                       />
                       {weekTasks.length > 0 && (
-                        <div className="roadmap-week-tasks">
-                          {weekTasks.map(renderWeekTask)}
+                        <div className="roadmap-week-tasks" style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+                          {weekTasks.map(renderLinkedItem)}
                         </div>
                       )}
                     </div>
@@ -3190,17 +3221,9 @@ function GoalNode({ goal, items, milestones, todayKey, updateGoal, updateThought
           {undated.length > 0 && (
             <div className="roadmap-undated">
               <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
-              {undated.map((item) => (
-                <div key={item.id} className="plan-task roadmap-task">
-                  <div className="plan-task-row">
-                    <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-                      <CircleDashed size={15} />
-                    </button>
-                    <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
-                    <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
-                  </div>
-                </div>
-              ))}
+              <div style={{ display: 'grid', gap: 6 }}>
+                {undated.map((item) => renderLinkedItem(item))}
+              </div>
             </div>
           )}
 
