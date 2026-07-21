@@ -131,7 +131,6 @@ h3 {
 .card,
 .hero-card,
 .mission-card,
-.mission-detail-card,
 .thought-card,
 .stat-card,
 .review-card {
@@ -161,7 +160,7 @@ h3 {
 .hero-icon { color: var(--accent); opacity: 0.7; }
 
 /* ── Section layout helpers ───────────────────────────────────────────── */
-.section-header, .mission-detail-top, .thought-topline, .mission-footer {
+.section-header, .thought-topline {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -407,10 +406,6 @@ input:focus, textarea:focus, select:focus {
   0%   { box-shadow: 0 0 0 3px rgba(245,158,11,0.5), 0 8px 32px rgba(245,158,11,0.2); }
   100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.2), 0 4px 16px rgba(0,0,0,0.2); }
 }
-
-.mission-detail-card { padding: 16px; display: grid; gap: 12px; }
-.mission-detail-card textarea { min-height: 76px; }
-.mission-footer { margin-top: 4px; }
 
 /* ── Pills ─────────────────────────────────────────────────────────────── */
 .pill {
@@ -1185,7 +1180,7 @@ input:focus, textarea:focus, select:focus {
 
 @media (max-width: 520px) {
   .app-shell { padding-inline: 10px; }
-  .card, .hero-card, .mission-card, .mission-detail-card, .thought-card { border-radius: 16px; }
+  .card, .hero-card, .mission-card, .thought-card { border-radius: 16px; }
   .topbar .primary-button span { display: none; }
   .topbar .primary-button.compact { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
   .mission-card { flex-direction: column; }
@@ -2869,7 +2864,7 @@ body {
 }
 .date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
 
-/* ── Mission priority signal — shown on active-mission ThoughtCards ──── */
+/* ── Priority signals — shown on ThoughtCards ──── */
 .mission-signal-row {
   display: flex;
   flex-wrap: wrap;
@@ -3312,65 +3307,6 @@ body {
 
 .goal-node-toggle { cursor: pointer; }
 
-.mission-node-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.mission-node {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.025);
-  overflow: hidden;
-}
-.mission-node-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-}
-.mission-node-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.35;
-}
-.mission-node-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.mission-node-actions {
-  display: grid;
-  gap: 6px;
-  padding: 0 12px 12px;
-}
-.mission-node-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.03);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.82rem;
-  transition: border-color 0.15s, background 0.15s;
-}
-.mission-node-action:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.06); }
-.mission-node-action span:first-of-type { flex: 1; }
-
 /* ═══ Capture page — tabbed hub ═══════════════════════════════════════════ */
 .capture-tabs {
   display: grid;
@@ -3400,7 +3336,6 @@ body {
 }
 .capture-tab:hover { color: var(--text-secondary); }
 .capture-tab.active-thought   { background: var(--accent-dim); color: var(--accent); }
-.capture-tab.active-mission   { background: rgba(255,176,32,0.14); color: #ffb020; }
 .capture-tab.active-goal      { background: rgba(96,165,250,0.14); color: #60a5fa; }
 .capture-tab.active-direction { background: rgba(167,139,250,0.14); color: #a78bfa; }
 
@@ -3421,7 +3356,6 @@ body {
   justify-content: center;
   flex-shrink: 0;
 }
-.icon-mission-bg   { background: rgba(255,176,32,0.14); color: #ffb020; }
 .icon-goal-bg      { background: rgba(96,165,250,0.14); color: #60a5fa; }
 .icon-direction-bg { background: rgba(167,139,250,0.14); color: #a78bfa; }
 .capture-form-type-header strong {
@@ -3436,11 +3370,9 @@ body {
   margin-top: 1px;
 }
 
-.capture-card-mission   { border-color: rgba(255,176,32,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(255,176,32,0.055), transparent 40%), var(--bg-card) !important; }
 .capture-card-goal      { border-color: rgba(96,165,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(96,165,250,0.055), transparent 40%), var(--bg-card) !important; }
 .capture-card-direction { border-color: rgba(167,139,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(167,139,250,0.055), transparent 40%), var(--bg-card) !important; }
 
-.capture-submit-mission   { background: linear-gradient(135deg, #ffc94d, #ffb020) !important; color: #0c0f14 !important; }
 .capture-submit-goal      { background: linear-gradient(135deg, #93c5fd, #60a5fa) !important; color: #0c0f14 !important; }
 .capture-submit-direction { background: linear-gradient(135deg, #c4b5fd, #a78bfa) !important; color: #0c0f14 !important; }
 
