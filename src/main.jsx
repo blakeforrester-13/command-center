@@ -29,13 +29,14 @@ const categoryTiers = [
 ];
 
 const categoryItemLabel = {
-  'next-actions': 'Action', 'problems': 'Problem',
+  'active-missions': 'Mission', 'next-actions': 'Action', 'problems': 'Problem',
   'decisions': 'Decision', 'waiting-on': 'Waiting On', 'maintenance': 'Maintenance Task',
   'relationships': 'Relationship Item', 'money-adult-life': 'Adult Life Item',
   'someday': 'Someday Idea', 'anxiety-noise': 'Noise / Worry',
 };
 
 const categories = [
+  { id: 'active-missions', label: 'Active Missions', short: 'Missions', icon: Target, color: 'amber', tier: 'act-now', description: 'The major priorities you are actively focused on right now. Keep this capped at 3.', prompt: 'What bigger priority does this connect to?' },
   { id: 'next-actions', label: 'Next Actions', short: 'Actions', icon: CheckCircle2, color: 'green', tier: 'act-now', description: 'Small specific tasks you can actually do right now.', prompt: 'What is the next physical action?' },
   { id: 'problems', label: 'Problems to Solve', short: 'Problems', icon: HelpCircle, color: 'orange', tier: 'needs-thinking', description: 'Things that need thinking, planning, or breaking down before action.', prompt: 'What question needs to be solved?' },
   { id: 'decisions', label: 'Decisions', short: 'Decisions', icon: Compass, color: 'purple', tier: 'needs-thinking', description: 'Open choices that are draining attention until you close them.', prompt: 'What options are you choosing between?' },
@@ -396,7 +397,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('today');
   const [progressSubTab, setProgressSubTab] = useState('accomplishments');
-  const [selectedCategory, setSelectedCategory] = useState('next-actions');
+  const [selectedCategory, setSelectedCategory] = useState('active-missions');
   const [commandGoalFilter, setCommandGoalFilter] = useState(''); // '' = All goals; goal.id = filtered. Session-only by design.
   const [query, setQuery] = useState('');
   const [modal, setModal] = useState(null);
@@ -459,6 +460,7 @@ function App() {
   const openTasks = activeThoughts.filter((t) => t.category === 'next-actions');
   const openLoops = activeThoughts.filter((t) => ['problems', 'decisions', 'waiting-on'].includes(t.category));
   const noiseItems = activeThoughts.filter((t) => t.category === 'anxiety-noise');
+  const activeMissionItems = activeThoughts.filter((t) => t.category === 'active-missions');
 
   const pinnedGoals = useMemo(() => {
     if (pinnedGoalIds.length > 0) {
@@ -688,9 +690,12 @@ function App() {
     const t = thoughts.find((x) => x.id === linkedId);
     if (!t) return { supports: null, energy: null, why: null };
     let supports = null;
-    if (t.goalId) {
+    if (t.category === 'active-missions' && t.goalId) {
       const goal = goals.find((g) => g.id === t.goalId);
       supports = goal ? goal.title : null;
+    } else if (t.relatedMissionId) {
+      const mission = thoughts.find((m) => m.id === t.relatedMissionId && m.category === 'active-missions');
+      supports = mission ? mission.text : null;
     }
     return { supports: supports || t.area, energy: t.energy || null, why: t.notes || t.nextAction || null };
   }
@@ -814,7 +819,7 @@ function App() {
         {activeTab === 'capture' && (
           <CaptureView
             addThought={addThought} addGoal={addGoal} addLifeDirection={addLifeDirection}
-            goals={goals} lifeDirections={lifeDirections}
+            goals={goals} activeMissions={activeMissionItems} lifeDirections={lifeDirections}
             setActiveTab={setActiveTab}
           />
         )}
@@ -833,7 +838,7 @@ function App() {
         {activeTab === 'plan' && (
           <PlanView
             openTasks={openTasks} openLoops={openLoops}
-            lifeDirections={lifeDirections} goals={goals}
+            lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissionItems}
             milestones={milestones} today={today}
             updateThought={updateThought} updateGoal={updateGoal} updateLifeDirection={updateLifeDirection}
             setMilestone={setMilestone} toggleMilestone={toggleMilestone}
@@ -869,12 +874,12 @@ function App() {
 
       {modal?.type === 'quick-capture' && (
         <Modal title="Quick Capture" onClose={() => setModal(null)}>
-          <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} goals={goals} compact />
+          <CaptureForm addThought={(input) => { addThought(input); setModal(null); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissionItems} compact />
         </Modal>
       )}
       {modal?.type === 'edit-thought' && (
         <Modal title="Edit Item" onClose={() => setModal(null)}>
-          <ThoughtEditForm thought={modal.thought} goals={goals} updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }} />
+          <ThoughtEditForm thought={modal.thought} goals={goals} activeMissions={activeMissionItems} updateThought={(id, patch) => { updateThought(id, patch); setModal(null); }} />
         </Modal>
       )}
       {modal?.type === 'promote' && (
@@ -882,8 +887,10 @@ function App() {
           <PromoteModal
             mode={modal.slot}
             thoughts={activeThoughts}
+            activeMissions={activeMissionItems}
             tasks={openTasks}
             loops={openLoops}
+            goals={goals}
             onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }}
           />
         </Modal>
@@ -892,7 +899,7 @@ function App() {
         <Modal title="Close the Day" onClose={() => setModal(null)}>
           <CloseDayModal
             thoughts={thoughts}
-            goals={goals}
+            activeMissions={activeMissionItems}
             onClose={() => setModal(null)}
             saveTomorrowPreload={saveTomorrowPreload}
           />
@@ -1479,7 +1486,7 @@ function getBehaviorMode(thought) {
   if (['problems', 'decisions', 'anxiety-noise'].includes(thought.category)) return 'main';
   if (thought.category === 'maintenance' || thought.area === 'Health' || ['workout', 'gym', 'legs', 'sleep', 'food', 'eat', 'clean', 'room', 'laundry', 'supplement', 'recovery'].some((w) => text.includes(w))) return 'body';
   if (thought.category === 'someday' || ['learn', 'read', 'course', 'research', 'study', 'reflect', 'vision', 'future', 'skill'].some((w) => text.includes(w))) return 'life';
-  if (['next-actions', 'relationships', 'money-adult-life', 'waiting-on'].includes(thought.category)) return 'avoiding';
+  if (['active-missions', 'next-actions', 'relationships', 'money-adult-life', 'waiting-on'].includes(thought.category)) return 'avoiding';
   return 'avoiding';
 }
 
@@ -1495,26 +1502,37 @@ function scoreBehaviorCandidate(thought, mode) {
   let score = 0;
   if (getBehaviorMode(thought) === mode) score += 40;
   if (thought.pinned) score += 24;
-  if (thought.goalId) score += 18;
+  if (thought.relatedMissionId) score += 18;
   if (thought.dueDate) score += 14;
   if (thought.energy === 'High' && ['main', 'body', 'avoiding'].includes(mode)) score += 8;
   if (thought.energy === 'Low' && mode === 'body') score += 8;
   if (['decisions', 'problems'].includes(thought.category) && mode === 'main') score += 12;
-  if (thought.category === 'next-actions' && mode === 'avoiding') score += 12;
+  if (['next-actions', 'active-missions'].includes(thought.category) && mode === 'avoiding') score += 12;
   if (thought.category === 'maintenance' && mode === 'body') score += 12;
   if (thought.category === 'someday' && mode === 'life') score += 12;
   score += Math.min(daysOld, 10);
   return score;
 }
 
-function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect }) {
+function PromoteModal({ mode = 'avoiding', thoughts = [], activeMissions, tasks, loops, goals = [], onSelect }) {
   const meta = behaviorModeMeta[mode] || behaviorModeMeta.avoiding;
   const ModeIcon = meta.icon;
-  const candidates = (thoughts.length ? thoughts : [...tasks, ...loops])
-    .filter((t) => t.status !== 'Done')
-    .sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
-  const recommended = candidates.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
-  const fallback = candidates.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
+  const [goalFilter, setGoalFilter] = useState('');
+
+  const allCandidates = (thoughts.length ? thoughts : [...activeMissions, ...tasks, ...loops])
+    .filter((t) => t.status !== 'Done');
+
+  // Open goals that have at least one candidate
+  const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done' && allCandidates.some((t) => t.goalId === g.id)), [goals, allCandidates]);
+
+  const scopedCandidates = useMemo(() => {
+    if (!goalFilter) return allCandidates;
+    return allCandidates.filter((t) => t.goalId === goalFilter);
+  }, [allCandidates, goalFilter]);
+
+  const sorted = scopedCandidates.sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
+  const recommended = sorted.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
+  const fallback = sorted.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
 
   function renderItem(t) {
     const cat = getCategory(t.category);
@@ -1537,6 +1555,24 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect
           <p>{meta.description}</p>
         </div>
       </div>
+      {openGoals.length > 0 && (
+        <div className="promote-goal-filter">
+          <p className="promote-goal-filter-label">Filter by goal</p>
+          <div className="promote-goal-pills">
+            <button
+              className={`promote-goal-pill ${!goalFilter ? 'active' : ''}`}
+              onClick={() => setGoalFilter('')}
+            >All</button>
+            {openGoals.map((g) => (
+              <button
+                key={g.id}
+                className={`promote-goal-pill ${goalFilter === g.id ? 'active' : ''}`}
+                onClick={() => setGoalFilter(goalFilter === g.id ? '' : g.id)}
+              >{g.title}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <p className="muted small">Pick up to 1-2 items for this mode. The app ranks by category fit, pinned items, related goals, due dates, energy, and stale open loops.</p>
       {recommended.length > 0 && (
         <div className="promote-group">
@@ -1550,7 +1586,7 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect
           {fallback.map(renderItem)}
         </div>
       )}
-      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing to pull yet" text="Capture or sort a few items first, then this mode will have smart candidates." />}
+      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing here" text={goalFilter ? 'No items linked to this goal. Try All or a different goal.' : 'Capture or sort a few items first.'} />}
     </div>
   );
 }
@@ -1606,14 +1642,14 @@ function ManageGoalsModal({ goals, pinnedGoalIds, onSave, onClose }) {
 
 // ─── Close Day Modal ───────────────────────────────────────────────────────
 const CLOSE_DAY_QUESTIONS = [
-  { id: 'mission',    label: 'Goal',              question: 'Did I move a goal forward today?' },
+  { id: 'mission',    label: 'Mission',          question: 'Did I move a mission forward today?' },
   { id: 'body',       label: 'Body & Discipline', question: 'Did I keep my body and discipline standards?' },
   { id: 'courage',    label: 'Courage',           question: 'Did I face the thing I was avoiding?' },
   { id: 'mind',       label: 'Mind',              question: 'Did I quiet the noise and not let worry loops run me?' },
   { id: 'becoming',   label: 'Becoming',          question: 'Did I live today like the person I\'m trying to become?' },
 ];
 
-function CloseDayModal({ thoughts, goals, onClose, saveTomorrowPreload }) {
+function CloseDayModal({ thoughts, activeMissions, onClose, saveTomorrowPreload }) {
   const [step, setStep] = useState('gut'); // 'gut' | 'questions' | 'summary' | 'preload'
   const [gutCall, setGutCall] = useState('');
   const [answers, setAnswers] = useState({});
@@ -1626,7 +1662,7 @@ function CloseDayModal({ thoughts, goals, onClose, saveTomorrowPreload }) {
 
   const todayDone = thoughts.filter((t) => t.status === 'Done' && getDayKey(t.completedAt || t.createdAt) === todayKey);
   const todayActive = thoughts.filter((t) => t.status !== 'Done' && getDayKey(t.createdAt) === todayKey);
-  const goalsTouched = (goals || []).filter((g) => todayDone.some((t) => t.goalId === g.id) || todayActive.some((t) => t.goalId === g.id));
+  const missionsTouched = (activeMissions || []).filter((m) => todayDone.some((t) => t.relatedMissionId === m.id) || todayActive.some((t) => t.relatedMissionId === m.id));
 
   const score = Object.values(answers).filter(Boolean).length;
 
@@ -1647,8 +1683,8 @@ function CloseDayModal({ thoughts, goals, onClose, saveTomorrowPreload }) {
     if (todayDone.length) todayDone.forEach((t) => lines.push(`  • ${t.text}`));
     else lines.push('  • Nothing marked done today');
     lines.push('');
-    lines.push('🎯 Goals Touched:');
-    if (goalsTouched.length) goalsTouched.forEach((g) => lines.push(`  • ${g.title}`));
+    lines.push('🎯 Missions Touched:');
+    if (missionsTouched.length) missionsTouched.forEach((m) => lines.push(`  • ${m.text}`));
     else lines.push('  • None directly linked');
     lines.push('');
     lines.push('💭 New Thoughts Captured Today:');
@@ -1773,11 +1809,12 @@ function CloseDayModal({ thoughts, goals, onClose, saveTomorrowPreload }) {
 // ─── Capture ───────────────────────────────────────────────────────────────
 const CAPTURE_TABS = [
   { id: 'thought', label: 'Thought', icon: Brain, tone: 'thought' },
+  { id: 'mission', label: 'Mission', icon: Target, tone: 'mission' },
   { id: 'goal', label: 'Goal', icon: Flag, tone: 'goal' },
   { id: 'direction', label: 'Direction', icon: Compass, tone: 'direction' },
 ];
 
-function CaptureView({ addThought, addGoal, addLifeDirection, goals, lifeDirections, setActiveTab }) {
+function CaptureView({ addThought, addGoal, addLifeDirection, goals, activeMissions, lifeDirections, setActiveTab }) {
   const [tab, setTab] = useState('thought');
   return (
     <section className="screen stack">
@@ -1794,7 +1831,10 @@ function CaptureView({ addThought, addGoal, addLifeDirection, goals, lifeDirecti
         })}
       </div>
       {tab === 'thought' && (
-        <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} />
+        <CaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} activeMissions={activeMissions} />
+      )}
+      {tab === 'mission' && (
+        <MissionCaptureForm addThought={(input) => { addThought(input); setActiveTab('sort'); }} goals={goals} />
       )}
       {tab === 'goal' && (
         <GoalCaptureForm addGoal={(input) => { addGoal(input); setActiveTab('plan'); }} lifeDirections={lifeDirections} />
@@ -1803,6 +1843,55 @@ function CaptureView({ addThought, addGoal, addLifeDirection, goals, lifeDirecti
         <LifeDirectionCaptureForm addLifeDirection={(input) => { addLifeDirection(input); setActiveTab('plan'); }} />
       )}
     </section>
+  );
+}
+
+function MissionCaptureForm({ addThought, goals }) {
+  const [form, setForm] = useState({ text: '', area: 'Personal', goalId: '', prioritySignals: [] });
+  function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
+  function toggleSignal(id) {
+    setForm((prev) => {
+      const has = prev.prioritySignals.includes(id);
+      return { ...prev, prioritySignals: has ? prev.prioritySignals.filter((x) => x !== id) : [...prev.prioritySignals, id] };
+    });
+  }
+  function submit(e) {
+    e.preventDefault();
+    if (!form.text.trim()) return;
+    addThought({ ...form, category: 'active-missions' });
+    setForm({ text: '', area: 'Personal', goalId: '', prioritySignals: [] });
+  }
+  return (
+    <form className="capture-form card capture-card-mission" onSubmit={submit}>
+      <div className="capture-form-type-header">
+        <div className="capture-form-type-icon icon-mission-bg"><Target size={18} /></div>
+        <div><strong>New Mission</strong><p>Active priority — capped at 3 in Command</p></div>
+      </div>
+      <Field label="Mission"><input placeholder="Get Command Center to 100%" value={form.text} onChange={(e) => set('text', e.target.value)} autoFocus /></Field>
+      <div className="form-grid">
+        <Field label="Life Area"><select value={form.area} onChange={(e) => set('area', e.target.value)}>{lifeAreas.map((a) => <option key={a}>{a}</option>)}</select></Field>
+        <Field label="Related Goal">
+          <select value={form.goalId} onChange={(e) => set('goalId', e.target.value)}>
+            <option value="">None</option>
+            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="field">
+        <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional — select any)</span></span>
+        <div className="goal-signal-toggles">
+          {PRIORITY_SIGNALS.map((s) => {
+            const active = form.prioritySignals.includes(s.id);
+            return (
+              <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
+                {s.icon} {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <button className="primary-button capture-submit-mission" type="submit"><Save size={17} /> Save Mission</button>
+    </form>
   );
 }
 
@@ -1886,15 +1975,16 @@ function LifeDirectionCaptureForm({ addLifeDirection }) {
   );
 }
 
-function CaptureForm({ addThought, goals, compact = false }) {
-  const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', goalId: '' });
+function CaptureForm({ addThought, goals, activeMissions, compact = false }) {
+  const [form, setForm] = useState({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '', goalId: '' });
   const selected = form.category ? getCategory(form.category) : null;
+  const isMission = form.category === 'active-missions';
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
   function submit(e) {
     e.preventDefault();
     if (!form.text.trim()) return;
     addThought(form);
-    setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', goalId: '' });
+    setForm({ text: '', category: '', area: 'Personal', nextAction: '', notes: '', dueDate: '', energy: 'Medium', relatedMissionId: '', goalId: '' });
   }
   return (
     <form className="capture-form card" onSubmit={submit}>
@@ -1926,12 +2016,21 @@ function CaptureForm({ addThought, goals, compact = false }) {
         <Field label="Due / Follow-up Date"><input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} /></Field>
         <Field label="Energy Required"><select value={form.energy} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
       </div>
-      <Field label="Related Goal">
-        <select value={form.goalId} onChange={(e) => set('goalId', e.target.value)}>
-          <option value="">None</option>
-          {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-        </select>
-      </Field>
+      {isMission ? (
+        <Field label="Related Goal">
+          <select value={form.goalId} onChange={(e) => set('goalId', e.target.value)}>
+            <option value="">None</option>
+            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+          </select>
+        </Field>
+      ) : (
+        <Field label="Related Mission">
+          <select value={form.relatedMissionId} onChange={(e) => set('relatedMissionId', e.target.value)}>
+            <option value="">None</option>
+            {activeMissions.map((m) => <option key={m.id} value={m.id}>{m.text}</option>)}
+          </select>
+        </Field>
+      )}
       <Field label="Notes"><textarea placeholder="Context, why it matters, anything you don't want to forget." value={form.notes} onChange={(e) => set('notes', e.target.value)} /></Field>
       <button className="primary-button" type="submit"><Save size={17} /> Save to Command Center</button>
     </form>
@@ -1939,16 +2038,25 @@ function CaptureForm({ addThought, goals, compact = false }) {
 }
 
 // ─── Sort View ─────────────────────────────────────────────────────────────
-// Every thought links to a goal directly via goalId. '' = unlinked.
-function resolveThoughtGoalId(t) {
-  return t.goalId || '';
+// Resolve which goal a thought serves: missions link directly via goalId,
+// everything else resolves through its related mission. '' = unlinked.
+function resolveThoughtGoalId(t, missionById) {
+  if (t.category === 'active-missions') return t.goalId || '';
+  if (t.relatedMissionId && missionById[t.relatedMissionId]) return missionById[t.relatedMissionId].goalId || '';
+  return '';
 }
 
 function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoalFilter, setGoalFilter, goToPlan, goToGoal, selectedCategory, setSelectedCategory, query, setQuery, filteredThoughts, updateThought, deleteThought, convertThought, setModal }) {
   const [collapsedTiers, setCollapsedTiers] = useState({});
   function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
 
-  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
+  // Mission lookup spans active + done missions so completed missions still resolve linkage
+  const missionById = useMemo(() => {
+    const map = {};
+    [...thoughts, ...(doneThoughts || [])].forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    return map;
+  }, [thoughts, doneThoughts]);
+
   const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done'), [goals]);
 
   // Guard against a stale filter: if the selected goal was completed or deleted,
@@ -1960,36 +2068,36 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
     const stats = {};
     openGoals.forEach((g) => { stats[g.id] = { open: 0, actionsDone: 0, actionsTotal: 0 }; });
     thoughts.forEach((t) => {
-      const gid = resolveThoughtGoalId(t);
+      const gid = resolveThoughtGoalId(t, missionById);
       if (gid && stats[gid]) {
         stats[gid].open += 1;
         if (t.category === 'next-actions') stats[gid].actionsTotal += 1;
       }
     });
     (doneThoughts || []).forEach((t) => {
-      const gid = resolveThoughtGoalId(t);
+      const gid = resolveThoughtGoalId(t, missionById);
       if (gid && stats[gid] && t.category === 'next-actions') { stats[gid].actionsDone += 1; stats[gid].actionsTotal += 1; }
     });
     return stats;
-  }, [openGoals, thoughts, doneThoughts]);
+  }, [openGoals, thoughts, doneThoughts, missionById]);
 
   // Apply goal filter to the sorted (categorized) working set
   const goalScopedThoughts = useMemo(() => {
     if (!goalFilter) return thoughts;
-    if (goalFilter === '__unlinked__') return thoughts.filter((t) => t.category && resolveThoughtGoalId(t) === '');
-    return thoughts.filter((t) => resolveThoughtGoalId(t) === goalFilter);
-  }, [thoughts, goalFilter]);
+    if (goalFilter === '__unlinked__') return thoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '');
+    return thoughts.filter((t) => resolveThoughtGoalId(t, missionById) === goalFilter);
+  }, [thoughts, goalFilter, missionById]);
 
   const scopedFilteredThoughts = useMemo(() => {
     if (!goalFilter) return filteredThoughts;
-    if (goalFilter === '__unlinked__') return filteredThoughts.filter((t) => t.category && resolveThoughtGoalId(t) === '');
-    return filteredThoughts.filter((t) => resolveThoughtGoalId(t) === goalFilter);
-  }, [filteredThoughts, goalFilter]);
+    if (goalFilter === '__unlinked__') return filteredThoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '');
+    return filteredThoughts.filter((t) => resolveThoughtGoalId(t, missionById) === goalFilter);
+  }, [filteredThoughts, goalFilter, missionById]);
 
   const isUnlinkedFilter = goalFilter === '__unlinked__';
   const unlinkedCount = useMemo(() =>
-    thoughts.filter((t) => t.category && resolveThoughtGoalId(t) === '').length,
-  [thoughts]);
+    thoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '').length,
+  [thoughts, missionById]);
 
   const activeGoal = (!goalFilter || isUnlinkedFilter) ? null : openGoals.find((g) => g.id === goalFilter);
 
@@ -2009,10 +2117,65 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
           </div>
         </div>
       )}
+      {/* ── Goal Scope Selector — lens above all tiers ── */}
+      {openGoals.length > 0 && (
+        <div className="goal-scope-selector">
+          <div className="goal-scope-eyebrow">
+            <span>Scope by goal</span>
+            <button className="text-button small" onClick={goToPlan}>Manage</button>
+          </div>
+          <div className="goal-scope-pills">
+            {openGoals.map((g) => {
+              const stats = goalStats[g.id] || { open: 0 };
+              const isActive = goalFilter === g.id;
+              return (
+                <button
+                  key={g.id}
+                  className={`goal-scope-pill ${isActive ? 'active' : ''}`}
+                  onClick={() => setGoalFilter(isActive ? '' : g.id)}
+                >
+                  {g.title} <span className="goal-scope-pill-ct">{stats.open}</span>
+                </button>
+              );
+            })}
+            <button
+              className={`goal-scope-pill goal-scope-pill-unlinked ${goalFilter === '__unlinked__' ? 'active' : ''}`}
+              onClick={() => setGoalFilter(goalFilter === '__unlinked__' ? '' : '__unlinked__')}
+            >
+              <LinkIcon size={11} style={{ display: 'inline', marginRight: 3, verticalAlign: -1 }} />
+              Unlinked <span className="goal-scope-pill-ct">{unlinkedCount}</span>
+            </button>
+          </div>
+          {goalFilter && goalFilter !== '__unlinked__' && (() => {
+            const g = openGoals.find((x) => x.id === goalFilter);
+            if (!g) return null;
+            return (
+              <div className="goal-scope-band">
+                <Target size={13} />
+                <span className="goal-scope-band-title">{g.title}</span>
+                {g.why && <span className="goal-scope-band-why">{g.why}</span>}
+                <div className="goal-scope-band-actions">
+                  <button className="text-button small" onClick={() => setModal({ type: 'edit-goal', goal: g })}><Edit3 size={12} /> Edit</button>
+                  <button className="text-button small" onClick={() => goToGoal(g.id)}><Flag size={12} /> Plan</button>
+                </div>
+              </div>
+            );
+          })()}
+          {goalFilter === '__unlinked__' && (
+            <div className="goal-scope-band goal-scope-band-unlinked">
+              <Compass size={13} />
+              <span className="goal-scope-band-why">Sorted items with no goal linked. Edit each to connect it.</span>
+            </div>
+          )}
+        </div>
+      )}
       <div className="tier-nav">
         {categoryTiers.map((tier) => {
           const tierCats = categories.filter((c) => c.tier === tier.id);
           const isCollapsed = collapsedTiers[tier.id];
+          // Act Now: Actions count + Quick Wins count (low energy next-actions)
+          const actNowActions = goalScopedThoughts.filter((t) => t.category === 'next-actions').length;
+          const actNowQuickWins = goalScopedThoughts.filter((t) => t.category === 'next-actions' && t.energy === 'Low').length;
           return (
             <div key={tier.id} className={`tier-group tier-group-${tier.color}`}>
               <button className="tier-header" onClick={() => toggleTier(tier.id)}>
@@ -2023,18 +2186,18 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
                     <span className="tier-desc">{tierScopeLabel ? `Scoped to ${tierScopeLabel}` : tier.description}</span>
                   </div>
                 </div>
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {tier.id === 'act-now' && !isCollapsed && (
+                    <>
+                      <span className="tier-summary-pill tier-pill-green"><CheckCircle2 size={11} /> {actNowActions} actions</span>
+                      {actNowQuickWins > 0 && <span className="tier-summary-pill tier-pill-yellow"><Zap size={11} /> {actNowQuickWins} quick wins</span>}
+                    </>
+                  )}
+                  {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                </div>
               </button>
               {!isCollapsed && (
                 <div className="tier-chips">
-                  {tier.id === 'act-now' && openGoals.length > 0 && (
-                    <button
-                      className={`category-chip chip-active-blue ${goalPickerOpen || goalFilter ? 'active' : ''}`}
-                      onClick={() => setGoalPickerOpen((v) => !v)}
-                    >
-                      <Target size={16} /><span>Goals</span><small>{openGoals.length}</small>
-                    </button>
-                  )}
                   {tierCats.map((cat) => {
                     const CIcon = cat.icon;
                     const count = goalScopedThoughts.filter((t) => t.category === cat.id).length;
@@ -2047,14 +2210,6 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
                     );
                   })}
                 </div>
-              )}
-              {!isCollapsed && tier.id === 'act-now' && goalPickerOpen && openGoals.length > 0 && (
-                <GoalCardGrid
-                  goals={openGoals} goalStats={goalStats}
-                  goalFilter={goalFilter} setGoalFilter={setGoalFilter}
-                  unlinkedCount={unlinkedCount} setModal={setModal}
-                  goToPlan={goToPlan} goToGoal={goToGoal}
-                />
               )}
             </div>
           );
@@ -2076,7 +2231,7 @@ function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCou
     <div>
       <div className="goals-section-header">
         <span className="goals-section-label"><Target size={13} /> Goals</span>
-        <button className="text-button small" onClick={() => goalFilter && goalFilter !== '__unlinked__' ? goToGoal(goalFilter) : goToPlan()}>Manage</button>
+        <button className="text-button small" onClick={goToPlan}>Manage</button>
       </div>
       <div className="goals-card-grid">
         {goals.map((g) => {
@@ -2129,7 +2284,7 @@ function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCou
       {isUnlinked && (
         <div className="goal-context-band unlinked-band">
           <Compass size={13} />
-          <span className="goal-context-why">These items are sorted but don't connect to any goal. Edit each one to link it directly.</span>
+          <span className="goal-context-why">These items are sorted but don't connect to any goal. Edit each one to link it to a mission.</span>
         </div>
       )}
     </div>
@@ -2193,7 +2348,7 @@ function ThoughtCard({ thought, updateThought, deleteThought, convertThought, se
         {thought.energy && <Pill tone={energyTone}><EnergyIcon level={thought.energy} /> {thought.energy}</Pill>}
         {stale && <Pill tone={stale.urgent ? 'red' : 'slate'}><Clock size={11} /> {stale.label}</Pill>}
       </div>
-      {thought.prioritySignals && thought.prioritySignals.length > 0 && (
+      {thought.category === 'active-missions' && thought.prioritySignals && thought.prioritySignals.length > 0 && (
         <div className="mission-signal-row">
           {thought.prioritySignals.map((sid) => {
             const s = PRIORITY_SIGNALS.find((x) => x.id === sid);
@@ -2239,8 +2394,9 @@ function ConversionButtons({ thought, convertThought }) {
   );
 }
 
-function ThoughtEditForm({ thought, goals, updateThought }) {
+function ThoughtEditForm({ thought, goals, activeMissions, updateThought }) {
   const [form, setForm] = useState({ ...thought, prioritySignals: thought.prioritySignals || [] });
+  const isMission = form.category === 'active-missions';
   function set(key, value) { setForm((prev) => ({ ...prev, [key]: value })); }
   function toggleSignal(id) {
     setForm((prev) => {
@@ -2267,25 +2423,36 @@ function ThoughtEditForm({ thought, goals, updateThought }) {
         <Field label="Status"><select value={form.status || 'Open'} onChange={(e) => set('status', e.target.value)}>{statuses.map((s) => <option key={s}>{s}</option>)}</select></Field>
       </div>
       <Field label="Energy Required"><select value={form.energy || 'Medium'} onChange={(e) => set('energy', e.target.value)}>{energyLevels.map((l) => <option key={l}>{l}</option>)}</select></Field>
-      <Field label="Related Goal">
-        <select value={form.goalId || ''} onChange={(e) => set('goalId', e.target.value)}>
-          <option value="">None</option>
-          {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-        </select>
-      </Field>
-      <div className="field">
-        <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(select any that apply)</span></span>
-        <div className="goal-signal-toggles">
-          {PRIORITY_SIGNALS.map((s) => {
-            const active = form.prioritySignals.includes(s.id);
-            return (
-              <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
-                {s.icon} {s.label}
-              </button>
-            );
-          })}
+      {isMission ? (
+        <Field label="Related Goal">
+          <select value={form.goalId || ''} onChange={(e) => set('goalId', e.target.value)}>
+            <option value="">None</option>
+            {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+          </select>
+        </Field>
+      ) : (
+        <Field label="Related Mission">
+          <select value={form.relatedMissionId || ''} onChange={(e) => set('relatedMissionId', e.target.value)}>
+            <option value="">None</option>
+            {activeMissions.map((m) => <option key={m.id} value={m.id}>{m.text}</option>)}
+          </select>
+        </Field>
+      )}
+      {form.category === 'active-missions' && (
+        <div className="field">
+          <span>Priority Signal <span style={{ fontWeight: 400, opacity: 0.5 }}>(select any that apply)</span></span>
+          <div className="goal-signal-toggles">
+            {PRIORITY_SIGNALS.map((s) => {
+              const active = form.prioritySignals.includes(s.id);
+              return (
+                <button key={s.id} type="button" className={`goal-signal-toggle ${active ? `signal-active-${s.tone}` : 'signal-inactive'}`} onClick={() => toggleSignal(s.id)}>
+                  {s.icon} {s.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
       {form.category === 'decisions' && <Field label="Options"><textarea value={form.decisionOptions || ''} onChange={(e) => set('decisionOptions', e.target.value)} placeholder="Option A / Option B / Current leaning" /></Field>}
       {form.category === 'waiting-on' && <Field label="Waiting On"><input value={form.waitingOn || ''} onChange={(e) => set('waitingOn', e.target.value)} placeholder="Person, payment, email, answer..." /></Field>}
       {form.category === 'anxiety-noise' && (
@@ -2322,27 +2489,6 @@ function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDi
 
 const TRAJECTORY_PALETTE = ['amber', 'green', 'purple', 'blue', 'pink', 'teal'];
 
-// Direction accent colors by position — amber, blue, emerald
-const DIRECTION_PALETTE = [
-  { color: 'amber',   hex: '#f59e0b', border: 'rgba(245,158,11,0.32)',  bg: 'rgba(245,158,11,0.06)',  headerBg: 'rgba(245,158,11,0.11)', subColor: '#b45309', divider: 'rgba(245,158,11,0.14)' },
-  { color: 'blue',    hex: '#60a5fa', border: 'rgba(96,165,250,0.28)',   bg: 'rgba(96,165,250,0.05)',  headerBg: 'rgba(96,165,250,0.09)', subColor: '#3b82f6', divider: 'rgba(96,165,250,0.12)' },
-  { color: 'emerald', hex: '#34d399', border: 'rgba(52,211,153,0.26)',   bg: 'rgba(52,211,153,0.04)',  headerBg: 'rgba(52,211,153,0.09)', subColor: '#059669', divider: 'rgba(52,211,153,0.10)' },
-  { color: 'purple',  hex: '#a78bfa', border: 'rgba(167,139,250,0.28)',  bg: 'rgba(167,139,250,0.05)', headerBg: 'rgba(167,139,250,0.09)', subColor: '#7c3aed', divider: 'rgba(167,139,250,0.12)' },
-];
-
-// Map category → tier color tokens for roadmap thought rows
-const CAT_TIER_STYLE = {
-  'next-actions':    { rowBorder: 'rgba(245,158,11,0.22)', rowBg: 'rgba(245,158,11,0.07)', iconColor: '#d97706', badgeBg: 'rgba(245,158,11,0.15)', badgeColor: '#d97706' },
-  'problems':        { rowBorder: 'rgba(251,146,60,0.25)',  rowBg: 'rgba(251,146,60,0.07)', iconColor: '#f97316', badgeBg: 'rgba(251,146,60,0.15)', badgeColor: '#f97316' },
-  'decisions':       { rowBorder: 'rgba(167,139,250,0.25)', rowBg: 'rgba(167,139,250,0.07)', iconColor: '#a78bfa', badgeBg: 'rgba(167,139,250,0.15)', badgeColor: '#a78bfa' },
-  'waiting-on':      { rowBorder: 'rgba(251,191,36,0.22)',  rowBg: 'rgba(251,191,36,0.06)', iconColor: '#fbbf24', badgeBg: 'rgba(251,191,36,0.12)', badgeColor: '#d97706' },
-  'maintenance':     { rowBorder: 'rgba(45,212,191,0.22)',  rowBg: 'rgba(45,212,191,0.05)', iconColor: '#2dd4bf', badgeBg: 'rgba(45,212,191,0.12)', badgeColor: '#0d9488' },
-  'relationships':   { rowBorder: 'rgba(244,114,182,0.22)', rowBg: 'rgba(244,114,182,0.05)', iconColor: '#f472b6', badgeBg: 'rgba(244,114,182,0.12)', badgeColor: '#db2777' },
-  'money-adult-life':{ rowBorder: 'rgba(96,165,250,0.22)',  rowBg: 'rgba(96,165,250,0.05)', iconColor: '#60a5fa', badgeBg: 'rgba(96,165,250,0.12)', badgeColor: '#2563eb' },
-  'someday':         { rowBorder: 'rgba(148,163,184,0.2)',  rowBg: 'rgba(148,163,184,0.05)', iconColor: '#94a3b8', badgeBg: 'rgba(148,163,184,0.12)', badgeColor: '#94a3b8' },
-  'anxiety-noise':   { rowBorder: 'rgba(248,113,113,0.22)', rowBg: 'rgba(248,113,113,0.05)', iconColor: '#f87171', badgeBg: 'rgba(248,113,113,0.12)', badgeColor: '#ef4444' },
-};
-
 function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, updateThought, setModal }) {
   const [expandedDays, setExpandedDays] = useState({});
   const [range, setRange] = useState(14);
@@ -2362,6 +2508,11 @@ function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, 
 
   const byDayList = useMemo(() => Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0])), [byDay]);
 
+  const missionById = useMemo(() => {
+    const map = {};
+    (allThoughts || []).filter((t) => t.category === 'active-missions').forEach((m) => { map[m.id] = m; });
+    return map;
+  }, [allThoughts]);
   const goalById = useMemo(() => {
     const map = {};
     (goals || []).forEach((g) => { map[g.id] = g; });
@@ -2369,7 +2520,10 @@ function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, 
   }, [goals]);
 
   function getLifeDirectionId(t) {
-    const goal = t.goalId ? goalById[t.goalId] : null;
+    let goalId = '';
+    if (t.category === 'active-missions') goalId = t.goalId;
+    else if (t.relatedMissionId && missionById[t.relatedMissionId]) goalId = missionById[t.relatedMissionId].goalId;
+    const goal = goalId ? goalById[goalId] : null;
     return goal ? goal.lifeDirectionId : '';
   }
 
@@ -2434,7 +2588,7 @@ function AccomplishmentsTab({ doneThoughts, allThoughts, goals, lifeDirections, 
     if (counts.unlinked > 0) rows.push({ id: 'unlinked', title: 'Unlinked', count: counts.unlinked, color: 'slate' });
     const total = rows.reduce((s, r) => s + r.count, 0);
     return { rows, total };
-  }, [rangeData, byDay, lifeDirections, goalById]);
+  }, [rangeData, byDay, lifeDirections, missionById, goalById]);
 
   if (doneThoughts.length === 0) {
     return (
@@ -2642,21 +2796,28 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
   [activeThoughts]);
   const staleItems = staleAll.slice(0, 6);
 
+  const missionById = useMemo(() => {
+    const map = {};
+    activeThoughts.forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    doneThoughts.forEach((t) => { if (t.category === 'active-missions') map[t.id] = t; });
+    return map;
+  }, [activeThoughts, doneThoughts]);
+
   const unlinkedCount = useMemo(() =>
-    activeThoughts.filter((t) => t.category && resolveThoughtGoalId(t) === '').length,
-  [activeThoughts]);
+    activeThoughts.filter((t) => t.category && resolveThoughtGoalId(t, missionById) === '').length,
+  [activeThoughts, missionById]);
 
   const goalProgressItems = useMemo(() => {
     const openGoals = (goals || []).filter((g) => g.status !== 'Done');
     return openGoals.map((g) => {
-      const linked = activeThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t) === g.id);
-      const doneLinked = doneThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t) === g.id);
+      const linked = activeThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t, missionById) === g.id);
+      const doneLinked = doneThoughts.filter((t) => t.category === 'next-actions' && resolveThoughtGoalId(t, missionById) === g.id);
       const total = linked.length + doneLinked.length;
       const pct = total > 0 ? Math.round((doneLinked.length / total) * 100) : 0;
       const doneThisWeek = doneLinked.filter((t) => new Date(t.completedAt || t.createdAt).getTime() >= weekCutoff).length;
       return { goal: g, pct, doneThisWeek, total };
     }).filter((item) => item.total > 0);
-  }, [goals, activeThoughts, doneThoughts, weekCutoff]);
+  }, [goals, activeThoughts, doneThoughts, missionById, weekCutoff]);
 
   const GOAL_COLORS = ['blue', 'purple', 'green', 'amber', 'teal', 'pink'];
 
@@ -2769,7 +2930,7 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
 }
 
 // ─── Plan View — Agenda Rail + Nested Roadmap ───────────────────────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+function PlanView({ openTasks, openLoops, lifeDirections, goals, activeMissions, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [expandedGoalId, setExpandedGoalId] = useState('');
 
@@ -2800,7 +2961,7 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, tod
       )}
       {subTab === 'roadmap' && (
         <RoadmapView
-          lifeDirections={lifeDirections} goals={goals}
+          lifeDirections={lifeDirections} goals={goals} activeMissions={activeMissions}
           items={allPlanItems} milestones={milestones} todayKey={todayKey}
           updateGoal={updateGoal} updateLifeDirection={updateLifeDirection} updateThought={updateThought}
           setMilestone={setMilestone} toggleMilestone={toggleMilestone}
@@ -3006,13 +3167,14 @@ function MilestoneSlot({ missionId, weekStart, milestone, setMilestone, toggleMi
   );
 }
 
-function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updateGoal, updateLifeDirection, updateThought, setMilestone, toggleMilestone, expandedGoalId, setExpandedGoalId, setModal, setActiveTab, setSelectedCategory }) {
+function RoadmapView({ lifeDirections, goals, activeMissions, items, milestones, todayKey, updateGoal, updateLifeDirection, updateThought, setMilestone, toggleMilestone, expandedGoalId, setExpandedGoalId, setModal, setActiveTab, setSelectedCategory }) {
   const [openDirections, setOpenDirections] = useState(() => {
     const initial = {};
     lifeDirections.forEach((d) => { initial[d.id] = true; });
     return initial;
   });
   const [openGoals, setOpenGoals] = useState({});
+  const [openMissions, setOpenMissions] = useState({});
 
   useEffect(() => {
     if (expandedGoalId) {
@@ -3027,6 +3189,7 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
 
   function toggleDirection(id) { setOpenDirections((p) => ({ ...p, [id]: !p[id] })); }
   function toggleGoalOpen(id) { setOpenGoals((p) => ({ ...p, [id]: !p[id] })); }
+  function toggleMissionOpen(id) { setOpenMissions((p) => ({ ...p, [id]: !p[id] })); }
 
   function goToItem(item) {
     setSelectedCategory(item.category);
@@ -3043,18 +3206,17 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
 
   return (
     <div className="stack">
-      {lifeDirections.map((dir, dirIdx) => {
+      {lifeDirections.map((dir) => {
         const dirGoals = goals.filter((g) => g.lifeDirectionId === dir.id);
         const isOpen = !!openDirections[dir.id];
-        const dp = DIRECTION_PALETTE[dirIdx % DIRECTION_PALETTE.length];
         return (
-          <div key={dir.id} className="direction-group" style={{ borderColor: dp.border, background: dp.bg }}>
-            <div className="direction-header" style={{ background: `linear-gradient(90deg, ${dp.headerBg}, ${dp.bg})` }} onClick={() => toggleDirection(dir.id)}>
+          <div key={dir.id} className="direction-group">
+            <div className="direction-header" onClick={() => toggleDirection(dir.id)}>
               <div className="direction-header-left">
-                <Compass size={16} style={{ color: dp.hex }} />
+                <Compass size={16} />
                 <div>
                   <span className="direction-title">{dir.title}</span>
-                  <span className="direction-sub" style={{ color: dp.subColor }}>{dirGoals.length} goal{dirGoals.length === 1 ? '' : 's'}</span>
+                  <span className="direction-sub">{dirGoals.length} goal{dirGoals.length === 1 ? '' : 's'}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3065,17 +3227,17 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
               </div>
             </div>
             {isOpen && (
-              <div className="direction-body" style={{ borderTopColor: dp.divider }}>
+              <div className="direction-body">
                 {dirGoals.length === 0 && (
                   <p className="muted small" style={{ padding: '8px 4px' }}>No goals yet under this direction.</p>
                 )}
                 {dirGoals.map((goal) => (
                   <GoalNode
-                    key={goal.id} goal={goal} items={items} milestones={milestones}
-                    dirPalette={dp}
+                    key={goal.id} goal={goal} activeMissions={activeMissions} items={items} milestones={milestones}
                     todayKey={todayKey} updateGoal={updateGoal} updateThought={updateThought}
                     setMilestone={setMilestone} toggleMilestone={toggleMilestone}
                     isOpen={!!openGoals[goal.id]} onToggle={() => toggleGoalOpen(goal.id)}
+                    openMissions={openMissions} toggleMissionOpen={toggleMissionOpen}
                     goToItem={goToItem} setModal={setModal}
                   />
                 ))}
@@ -3091,11 +3253,12 @@ function RoadmapView({ lifeDirections, goals, items, milestones, todayKey, updat
   );
 }
 
-function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, isOpen, onToggle, goToItem, setModal }) {
+function GoalNode({ goal, activeMissions, items, milestones, todayKey, updateGoal, updateThought, setMilestone, toggleMilestone, isOpen, onToggle, openMissions, toggleMissionOpen, goToItem, setModal }) {
   const meta = getAreaMeta(goal.area);
   const GIcon = meta.icon;
-  const dp = dirPalette || DIRECTION_PALETTE[0];
-  const linked = items.filter((t) => t.goalId === goal.id);
+  const goalMissions = activeMissions.filter((m) => m.goalId === goal.id);
+  const missionIds = goalMissions.map((m) => m.id);
+  const linked = items.filter((t) => missionIds.includes(t.relatedMissionId));
   const goalMilestones = milestones.filter((m) => m.missionId === goal.id);
   const currentWeek = weekStartKey(todayKey);
   const daysLeft = goal.targetDate ? daysBetweenKeys(todayKey, goal.targetDate) : null;
@@ -3114,34 +3277,30 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
   const currentIdx = weeks.indexOf(currentWeek);
   const progressPct = weeks.length > 1 && currentIdx >= 0 ? Math.round((currentIdx / (weeks.length - 1)) * 100) : 0;
 
-
-
-  const undated = linked.filter((t) => !t.dueDate);
-
-  function renderLinkedItem(item) {
-    const cat = getCategory(item.category);
-    const CatIcon = cat.icon;
-    const ts = CAT_TIER_STYLE[item.category] || CAT_TIER_STYLE['someday'];
+  function renderWeekTask(item) {
+    const itemCat = getCategory(item.category);
+    const CatIcon = itemCat.icon;
     return (
-      <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', borderRadius: 11, border: `1px solid ${ts.rowBorder}`, background: ts.rowBg }}>
-        <button style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: ts.iconColor, display: 'flex', flexShrink: 0 }} title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
-          <CircleDashed size={15} />
-        </button>
-        <button style={{ flex: 1, background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontSize: '0.86rem', color: 'var(--text)', fontFamily: 'inherit' }} onClick={() => goToItem(item)}>{item.text}</button>
-        {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.badgeBg, color: ts.badgeColor, whiteSpace: 'nowrap', flexShrink: 0 }}>
-          <CatIcon size={11} />
-          {cat.short}
-        </span>
+      <div key={item.id} className="plan-task roadmap-task">
+        <div className="plan-task-row">
+          <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+            <CircleDashed size={15} />
+          </button>
+          <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+          {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
+          <Pill tone={itemCat.color} className="plan-pill"><CatIcon size={10} /> {itemCat.short}</Pill>
+        </div>
       </div>
     );
   }
 
+  const undated = linked.filter((t) => !t.dueDate);
+
   return (
-    <div className="card roadmap-hq goal-node" style={{ borderLeftColor: dp.hex, borderLeftWidth: 3 }}>
+    <div className={`card roadmap-hq goal-node roadmap-tint-${meta.color}`}>
       <div className="roadmap-head goal-node-toggle" onClick={onToggle}>
         <div className="roadmap-title">
-          <GIcon size={17} style={{ color: dp.hex }} />
+          <GIcon size={17} className={`stat-icon-${meta.color}`} />
           <h3>{goal.title}</h3>
         </div>
         <div className="roadmap-head-actions">
@@ -3162,7 +3321,7 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
           {goal.why && <p className="roadmap-why">{goal.why}</p>}
           <p className="roadmap-sub">
             {goal.targetDate ? `Target: ${formatDateFull(goal.targetDate)}` : 'No target date set'}
-            {' · '}{linked.length} linked item{linked.length === 1 ? '' : 's'}
+            {' · '}{goalMissions.length} mission{goalMissions.length === 1 ? '' : 's'}
             
           </p>
 
@@ -3207,8 +3366,8 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
                         setMilestone={setMilestone} toggleMilestone={toggleMilestone}
                       />
                       {weekTasks.length > 0 && (
-                        <div className="roadmap-week-tasks" style={{ display: 'grid', gap: 6, marginTop: 6 }}>
-                          {weekTasks.map(renderLinkedItem)}
+                        <div className="roadmap-week-tasks">
+                          {weekTasks.map(renderWeekTask)}
                         </div>
                       )}
                     </div>
@@ -3221,13 +3380,72 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
           {undated.length > 0 && (
             <div className="roadmap-undated">
               <p className="triage-section-label"><Inbox size={13} /> Linked, no date yet</p>
-              <div style={{ display: 'grid', gap: 6 }}>
-                {undated.map((item) => renderLinkedItem(item))}
-              </div>
+              {undated.map((item) => {
+                const itemCat = getCategory(item.category);
+                const CatIcon = itemCat.icon;
+                return (
+                  <div key={item.id} className="plan-task roadmap-task">
+                    <div className="plan-task-row">
+                      <button className="plan-check" title="Mark done" onClick={() => updateThought(item.id, { status: 'Done' })}>
+                        <CircleDashed size={15} />
+                      </button>
+                      <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
+                      <Pill tone={itemCat.color} className="plan-pill"><CatIcon size={10} /> {itemCat.short}</Pill>
+                      <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
+          <div className="mission-node-list">
+            <p className="triage-section-label" style={{ marginTop: 6 }}><Target size={13} /> Missions under this goal</p>
+            {goalMissions.length === 0 && (
+              <p className="muted small">No active missions point at this goal yet. Set "Related Goal" when editing a Mission in Command.</p>
+            )}
+            {goalMissions.map((mission) => (
+              <MissionNode
+                key={mission.id} mission={mission} items={items}
+                isOpen={!!openMissions[mission.id]} onToggle={() => toggleMissionOpen(mission.id)}
+                goToItem={goToItem}
+              />
+            ))}
+          </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function MissionNode({ mission, items, isOpen, onToggle, goToItem }) {
+  const actions = items.filter((t) => t.relatedMissionId === mission.id);
+  const signals = (mission.prioritySignals || []).map((sid) => PRIORITY_SIGNALS.find((s) => s.id === sid)).filter(Boolean);
+  const statusTone = mission.status === 'On Track' ? 'green' : mission.status === 'Slipping' || mission.status === 'Blocked' ? 'red' : 'default';
+  return (
+    <div className="mission-node">
+      <button className="mission-node-header" onClick={onToggle}>
+        <span className="mission-node-title">{mission.text}</span>
+        <div className="mission-node-meta">
+          {signals.map((s) => <Pill key={s.id} tone={s.tone} className="plan-pill">{s.icon}</Pill>)}
+          <Pill tone={statusTone} className="plan-pill">{mission.status}</Pill>
+          <span className="plan-day-load">{actions.length} item{actions.length === 1 ? '' : 's'}</span>
+          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </div>
+      </button>
+      {isOpen && (
+        <div className="mission-node-actions">
+          {actions.length ? actions.map((item) => {
+            const cat = getCategory(item.category);
+            return (
+              <button key={item.id} className="mission-node-action" onClick={() => goToItem(item)}>
+                <cat.icon size={13} className={`task-cat-icon-${cat.color}`} />
+                <span>{item.text}</span>
+                <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
+              </button>
+            );
+          }) : <p className="muted small" style={{ padding: '6px 4px' }}>Nothing linked yet.</p>}
+        </div>
       )}
     </div>
   );
@@ -3250,7 +3468,7 @@ function GoalFormModal({ goal, defaultLifeDirectionId, lifeDirections, addGoal, 
     onClose();
   }
   function handleDelete() {
-    if (window.confirm(`Delete goal "${goal.title}"? Its weekly milestones will be deleted too. Linked items stay in place.`)) {
+    if (window.confirm(`Delete goal "${goal.title}"? Its weekly milestones will be deleted too. Missions and linked items stay in place.`)) {
       deleteGoal(goal.id);
       onClose();
     }
