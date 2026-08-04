@@ -3374,7 +3374,7 @@ body {
 /* ═══ Capture page — tabbed hub ═══════════════════════════════════════════ */
 .capture-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 5px;
   border-radius: 18px;
@@ -3733,3 +3733,125 @@ body {
   border-color: var(--accent-border);
   color: var(--accent);
 }
+
+/* ── Momentum goal rows (Today page) — replaces boxy mission-card grid ──── */
+.momentum-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.momentum-goal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.momentum-goal-row:hover {
+  border-color: var(--line-strong);
+  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  transform: translateY(-1px);
+}
+.momentum-goal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.momentum-goal-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.momentum-goal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.momentum-goal-title-row h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.momentum-goal-chevron { color: var(--text-muted); flex-shrink: 0; }
+.momentum-goal-why {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.momentum-goal-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.momentum-goal-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.momentum-goal-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #34d399);
+  transition: width 0.4s ease;
+}
+.momentum-goal-pct {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  min-width: 32px;
+  text-align: right;
+}
+.momentum-goal-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Promote picker (This Week page "Promote" button) ──────────────────── */
+.promote-slot-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card-strong);
+  box-shadow: var(--shadow);
+}
+.promote-slot-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: none;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.promote-slot-option:hover { background: rgba(255,255,255,0.08); }
