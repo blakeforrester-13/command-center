@@ -3747,6 +3747,7 @@ body {
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid var(--line);
+  border-left-width: 3px;
   background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
   text-align: left;
   cursor: pointer;
@@ -3829,11 +3830,18 @@ body {
 }
 
 /* ── Promote picker (This Week page "Promote" button) ──────────────────── */
+.promote-btn-wrap { position: relative; display: inline-flex; }
 .promote-slot-picker {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  margin-top: 4px;
+  min-width: 150px;
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 8px;
+  padding: 6px;
   border-radius: 12px;
   border: 1px solid var(--line-strong);
   background: var(--bg-card-strong);
@@ -3845,13 +3853,22 @@ body {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 9px;
-  border: none;
+  border: 1px solid transparent;
   background: rgba(255,255,255,0.04);
   color: var(--text);
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .promote-slot-option:hover { background: rgba(255,255,255,0.08); }
+/* Match the tones used by the four Today command cards: red / orange / amber / blue */
+.promote-slot-option-red    { color: #ff7a66; background: rgba(255,90,61,0.09);  border-color: rgba(255,90,61,0.22); }
+.promote-slot-option-red:hover    { background: rgba(255,90,61,0.16); }
+.promote-slot-option-orange { color: var(--cat-orange); background: rgba(255,122,47,0.09); border-color: rgba(255,122,47,0.22); }
+.promote-slot-option-orange:hover { background: rgba(255,122,47,0.16); }
+.promote-slot-option-amber  { color: var(--cat-amber); background: rgba(255,176,32,0.09); border-color: rgba(255,176,32,0.22); }
+.promote-slot-option-amber:hover  { background: rgba(255,176,32,0.16); }
+.promote-slot-option-blue   { color: var(--cat-blue); background: rgba(96,165,250,0.09); border-color: rgba(96,165,250,0.22); }
+.promote-slot-option-blue:hover   { background: rgba(96,165,250,0.16); }
