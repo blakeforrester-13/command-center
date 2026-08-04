@@ -402,6 +402,7 @@ function App() {
   const [modal, setModal] = useState(null);
   const [energyFilter, setEnergyFilter] = useState('');
   const [highlightGoalId, setHighlightGoalId] = useState('');
+  const [planSubTabRequest, setPlanSubTabRequest] = useState('');
   const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
   });
@@ -789,6 +790,7 @@ function App() {
           noise={noiseItems.length}
           setActiveTab={setActiveTab}
           setSelectedCategory={setSelectedCategory}
+          onGoalsClick={() => { setPlanSubTabRequest('roadmap'); setActiveTab('plan'); }}
         />
       </header>
 
@@ -840,6 +842,7 @@ function App() {
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             promoteToToday={promoteToToday}
             highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
+            subTabRequest={planSubTabRequest} clearSubTabRequest={() => setPlanSubTabRequest('')}
             setModal={setModal}
           />
         )}
@@ -1026,6 +1029,18 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
 
+  const goalProgress = useMemo(() => {
+    const map = {};
+    goals.forEach((g) => { map[g.id] = { done: 0, total: 0 }; });
+    activeThoughts.forEach((t) => {
+      if (t.category === 'next-actions' && t.goalId && map[t.goalId]) map[t.goalId].total += 1;
+    });
+    (doneThoughts || []).forEach((t) => {
+      if (t.category === 'next-actions' && t.goalId && map[t.goalId]) { map[t.goalId].total += 1; map[t.goalId].done += 1; }
+    });
+    return map;
+  }, [goals, activeThoughts, doneThoughts]);
+
   return (
     <section className="screen stack">
       <div className="hero-card hero-command-layout">
@@ -1079,27 +1094,30 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
         <div><p className="eyebrow">Active Goals</p><h2>Where Momentum Lives</h2></div>
         <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
       </div>
-      <div className="mission-list">
+      <div className="momentum-goal-list">
         {goals.slice(0, 3).map((m) => {
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
+          const prog = goalProgress[m.id] || { done: 0, total: 0 };
+          const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
           return (
-            <button
-              key={m.id}
-              className={`mission-card mission-card-btn mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
-              onClick={() => goToGoal(m.id)}
-            >
-              <div>
-                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
-                  <AreaIcon size={13} /><span>{m.area}</span>
+            <button key={m.id} className="momentum-goal-row" onClick={() => goToGoal(m.id)}>
+              <div className="momentum-goal-top">
+                <div className="momentum-goal-area" style={{ color: `var(--cat-${areaMeta.color})` }}>
+                  <AreaIcon size={12} /><span>{m.area}</span>
                 </div>
-                <h3>{m.title}</h3>
-                <p>{m.why || 'No why added yet.'}</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
-                <ChevronRight size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               </div>
+              <div className="momentum-goal-title-row">
+                <h3>{m.title}</h3>
+                <ChevronRight size={15} className="momentum-goal-chevron" />
+              </div>
+              {m.why && <p className="momentum-goal-why">{m.why}</p>}
+              <div className="momentum-goal-progress-row">
+                <div className="momentum-goal-track"><div className="momentum-goal-fill" style={{ width: `${pct}%` }} /></div>
+                <span className="momentum-goal-pct">{pct}%</span>
+              </div>
+              <span className="momentum-goal-sub">{prog.total > 0 ? `${prog.done}/${prog.total} actions done` : 'No actions linked yet'}</span>
             </button>
           );
         })}
@@ -1240,7 +1258,7 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount,
   );
 }
 
-function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, setSelectedCategory }) {
+function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, setSelectedCategory, onGoalsClick }) {
   const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
   const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
@@ -1254,7 +1272,7 @@ function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, 
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={onGoalsClick}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} Action{actions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} Loop{loops === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} Noise</span></button>
@@ -2024,6 +2042,18 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
 
   const tierScopeLabel = activeGoal ? activeGoal.title : isUnlinkedFilter ? 'Unlinked' : null;
 
+  // When the goal scope changes, the currently selected category tab may have
+  // zero items under the new scope even though the overall pill count is >0 —
+  // that reads as "empty" to the person even though items exist elsewhere.
+  // Auto-hop to the first category that actually has items under this scope.
+  useEffect(() => {
+    if (!goalFilter) return;
+    const currentHasItems = goalScopedThoughts.some((t) => t.category === selectedCategory);
+    if (currentHasItems) return;
+    const firstWithItems = categories.find((c) => goalScopedThoughts.some((t) => t.category === c.id));
+    if (firstWithItems) setSelectedCategory(firstWithItems.id);
+  }, [goalFilter]);
+
   return (
     <section className="screen stack">
       <div className="section-header">
@@ -2781,7 +2811,7 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
 }
 
 // ─── Plan View — Agenda Rail + Nested Roadmap ───────────────────────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, subTabRequest, clearSubTabRequest, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [expandedGoalId, setExpandedGoalId] = useState('');
 
@@ -2796,6 +2826,14 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, tod
       setHighlightGoalId('');
     }
   }, [highlightGoalId, setHighlightGoalId]);
+
+  // External request to land on a specific sub-tab (e.g. Goals pill in the command strip)
+  useEffect(() => {
+    if (subTabRequest) {
+      setSubTab(subTabRequest);
+      if (clearSubTabRequest) clearSubTabRequest();
+    }
+  }, [subTabRequest, clearSubTabRequest]);
 
   return (
     <div className="stack">
@@ -2848,10 +2886,18 @@ function DateChips({ item, todayKey, updateThought }) {
 
 function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, showChips }) {
   const [promoted, setPromoted] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const cat = getCategory(item.category);
   const areaMeta = getAreaMeta(item.area);
   const AreaIcon = areaMeta.icon;
   const energyTone = item.energy === 'Low' ? 'rose' : item.energy === 'High' ? 'emerald' : 'yellow';
+
+  function pick(slotId) {
+    promoteToToday(slotId, item.id, item.text);
+    setPromoted(true);
+    setPickerOpen(false);
+  }
+
   return (
     <div className="plan-task">
       <div className="plan-task-row">
@@ -2861,18 +2907,27 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, sho
         <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
         {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
       </div>
-      <div className="plan-task-meta">
+      <div className="plan-task-meta" style={{ position: 'relative' }}>
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
         <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
         {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
         <button
           className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
-          onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
+          onClick={() => setPickerOpen((v) => !v)}
           disabled={promoted}
         >
           {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
-          {promoted ? 'On Today' : 'Make Main'}
+          {promoted ? 'On Today' : 'Promote'}
         </button>
+        {pickerOpen && !promoted && (
+          <div className="promote-slot-picker" style={{ position: 'absolute', top: '100%', right: 0, zIndex: 5, marginTop: 4, minWidth: 160 }}>
+            {Object.entries(SLOT_META).map(([slotId, meta]) => (
+              <button key={slotId} className="promote-slot-option" onClick={() => pick(slotId)}>
+                <meta.icon size={14} /> {meta.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
