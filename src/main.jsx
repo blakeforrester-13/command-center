@@ -81,6 +81,13 @@ const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
 
+// Accent palette for "Where Momentum Lives" goal rows on Today — cycles per goal
+const MOMENTUM_PALETTE = [
+  { hex: '#f59e0b', bg: 'rgba(245,158,11,0.07)' },
+  { hex: '#60a5fa', bg: 'rgba(96,165,250,0.07)' },
+  { hex: '#34d399', bg: 'rgba(52,211,153,0.07)' },
+];
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function getDaysOld(isoString) {
   if (!isoString) return 0;
@@ -1095,15 +1102,21 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
         <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
       </div>
       <div className="momentum-goal-list">
-        {goals.slice(0, 3).map((m) => {
+        {goals.slice(0, 3).map((m, idx) => {
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
           const prog = goalProgress[m.id] || { done: 0, total: 0 };
           const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
+          const accent = MOMENTUM_PALETTE[idx % MOMENTUM_PALETTE.length];
           return (
-            <button key={m.id} className="momentum-goal-row" onClick={() => goToGoal(m.id)}>
+            <button
+              key={m.id}
+              className="momentum-goal-row"
+              style={{ borderLeftColor: accent.hex, background: `linear-gradient(135deg, ${accent.bg}, rgba(255,255,255,0.01))` }}
+              onClick={() => goToGoal(m.id)}
+            >
               <div className="momentum-goal-top">
-                <div className="momentum-goal-area" style={{ color: `var(--cat-${areaMeta.color})` }}>
+                <div className="momentum-goal-area" style={{ color: accent.hex }}>
                   <AreaIcon size={12} /><span>{m.area}</span>
                 </div>
                 <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
@@ -1114,8 +1127,8 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
               </div>
               {m.why && <p className="momentum-goal-why">{m.why}</p>}
               <div className="momentum-goal-progress-row">
-                <div className="momentum-goal-track"><div className="momentum-goal-fill" style={{ width: `${pct}%` }} /></div>
-                <span className="momentum-goal-pct">{pct}%</span>
+                <div className="momentum-goal-track"><div className="momentum-goal-fill" style={{ width: `${pct}%`, background: accent.hex }} /></div>
+                <span className="momentum-goal-pct" style={{ color: accent.hex }}>{pct}%</span>
               </div>
               <span className="momentum-goal-sub">{prog.total > 0 ? `${prog.done}/${prog.total} actions done` : 'No actions linked yet'}</span>
             </button>
@@ -2907,27 +2920,29 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, sho
         <button className="plan-task-text" onClick={() => goToItem(item)}>{item.text}</button>
         {showChips && <DateChips item={item} todayKey={todayKey} updateThought={updateThought} />}
       </div>
-      <div className="plan-task-meta" style={{ position: 'relative' }}>
+      <div className="plan-task-meta">
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
         <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
         {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
-        <button
-          className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
-          onClick={() => setPickerOpen((v) => !v)}
-          disabled={promoted}
-        >
-          {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
-          {promoted ? 'On Today' : 'Promote'}
-        </button>
-        {pickerOpen && !promoted && (
-          <div className="promote-slot-picker" style={{ position: 'absolute', top: '100%', right: 0, zIndex: 5, marginTop: 4, minWidth: 160 }}>
-            {Object.entries(SLOT_META).map(([slotId, meta]) => (
-              <button key={slotId} className="promote-slot-option" onClick={() => pick(slotId)}>
-                <meta.icon size={14} /> {meta.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="promote-btn-wrap">
+          <button
+            className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
+            onClick={() => setPickerOpen((v) => !v)}
+            disabled={promoted}
+          >
+            {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
+            {promoted ? 'On Today' : 'Promote'}
+          </button>
+          {pickerOpen && !promoted && (
+            <div className="promote-slot-picker">
+              {Object.entries(SLOT_META).map(([slotId, meta]) => (
+                <button key={slotId} className={`promote-slot-option promote-slot-option-${meta.tone}`} onClick={() => pick(slotId)}>
+                  <meta.icon size={14} /> {meta.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
