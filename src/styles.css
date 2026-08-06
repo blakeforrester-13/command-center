@@ -3872,3 +3872,31 @@ body {
 .promote-slot-option-amber:hover  { background: rgba(255,176,32,0.16); }
 .promote-slot-option-blue   { color: var(--cat-blue); background: rgba(96,165,250,0.09); border-color: rgba(96,165,250,0.22); }
 .promote-slot-option-blue:hover   { background: rgba(96,165,250,0.16); }
+
+/* ── Page header — unified 3-line pattern (eyebrow / headline / sub) ────── */
+.page-header { display: grid; gap: 4px; padding: 2px 2px 2px; }
+.page-header .eyebrow { margin-bottom: 0; }
+.page-header h2 { color: var(--text); }
+.page-header p.muted { margin-top: 0; }
+
+/* ── Today: state card + quote sit side by side on one row ─────────────── */
+.today-state-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.today-state-row .command-ring-panel {
+  flex: 1.35;
+  min-width: 0;
+}
+.today-state-row .daily-quote-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .today-state-row { flex-direction: column; }
+}
