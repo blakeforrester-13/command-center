@@ -1050,12 +1050,13 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
 
   return (
     <section className="screen stack">
-      <div className="hero-card hero-command-layout">
-        <div className="hero-copy">
-          <p className="eyebrow">Daily Operating System</p>
-          <h2>What deserves your attention?</h2>
-          <p>Pick the few things that make today a win. Park everything else.</p>
-        </div>
+      <div className="page-header">
+        <p className="eyebrow">Daily Operating System</p>
+        <h2>What Deserves Your Attention?</h2>
+        <p className="muted">Pick the few things that make today a win. Park everything else.</p>
+      </div>
+
+      <div className="today-state-row">
         <CommandRing
           score={commandScore}
           state={commandState}
@@ -1065,9 +1066,8 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
           noiseCount={noiseItems.length}
           clearedToday={clearedToday}
         />
+        <DailyQuote />
       </div>
-
-      <DailyQuote />
 
       <CommitmentPressure yesterdayFocus={yesterdayFocus} clearYesterdayCommitment={clearYesterdayCommitment} />
 
@@ -1842,7 +1842,7 @@ function CaptureView({ addThought, addGoal, addLifeDirection, goals, lifeDirecti
   const [tab, setTab] = useState('thought');
   return (
     <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Capture</h2><p className="muted">Get it out of your head — at whatever level it actually lives.</p></div></div>
+      <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Get It Out of Your Head</h2><p className="muted">Thoughts, goals, or directions — whatever level it actually lives at.</p></div></div>
       <div className="capture-tabs">
         {CAPTURE_TABS.map((t) => {
           const TIcon = t.icon;
@@ -2359,7 +2359,7 @@ function ThoughtEditForm({ thought, goals, updateThought }) {
 function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToUnlinked, updateThought, setModal }) {
   return (
     <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
+      <div className="section-header"><div><p className="eyebrow">Identity Evidence</p><h2>What Your Track Record Says</h2><p className="muted">Momentum trends, completed work, and weekly resets.</p></div></div>
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
         <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
@@ -2850,6 +2850,7 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, tod
 
   return (
     <div className="stack">
+      <div className="section-header"><div><p className="eyebrow">Weekly Execution</p><h2>Where the Work Gets Scheduled</h2><p className="muted">This week's agenda, or the long-term roadmap by goal.</p></div></div>
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'week' ? 'active' : ''}`} onClick={() => setSubTab('week')}><CalendarDays size={15} /> This Week</button>
         <button className={`subtab-btn ${subTab === 'roadmap' ? 'active' : ''}`} onClick={() => setSubTab('roadmap')}><Flag size={15} /> Roadmap</button>
