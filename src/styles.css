@@ -131,6 +131,7 @@ h3 {
 .card,
 .hero-card,
 .mission-card,
+.mission-detail-card,
 .thought-card,
 .stat-card,
 .review-card {
@@ -160,7 +161,7 @@ h3 {
 .hero-icon { color: var(--accent); opacity: 0.7; }
 
 /* ── Section layout helpers ───────────────────────────────────────────── */
-.section-header, .thought-topline {
+.section-header, .mission-detail-top, .thought-topline, .mission-footer {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -406,6 +407,10 @@ input:focus, textarea:focus, select:focus {
   0%   { box-shadow: 0 0 0 3px rgba(245,158,11,0.5), 0 8px 32px rgba(245,158,11,0.2); }
   100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.2), 0 4px 16px rgba(0,0,0,0.2); }
 }
+
+.mission-detail-card { padding: 16px; display: grid; gap: 12px; }
+.mission-detail-card textarea { min-height: 76px; }
+.mission-footer { margin-top: 4px; }
 
 /* ── Pills ─────────────────────────────────────────────────────────────── */
 .pill {
@@ -1180,7 +1185,7 @@ input:focus, textarea:focus, select:focus {
 
 @media (max-width: 520px) {
   .app-shell { padding-inline: 10px; }
-  .card, .hero-card, .mission-card, .thought-card { border-radius: 16px; }
+  .card, .hero-card, .mission-card, .mission-detail-card, .thought-card { border-radius: 16px; }
   .topbar .primary-button span { display: none; }
   .topbar .primary-button.compact { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
   .mission-card { flex-direction: column; }
@@ -2864,7 +2869,7 @@ body {
 }
 .date-chip-input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
 
-/* ── Priority signals — shown on ThoughtCards ──── */
+/* ── Mission priority signal — shown on active-mission ThoughtCards ──── */
 .mission-signal-row {
   display: flex;
   flex-wrap: wrap;
@@ -2885,10 +2890,9 @@ body {
 
 /* Mission Control HQ */
 .roadmap-hq {
-  border: 1px solid var(--line); border-radius: 18px;
-  background: var(--bg-card);
+  border: 1px solid rgba(251,146,60,0.3); border-radius: 18px;
+  background: linear-gradient(160deg, rgba(251,146,60,0.06), var(--bg-card) 40%);
   display: grid; gap: 12px;
-  border-left-width: 3px;
 }
 .roadmap-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .roadmap-title { display: flex; align-items: center; gap: 8px; }
@@ -3270,7 +3274,6 @@ body {
   border-radius: 18px;
   background: rgba(20,26,36,0.92);
   overflow: hidden;
-  transition: border-color 0.2s;
 }
 .direction-header {
   display: flex;
@@ -3279,11 +3282,13 @@ body {
   gap: 12px;
   padding: 14px 16px;
   cursor: pointer;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
 }
 .direction-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  color: var(--text-secondary);
 }
 .direction-title {
   display: block;
@@ -3306,6 +3311,65 @@ body {
 }
 
 .goal-node-toggle { cursor: pointer; }
+
+.mission-node-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.mission-node {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.025);
+  overflow: hidden;
+}
+.mission-node-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.mission-node-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.mission-node-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.mission-node-actions {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+.mission-node-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.mission-node-action:hover { border-color: var(--line-strong); background: rgba(255,255,255,0.06); }
+.mission-node-action span:first-of-type { flex: 1; }
 
 /* ═══ Capture page — tabbed hub ═══════════════════════════════════════════ */
 .capture-tabs {
@@ -3336,6 +3400,7 @@ body {
 }
 .capture-tab:hover { color: var(--text-secondary); }
 .capture-tab.active-thought   { background: var(--accent-dim); color: var(--accent); }
+.capture-tab.active-mission   { background: rgba(255,176,32,0.14); color: #ffb020; }
 .capture-tab.active-goal      { background: rgba(96,165,250,0.14); color: #60a5fa; }
 .capture-tab.active-direction { background: rgba(167,139,250,0.14); color: #a78bfa; }
 
@@ -3356,6 +3421,7 @@ body {
   justify-content: center;
   flex-shrink: 0;
 }
+.icon-mission-bg   { background: rgba(255,176,32,0.14); color: #ffb020; }
 .icon-goal-bg      { background: rgba(96,165,250,0.14); color: #60a5fa; }
 .icon-direction-bg { background: rgba(167,139,250,0.14); color: #a78bfa; }
 .capture-form-type-header strong {
@@ -3370,9 +3436,11 @@ body {
   margin-top: 1px;
 }
 
+.capture-card-mission   { border-color: rgba(255,176,32,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(255,176,32,0.055), transparent 40%), var(--bg-card) !important; }
 .capture-card-goal      { border-color: rgba(96,165,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(96,165,250,0.055), transparent 40%), var(--bg-card) !important; }
 .capture-card-direction { border-color: rgba(167,139,250,0.2) !important; background: radial-gradient(circle at 88% 0%, rgba(167,139,250,0.055), transparent 40%), var(--bg-card) !important; }
 
+.capture-submit-mission   { background: linear-gradient(135deg, #ffc94d, #ffb020) !important; color: #0c0f14 !important; }
 .capture-submit-goal      { background: linear-gradient(135deg, #93c5fd, #60a5fa) !important; color: #0c0f14 !important; }
 .capture-submit-direction { background: linear-gradient(135deg, #c4b5fd, #a78bfa) !important; color: #0c0f14 !important; }
 
@@ -3518,4 +3586,317 @@ body {
   .goal-split-legend { grid-template-columns: repeat(2, 1fr); }
   .mountain-hero-compact { min-height: 170px; padding: 14px; }
   .mountain-stat-value { font-size: 1.15rem; }
+}
+
+/* ── Goal Scope Selector (Command tab — sits above tier accordion) ──────── */
+.goal-scope-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.goal-scope-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+}
+.goal-scope-eyebrow span {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+}
+.goal-scope-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.goal-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 0.5px solid var(--line-strong);
+  background: rgba(255,255,255,0.04);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.goal-scope-pill:hover { border-color: var(--line-strong); color: var(--text); background: rgba(255,255,255,0.07); }
+.goal-scope-pill.active {
+  background: rgba(96,165,250,0.12);
+  border-color: rgba(96,165,250,0.35);
+  color: #93c5fd;
+}
+.goal-scope-pill-unlinked { border-color: rgba(167,139,250,0.25); color: #c4b5fd; }
+.goal-scope-pill-unlinked.active { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.4); color: #c4b5fd; }
+.goal-scope-pill-ct {
+  font-size: 0.68rem;
+  font-weight: 800;
+  opacity: 0.65;
+}
+.goal-scope-band {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(96,165,250,0.07);
+  border: 0.5px solid rgba(96,165,250,0.18);
+  color: #60a5fa;
+}
+.goal-scope-band-unlinked { background: rgba(167,139,250,0.07); border-color: rgba(167,139,250,0.18); color: #a78bfa; }
+.goal-scope-band-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #93c5fd;
+  flex-shrink: 0;
+}
+.goal-scope-band-why {
+  flex: 1;
+  font-size: 0.76rem;
+  color: rgba(147,197,253,0.75);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.goal-scope-band-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Tier summary pills — shown on Act Now header ─────────────────────── */
+.tier-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 0.5px solid;
+}
+.tier-pill-green {
+  background: rgba(52,211,153,0.1);
+  border-color: rgba(52,211,153,0.25);
+  color: #34d399;
+}
+.tier-pill-yellow {
+  background: rgba(255,176,32,0.1);
+  border-color: rgba(255,176,32,0.25);
+  color: #ffb020;
+}
+
+/* ── Promote modal — goal filter ─────────────────────────────────────── */
+.promote-goal-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.promote-goal-filter-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+}
+.promote-goal-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.promote-goal-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 0.5px solid var(--line-strong);
+  background: rgba(255,255,255,0.04);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.promote-goal-pill:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+.promote-goal-pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+/* ── Momentum goal rows (Today page) — replaces boxy mission-card grid ──── */
+.momentum-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.momentum-goal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.momentum-goal-row:hover {
+  border-color: var(--line-strong);
+  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  transform: translateY(-1px);
+}
+.momentum-goal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.momentum-goal-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.momentum-goal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.momentum-goal-title-row h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.momentum-goal-chevron { color: var(--text-muted); flex-shrink: 0; }
+.momentum-goal-why {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.momentum-goal-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.momentum-goal-track {
+  flex: 1;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+.momentum-goal-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #34d399);
+  transition: width 0.4s ease;
+}
+.momentum-goal-pct {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  min-width: 32px;
+  text-align: right;
+}
+.momentum-goal-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Promote picker (This Week page "Promote" button) ──────────────────── */
+.promote-btn-wrap { position: relative; display: inline-flex; }
+.promote-slot-picker {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  margin-top: 4px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card-strong);
+  box-shadow: var(--shadow);
+}
+.promote-slot-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.promote-slot-option:hover { background: rgba(255,255,255,0.08); }
+/* Match the tones used by the four Today command cards: red / orange / amber / blue */
+.promote-slot-option-red    { color: #ff7a66; background: rgba(255,90,61,0.09);  border-color: rgba(255,90,61,0.22); }
+.promote-slot-option-red:hover    { background: rgba(255,90,61,0.16); }
+.promote-slot-option-orange { color: var(--cat-orange); background: rgba(255,122,47,0.09); border-color: rgba(255,122,47,0.22); }
+.promote-slot-option-orange:hover { background: rgba(255,122,47,0.16); }
+.promote-slot-option-amber  { color: var(--cat-amber); background: rgba(255,176,32,0.09); border-color: rgba(255,176,32,0.22); }
+.promote-slot-option-amber:hover  { background: rgba(255,176,32,0.16); }
+.promote-slot-option-blue   { color: var(--cat-blue); background: rgba(96,165,250,0.09); border-color: rgba(96,165,250,0.22); }
+.promote-slot-option-blue:hover   { background: rgba(96,165,250,0.16); }
+
+/* ── Page header — unified 3-line pattern (eyebrow / headline / sub) ────── */
+.page-header { display: grid; gap: 4px; padding: 2px 2px 2px; }
+.page-header .eyebrow { margin-bottom: 0; }
+.page-header h2 { color: var(--text); }
+.page-header p.muted { margin-top: 0; }
+
+/* ── Today: state card + quote sit side by side on one row ─────────────── */
+.today-state-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.today-state-row .command-ring-panel {
+  flex: 1.35;
+  min-width: 0;
+}
+.today-state-row .daily-quote-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .today-state-row { flex-direction: column; }
 }

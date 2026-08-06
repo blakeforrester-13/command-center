@@ -81,6 +81,13 @@ const lifeAreas = ['Work', 'School', 'Money', 'Health', 'Relationships', 'Family
 const energyLevels = ['Low', 'Medium', 'High'];
 const statuses = ['Open', 'On Track', 'Slipping', 'Blocked', 'Done'];
 
+// Accent palette for "Where Momentum Lives" goal rows on Today — cycles per goal
+const MOMENTUM_PALETTE = [
+  { hex: '#f59e0b', bg: 'rgba(245,158,11,0.07)' },
+  { hex: '#60a5fa', bg: 'rgba(96,165,250,0.07)' },
+  { hex: '#34d399', bg: 'rgba(52,211,153,0.07)' },
+];
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 function getDaysOld(isoString) {
   if (!isoString) return 0;
@@ -402,6 +409,7 @@ function App() {
   const [modal, setModal] = useState(null);
   const [energyFilter, setEnergyFilter] = useState('');
   const [highlightGoalId, setHighlightGoalId] = useState('');
+  const [planSubTabRequest, setPlanSubTabRequest] = useState('');
   const [pinnedGoalIds, setPinnedGoalIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem('blakeos-pinned-goals') || '[]'); } catch { return []; }
   });
@@ -789,6 +797,7 @@ function App() {
           noise={noiseItems.length}
           setActiveTab={setActiveTab}
           setSelectedCategory={setSelectedCategory}
+          onGoalsClick={() => { setPlanSubTabRequest('roadmap'); setActiveTab('plan'); }}
         />
       </header>
 
@@ -840,6 +849,7 @@ function App() {
             setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory}
             promoteToToday={promoteToToday}
             highlightGoalId={highlightGoalId} setHighlightGoalId={setHighlightGoalId}
+            subTabRequest={planSubTabRequest} clearSubTabRequest={() => setPlanSubTabRequest('')}
             setModal={setModal}
           />
         )}
@@ -884,6 +894,7 @@ function App() {
             thoughts={activeThoughts}
             tasks={openTasks}
             loops={openLoops}
+            goals={goals}
             onSelect={(id, text) => { promoteToToday(modal.slot, id, text); setModal(null); }}
           />
         </Modal>
@@ -1025,14 +1036,27 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
   ));
   const commandState = commandScore >= 80 ? 'Locked In' : commandScore >= 60 ? 'In Command' : commandScore >= 40 ? 'Building Command' : 'Scattered';
 
+  const goalProgress = useMemo(() => {
+    const map = {};
+    goals.forEach((g) => { map[g.id] = { done: 0, total: 0 }; });
+    activeThoughts.forEach((t) => {
+      if (t.category === 'next-actions' && t.goalId && map[t.goalId]) map[t.goalId].total += 1;
+    });
+    (doneThoughts || []).forEach((t) => {
+      if (t.category === 'next-actions' && t.goalId && map[t.goalId]) { map[t.goalId].total += 1; map[t.goalId].done += 1; }
+    });
+    return map;
+  }, [goals, activeThoughts, doneThoughts]);
+
   return (
     <section className="screen stack">
-      <div className="hero-card hero-command-layout">
-        <div className="hero-copy">
-          <p className="eyebrow">Daily Operating System</p>
-          <h2>What deserves your attention?</h2>
-          <p>Pick the few things that make today a win. Park everything else.</p>
-        </div>
+      <div className="page-header">
+        <p className="eyebrow">Daily Operating System</p>
+        <h2>What Deserves Your Attention?</h2>
+        <p className="muted">Pick the few things that make today a win. Park everything else.</p>
+      </div>
+
+      <div className="today-state-row">
         <CommandRing
           score={commandScore}
           state={commandState}
@@ -1042,9 +1066,8 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
           noiseCount={noiseItems.length}
           clearedToday={clearedToday}
         />
+        <DailyQuote />
       </div>
-
-      <DailyQuote />
 
       <CommitmentPressure yesterdayFocus={yesterdayFocus} clearYesterdayCommitment={clearYesterdayCommitment} />
 
@@ -1078,27 +1101,36 @@ function TodayView({ today, updateToday, goals, allGoals, openTasks, openLoops, 
         <div><p className="eyebrow">Active Goals</p><h2>Where Momentum Lives</h2></div>
         <button className="promote-btn" onClick={onManageGoals}><Layers size={13} /> Choose Goals</button>
       </div>
-      <div className="mission-list">
-        {goals.slice(0, 3).map((m) => {
+      <div className="momentum-goal-list">
+        {goals.slice(0, 3).map((m, idx) => {
           const areaMeta = getAreaMeta(m.area);
           const AreaIcon = areaMeta.icon;
+          const prog = goalProgress[m.id] || { done: 0, total: 0 };
+          const pct = prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
+          const accent = MOMENTUM_PALETTE[idx % MOMENTUM_PALETTE.length];
           return (
             <button
               key={m.id}
-              className={`mission-card mission-card-btn mission-card-area-${m.area.toLowerCase().replace(/[^a-z]/g, '')}`}
+              className="momentum-goal-row"
+              style={{ borderLeftColor: accent.hex, background: `linear-gradient(135deg, ${accent.bg}, rgba(255,255,255,0.01))` }}
               onClick={() => goToGoal(m.id)}
             >
-              <div>
-                <div className="mission-area-tag" style={{ color: `var(--cat-${areaMeta.color})` }}>
-                  <AreaIcon size={13} /><span>{m.area}</span>
+              <div className="momentum-goal-top">
+                <div className="momentum-goal-area" style={{ color: accent.hex }}>
+                  <AreaIcon size={12} /><span>{m.area}</span>
                 </div>
-                <h3>{m.title}</h3>
-                <p>{m.why || 'No why added yet.'}</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <Pill tone={m.status === 'On Track' ? 'green' : m.status === 'Slipping' || m.status === 'Blocked' ? 'red' : 'default'}>{m.status}</Pill>
-                <ChevronRight size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
               </div>
+              <div className="momentum-goal-title-row">
+                <h3>{m.title}</h3>
+                <ChevronRight size={15} className="momentum-goal-chevron" />
+              </div>
+              {m.why && <p className="momentum-goal-why">{m.why}</p>}
+              <div className="momentum-goal-progress-row">
+                <div className="momentum-goal-track"><div className="momentum-goal-fill" style={{ width: `${pct}%`, background: accent.hex }} /></div>
+                <span className="momentum-goal-pct" style={{ color: accent.hex }}>{pct}%</span>
+              </div>
+              <span className="momentum-goal-sub">{prog.total > 0 ? `${prog.done}/${prog.total} actions done` : 'No actions linked yet'}</span>
             </button>
           );
         })}
@@ -1239,7 +1271,7 @@ function CommandRing({ score, state, slotsSet, openTasks, openLoops, noiseCount,
   );
 }
 
-function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, setSelectedCategory }) {
+function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, setSelectedCategory, onGoalsClick }) {
   const dayLabel = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
   const load = loops >= 4 || actions >= 8 ? 'Heavy' : loops >= 2 || actions >= 4 ? 'Medium' : 'Light';
   const loadColor = load === 'Heavy' ? 'strip-red' : load === 'Medium' ? 'strip-amber' : 'strip-green';
@@ -1253,7 +1285,7 @@ function DailyCommandStrip({ state, goals, actions, loops, noise, setActiveTab, 
     <div className="daily-command-strip">
       <div className="command-strip-item command-strip-state"><Sparkles size={15} /><span>{state}</span></div>
       <div className="command-strip-item command-strip-date"><CalendarDays size={15} /><span>{dayLabel}</span></div>
-      <button className="command-strip-item command-strip-btn strip-blue" onClick={() => goTo('plan')}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
+      <button className="command-strip-item command-strip-btn strip-blue" onClick={onGoalsClick}><Target size={15} /><span>{goals} Goal{goals === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-green" onClick={() => goTo('sort', 'next-actions')}><CheckCircle2 size={15} /><span>{actions} Action{actions === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-orange" onClick={() => goTo('sort', 'problems')}><AlertCircle size={15} /><span>{loops} Loop{loops === 1 ? '' : 's'}</span></button>
       <button className="command-strip-item command-strip-btn strip-red" onClick={() => goTo('sort', 'anxiety-noise')}><Brain size={15} /><span>{noise} Noise</span></button>
@@ -1507,14 +1539,25 @@ function scoreBehaviorCandidate(thought, mode) {
   return score;
 }
 
-function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect }) {
+function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, goals = [], onSelect }) {
   const meta = behaviorModeMeta[mode] || behaviorModeMeta.avoiding;
   const ModeIcon = meta.icon;
-  const candidates = (thoughts.length ? thoughts : [...tasks, ...loops])
-    .filter((t) => t.status !== 'Done')
-    .sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
-  const recommended = candidates.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
-  const fallback = candidates.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
+  const [goalFilter, setGoalFilter] = useState('');
+
+  const allCandidates = (thoughts.length ? thoughts : [...tasks, ...loops])
+    .filter((t) => t.status !== 'Done');
+
+  // Open goals that have at least one candidate item linked
+  const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done' && allCandidates.some((t) => t.goalId === g.id)), [goals, allCandidates]);
+
+  const scopedCandidates = useMemo(() => {
+    if (!goalFilter) return allCandidates;
+    return allCandidates.filter((t) => t.goalId === goalFilter);
+  }, [allCandidates, goalFilter]);
+
+  const sorted = scopedCandidates.sort((a, b) => scoreBehaviorCandidate(b, mode) - scoreBehaviorCandidate(a, mode));
+  const recommended = sorted.filter((t) => getBehaviorMode(t) === mode).slice(0, 6);
+  const fallback = sorted.filter((t) => getBehaviorMode(t) !== mode).slice(0, 6);
 
   function renderItem(t) {
     const cat = getCategory(t.category);
@@ -1537,6 +1580,24 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect
           <p>{meta.description}</p>
         </div>
       </div>
+      {openGoals.length > 0 && (
+        <div className="promote-goal-filter">
+          <p className="promote-goal-filter-label">Filter by goal</p>
+          <div className="promote-goal-pills">
+            <button
+              className={`promote-goal-pill ${!goalFilter ? 'active' : ''}`}
+              onClick={() => setGoalFilter('')}
+            >All</button>
+            {openGoals.map((g) => (
+              <button
+                key={g.id}
+                className={`promote-goal-pill ${goalFilter === g.id ? 'active' : ''}`}
+                onClick={() => setGoalFilter(goalFilter === g.id ? '' : g.id)}
+              >{g.title}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <p className="muted small">Pick up to 1-2 items for this mode. The app ranks by category fit, pinned items, related goals, due dates, energy, and stale open loops.</p>
       {recommended.length > 0 && (
         <div className="promote-group">
@@ -1550,7 +1611,7 @@ function PromoteModal({ mode = 'avoiding', thoughts = [], tasks, loops, onSelect
           {fallback.map(renderItem)}
         </div>
       )}
-      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing to pull yet" text="Capture or sort a few items first, then this mode will have smart candidates." />}
+      {recommended.length === 0 && fallback.length === 0 && <EmptyState title="Nothing here" text={goalFilter ? 'No items linked to this goal. Try All or a different goal.' : 'Capture or sort a few items first.'} />}
     </div>
   );
 }
@@ -1781,7 +1842,7 @@ function CaptureView({ addThought, addGoal, addLifeDirection, goals, lifeDirecti
   const [tab, setTab] = useState('thought');
   return (
     <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Capture</h2><p className="muted">Get it out of your head — at whatever level it actually lives.</p></div></div>
+      <div className="section-header"><div><p className="eyebrow">Brain Dump</p><h2>Get It Out of Your Head</h2><p className="muted">Thoughts, goals, or directions — whatever level it actually lives at.</p></div></div>
       <div className="capture-tabs">
         {CAPTURE_TABS.map((t) => {
           const TIcon = t.icon;
@@ -1948,7 +2009,6 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
   const [collapsedTiers, setCollapsedTiers] = useState({});
   function toggleTier(id) { setCollapsedTiers((prev) => ({ ...prev, [id]: !prev[id] })); }
 
-  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
   const openGoals = useMemo(() => (goals || []).filter((g) => g.status !== 'Done'), [goals]);
 
   // Guard against a stale filter: if the selected goal was completed or deleted,
@@ -1995,6 +2055,18 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
 
   const tierScopeLabel = activeGoal ? activeGoal.title : isUnlinkedFilter ? 'Unlinked' : null;
 
+  // When the goal scope changes, the currently selected category tab may have
+  // zero items under the new scope even though the overall pill count is >0 —
+  // that reads as "empty" to the person even though items exist elsewhere.
+  // Auto-hop to the first category that actually has items under this scope.
+  useEffect(() => {
+    if (!goalFilter) return;
+    const currentHasItems = goalScopedThoughts.some((t) => t.category === selectedCategory);
+    if (currentHasItems) return;
+    const firstWithItems = categories.find((c) => goalScopedThoughts.some((t) => t.category === c.id));
+    if (firstWithItems) setSelectedCategory(firstWithItems.id);
+  }, [goalFilter]);
+
   return (
     <section className="screen stack">
       <div className="section-header">
@@ -2009,10 +2081,67 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
           </div>
         </div>
       )}
+
+      {/* ── Goal Scope Selector — sits above tier accordion, its own lens ── */}
+      {openGoals.length > 0 && (
+        <div className="goal-scope-selector">
+          <div className="goal-scope-eyebrow">
+            <span>Scope by goal</span>
+            <button className="text-button small" onClick={goToPlan}>Manage</button>
+          </div>
+          <div className="goal-scope-pills">
+            {openGoals.map((g) => {
+              const stats = goalStats[g.id] || { open: 0 };
+              const isActive = goalFilter === g.id;
+              return (
+                <button
+                  key={g.id}
+                  className={`goal-scope-pill ${isActive ? 'active' : ''}`}
+                  onClick={() => setGoalFilter(isActive ? '' : g.id)}
+                >
+                  {g.title} <span className="goal-scope-pill-ct">{stats.open}</span>
+                </button>
+              );
+            })}
+            <button
+              className={`goal-scope-pill goal-scope-pill-unlinked ${goalFilter === '__unlinked__' ? 'active' : ''}`}
+              onClick={() => setGoalFilter(goalFilter === '__unlinked__' ? '' : '__unlinked__')}
+            >
+              <LinkIcon size={11} style={{ display: 'inline', marginRight: 3, verticalAlign: -1 }} />
+              Unlinked <span className="goal-scope-pill-ct">{unlinkedCount}</span>
+            </button>
+          </div>
+          {goalFilter && goalFilter !== '__unlinked__' && (() => {
+            const g = openGoals.find((x) => x.id === goalFilter);
+            if (!g) return null;
+            return (
+              <div className="goal-scope-band">
+                <Target size={13} />
+                <span className="goal-scope-band-title">{g.title}</span>
+                {g.why && <span className="goal-scope-band-why">{g.why}</span>}
+                <div className="goal-scope-band-actions">
+                  <button className="text-button small" onClick={() => setModal({ type: 'edit-goal', goal: g })}><Edit3 size={12} /> Edit</button>
+                  <button className="text-button small" onClick={() => goToGoal(g.id)}><Flag size={12} /> Plan</button>
+                </div>
+              </div>
+            );
+          })()}
+          {goalFilter === '__unlinked__' && (
+            <div className="goal-scope-band goal-scope-band-unlinked">
+              <Compass size={13} />
+              <span className="goal-scope-band-why">Sorted items with no goal linked. Edit each to connect it.</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="tier-nav">
         {categoryTiers.map((tier) => {
           const tierCats = categories.filter((c) => c.tier === tier.id);
           const isCollapsed = collapsedTiers[tier.id];
+          // Act Now header pills: Actions count + Quick Wins (low-energy next-actions)
+          const actNowActions = goalScopedThoughts.filter((t) => t.category === 'next-actions').length;
+          const actNowQuickWins = goalScopedThoughts.filter((t) => t.category === 'next-actions' && t.energy === 'Low').length;
           return (
             <div key={tier.id} className={`tier-group tier-group-${tier.color}`}>
               <button className="tier-header" onClick={() => toggleTier(tier.id)}>
@@ -2023,18 +2152,18 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
                     <span className="tier-desc">{tierScopeLabel ? `Scoped to ${tierScopeLabel}` : tier.description}</span>
                   </div>
                 </div>
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {tier.id === 'act-now' && (
+                    <>
+                      <span className="tier-summary-pill tier-pill-green"><CheckCircle2 size={11} /> {actNowActions} actions</span>
+                      {actNowQuickWins > 0 && <span className="tier-summary-pill tier-pill-yellow"><Zap size={11} /> {actNowQuickWins} quick wins</span>}
+                    </>
+                  )}
+                  {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                </div>
               </button>
               {!isCollapsed && (
                 <div className="tier-chips">
-                  {tier.id === 'act-now' && openGoals.length > 0 && (
-                    <button
-                      className={`category-chip chip-active-blue ${goalPickerOpen || goalFilter ? 'active' : ''}`}
-                      onClick={() => setGoalPickerOpen((v) => !v)}
-                    >
-                      <Target size={16} /><span>Goals</span><small>{openGoals.length}</small>
-                    </button>
-                  )}
                   {tierCats.map((cat) => {
                     const CIcon = cat.icon;
                     const count = goalScopedThoughts.filter((t) => t.category === cat.id).length;
@@ -2048,14 +2177,6 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
                   })}
                 </div>
               )}
-              {!isCollapsed && tier.id === 'act-now' && goalPickerOpen && openGoals.length > 0 && (
-                <GoalCardGrid
-                  goals={openGoals} goalStats={goalStats}
-                  goalFilter={goalFilter} setGoalFilter={setGoalFilter}
-                  unlinkedCount={unlinkedCount} setModal={setModal}
-                  goToPlan={goToPlan} goToGoal={goToGoal}
-                />
-              )}
             </div>
           );
         })}
@@ -2067,72 +2188,6 @@ function SortView({ thoughts, unsorted, doneThoughts, goals, goalFilter: rawGoal
         goalContext={activeGoal ? activeGoal.title : isUnlinkedFilter ? 'Unlinked' : null}
       />
     </section>
-  );
-}
-
-function GoalCardGrid({ goals, goalStats, goalFilter, setGoalFilter, unlinkedCount, setModal, goToPlan, goToGoal }) {
-  const isUnlinked = goalFilter === '__unlinked__';
-  return (
-    <div>
-      <div className="goals-section-header">
-        <span className="goals-section-label"><Target size={13} /> Goals</span>
-        <button className="text-button small" onClick={() => goalFilter && goalFilter !== '__unlinked__' ? goToGoal(goalFilter) : goToPlan()}>Manage</button>
-      </div>
-      <div className="goals-card-grid">
-        {goals.map((g) => {
-          const stats = goalStats[g.id] || { open: 0, actionsDone: 0, actionsTotal: 0 };
-          const pct = stats.actionsTotal > 0 ? Math.round((stats.actionsDone / stats.actionsTotal) * 100) : 0;
-          const isActive = goalFilter === g.id;
-          return (
-            <button
-              key={g.id}
-              className={`goal-card ${isActive ? 'active' : ''}`}
-              onClick={() => setGoalFilter(isActive ? '' : g.id)}
-              title={stats.actionsTotal > 0 ? `${stats.actionsDone}/${stats.actionsTotal} actions done` : undefined}
-            >
-              <div className="goal-card-top">
-                <span className="goal-card-title">{g.title}</span>
-                <span className="goal-card-count">{stats.open}</span>
-              </div>
-              <div className="goal-progress-row">
-                <span className="goal-progress-track"><span className="goal-progress-fill" style={{ width: `${pct}%` }} /></span>
-                <span className="goal-progress-pct">{pct}%</span>
-              </div>
-            </button>
-          );
-        })}
-        <button
-          className={`goal-card unlinked-card ${isUnlinked ? 'active' : ''}`}
-          onClick={() => setGoalFilter(isUnlinked ? '' : '__unlinked__')}
-        >
-          <div className="goal-card-top">
-            <span className="goal-card-title"><LinkIcon size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: -1 }} />Unlinked</span>
-            <span className="goal-card-count">{unlinkedCount}</span>
-          </div>
-          <span className="goal-card-unlinked-sub">Sorted work serving no goal</span>
-        </button>
-      </div>
-      {goalFilter && goalFilter !== '__unlinked__' && (() => {
-        const g = goals.find((x) => x.id === goalFilter);
-        if (!g) return null;
-        return (
-          <div className="goal-context-band">
-            <Quote size={13} />
-            <span className="goal-context-why">{g.why || 'No why set yet.'}</span>
-            <div className="goal-context-actions">
-              <button className="text-button small" onClick={() => setModal({ type: 'edit-goal', goal: g })}><Edit3 size={13} /> Edit</button>
-              <button className="text-button small" onClick={() => goToGoal(g.id)}><Flag size={13} /> Plan</button>
-            </div>
-          </div>
-        );
-      })()}
-      {isUnlinked && (
-        <div className="goal-context-band unlinked-band">
-          <Compass size={13} />
-          <span className="goal-context-why">These items are sorted but don't connect to any goal. Edit each one to link it directly.</span>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -2304,7 +2359,7 @@ function ThoughtEditForm({ thought, goals, updateThought }) {
 function ProgressView({ doneThoughts, activeThoughts, allThoughts, goals, lifeDirections, reviews, saveReview, subTab, setSubTab, goToUnlinked, updateThought, setModal }) {
   return (
     <section className="screen stack">
-      <div className="section-header"><div><p className="eyebrow">BlakeOS</p><h2>Progress</h2></div></div>
+      <div className="section-header"><div><p className="eyebrow">Identity Evidence</p><h2>What Your Track Record Says</h2><p className="muted">Momentum trends, completed work, and weekly resets.</p></div></div>
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'accomplishments' ? 'active' : ''}`} onClick={() => setSubTab('accomplishments')}><Trophy size={15} /> Accomplishments</button>
         <button className={`subtab-btn ${subTab === 'review' ? 'active' : ''}`} onClick={() => setSubTab('review')}><RefreshCw size={15} /> Weekly Review</button>
@@ -2330,15 +2385,15 @@ const DIRECTION_PALETTE = [
   { color: 'purple',  hex: '#a78bfa', border: 'rgba(167,139,250,0.28)',  bg: 'rgba(167,139,250,0.05)', headerBg: 'rgba(167,139,250,0.09)', subColor: '#7c3aed', divider: 'rgba(167,139,250,0.12)' },
 ];
 
-// Map category → tier color tokens for roadmap thought rows
+// Map category → tier color tokens for roadmap thought rows — MUST match Command's category.color palette
 const CAT_TIER_STYLE = {
-  'next-actions':    { rowBorder: 'rgba(245,158,11,0.22)', rowBg: 'rgba(245,158,11,0.07)', iconColor: '#d97706', badgeBg: 'rgba(245,158,11,0.15)', badgeColor: '#d97706' },
-  'problems':        { rowBorder: 'rgba(251,146,60,0.25)',  rowBg: 'rgba(251,146,60,0.07)', iconColor: '#f97316', badgeBg: 'rgba(251,146,60,0.15)', badgeColor: '#f97316' },
+  'next-actions':    { rowBorder: 'rgba(52,211,153,0.22)',  rowBg: 'rgba(52,211,153,0.06)',  iconColor: '#34d399', badgeBg: 'rgba(52,211,153,0.14)',  badgeColor: '#059669' },
+  'problems':        { rowBorder: 'rgba(251,146,60,0.25)',  rowBg: 'rgba(251,146,60,0.07)',  iconColor: '#f97316', badgeBg: 'rgba(251,146,60,0.15)',  badgeColor: '#f97316' },
   'decisions':       { rowBorder: 'rgba(167,139,250,0.25)', rowBg: 'rgba(167,139,250,0.07)', iconColor: '#a78bfa', badgeBg: 'rgba(167,139,250,0.15)', badgeColor: '#a78bfa' },
-  'waiting-on':      { rowBorder: 'rgba(251,191,36,0.22)',  rowBg: 'rgba(251,191,36,0.06)', iconColor: '#fbbf24', badgeBg: 'rgba(251,191,36,0.12)', badgeColor: '#d97706' },
-  'maintenance':     { rowBorder: 'rgba(45,212,191,0.22)',  rowBg: 'rgba(45,212,191,0.05)', iconColor: '#2dd4bf', badgeBg: 'rgba(45,212,191,0.12)', badgeColor: '#0d9488' },
+  'waiting-on':      { rowBorder: 'rgba(34,211,238,0.25)',  rowBg: 'rgba(34,211,238,0.06)',  iconColor: '#22d3ee', badgeBg: 'rgba(34,211,238,0.14)',  badgeColor: '#0e7490' },
+  'maintenance':     { rowBorder: 'rgba(45,212,191,0.22)',  rowBg: 'rgba(45,212,191,0.05)',  iconColor: '#2dd4bf', badgeBg: 'rgba(45,212,191,0.12)',  badgeColor: '#0d9488' },
   'relationships':   { rowBorder: 'rgba(244,114,182,0.22)', rowBg: 'rgba(244,114,182,0.05)', iconColor: '#f472b6', badgeBg: 'rgba(244,114,182,0.12)', badgeColor: '#db2777' },
-  'money-adult-life':{ rowBorder: 'rgba(96,165,250,0.22)',  rowBg: 'rgba(96,165,250,0.05)', iconColor: '#60a5fa', badgeBg: 'rgba(96,165,250,0.12)', badgeColor: '#2563eb' },
+  'money-adult-life':{ rowBorder: 'rgba(96,165,250,0.22)',  rowBg: 'rgba(96,165,250,0.05)',  iconColor: '#60a5fa', badgeBg: 'rgba(96,165,250,0.12)',  badgeColor: '#2563eb' },
   'someday':         { rowBorder: 'rgba(148,163,184,0.2)',  rowBg: 'rgba(148,163,184,0.05)', iconColor: '#94a3b8', badgeBg: 'rgba(148,163,184,0.12)', badgeColor: '#94a3b8' },
   'anxiety-noise':   { rowBorder: 'rgba(248,113,113,0.22)', rowBg: 'rgba(248,113,113,0.05)', iconColor: '#f87171', badgeBg: 'rgba(248,113,113,0.12)', badgeColor: '#ef4444' },
 };
@@ -2769,7 +2824,7 @@ function ReviewTab({ activeThoughts, doneThoughts, goals, reviews, saveReview, s
 }
 
 // ─── Plan View — Agenda Rail + Nested Roadmap ───────────────────────────────
-function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, setModal }) {
+function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, today, updateThought, updateGoal, updateLifeDirection, setMilestone, toggleMilestone, setActiveTab, setSelectedCategory, promoteToToday, highlightGoalId, setHighlightGoalId, subTabRequest, clearSubTabRequest, setModal }) {
   const [subTab, setSubTab] = useState('week');
   const [expandedGoalId, setExpandedGoalId] = useState('');
 
@@ -2785,8 +2840,17 @@ function PlanView({ openTasks, openLoops, lifeDirections, goals, milestones, tod
     }
   }, [highlightGoalId, setHighlightGoalId]);
 
+  // External request to land on a specific sub-tab (e.g. Goals pill in the command strip)
+  useEffect(() => {
+    if (subTabRequest) {
+      setSubTab(subTabRequest);
+      if (clearSubTabRequest) clearSubTabRequest();
+    }
+  }, [subTabRequest, clearSubTabRequest]);
+
   return (
     <div className="stack">
+      <div className="section-header"><div><p className="eyebrow">Weekly Execution</p><h2>Where the Work Gets Scheduled</h2><p className="muted">This week's agenda, or the long-term roadmap by goal.</p></div></div>
       <div className="subtab-row">
         <button className={`subtab-btn ${subTab === 'week' ? 'active' : ''}`} onClick={() => setSubTab('week')}><CalendarDays size={15} /> This Week</button>
         <button className={`subtab-btn ${subTab === 'roadmap' ? 'active' : ''}`} onClick={() => setSubTab('roadmap')}><Flag size={15} /> Roadmap</button>
@@ -2836,10 +2900,18 @@ function DateChips({ item, todayKey, updateThought }) {
 
 function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, showChips }) {
   const [promoted, setPromoted] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const cat = getCategory(item.category);
   const areaMeta = getAreaMeta(item.area);
   const AreaIcon = areaMeta.icon;
   const energyTone = item.energy === 'Low' ? 'rose' : item.energy === 'High' ? 'emerald' : 'yellow';
+
+  function pick(slotId) {
+    promoteToToday(slotId, item.id, item.text);
+    setPromoted(true);
+    setPickerOpen(false);
+  }
+
   return (
     <div className="plan-task">
       <div className="plan-task-row">
@@ -2853,14 +2925,25 @@ function PlanTask({ item, todayKey, updateThought, promoteToToday, goToItem, sho
         <Pill tone={cat.color} className="plan-pill">{cat.short}</Pill>
         <Pill tone={areaMeta.color} className="plan-pill"><AreaIcon size={11} /> {item.area}</Pill>
         {item.energy && <Pill tone={energyTone} className="plan-pill"><EnergyIcon level={item.energy} /> {item.energy}</Pill>}
-        <button
-          className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
-          onClick={() => { promoteToToday('main', item.id, item.text); setPromoted(true); }}
-          disabled={promoted}
-        >
-          {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
-          {promoted ? 'On Today' : 'Make Main'}
-        </button>
+        <div className="promote-btn-wrap">
+          <button
+            className={`triage-apply-btn ${promoted ? 'applied' : ''}`}
+            onClick={() => setPickerOpen((v) => !v)}
+            disabled={promoted}
+          >
+            {promoted ? <Check size={13} /> : <ArrowUpCircle size={13} />}
+            {promoted ? 'On Today' : 'Promote'}
+          </button>
+          {pickerOpen && !promoted && (
+            <div className="promote-slot-picker">
+              {Object.entries(SLOT_META).map(([slotId, meta]) => (
+                <button key={slotId} className={`promote-slot-option promote-slot-option-${meta.tone}`} onClick={() => pick(slotId)}>
+                  <meta.icon size={14} /> {meta.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -3119,8 +3202,8 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
   const undated = linked.filter((t) => !t.dueDate);
 
   function renderLinkedItem(item) {
-    const cat = getCategory(item.category);
-    const CatIcon = cat.icon;
+    const itemCat = getCategory(item.category);
+    const CatIcon = itemCat.icon;
     const ts = CAT_TIER_STYLE[item.category] || CAT_TIER_STYLE['someday'];
     return (
       <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', borderRadius: 11, border: `1px solid ${ts.rowBorder}`, background: ts.rowBg }}>
@@ -3131,7 +3214,7 @@ function GoalNode({ goal, items, milestones, dirPalette, todayKey, updateGoal, u
         {item.dueDate && <Pill tone={item.dueDate < todayKey ? 'red' : 'slate'} className="plan-pill">{dayShortLabel(item.dueDate, todayKey).split(',')[0]}</Pill>}
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: ts.badgeBg, color: ts.badgeColor, whiteSpace: 'nowrap', flexShrink: 0 }}>
           <CatIcon size={11} />
-          {cat.short}
+          {itemCat.short}
         </span>
       </div>
     );
